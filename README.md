@@ -248,3 +248,80 @@ careeros/
 ├── tests/
 └── infra/
 ```
+
+## M0 Local Development
+
+M0 provides the smallest runnable CareerOS path:
+
+```text
+Browser → Next.js Web → FastAPI API → PostgreSQL
+```
+
+### Prerequisites
+
+- Node.js 22 or newer
+- npm 10 or newer
+- Python 3.13 or newer
+- Docker with Docker Compose
+
+### Initial Setup
+
+From the repository root:
+
+```bash
+cp .env.example .env
+cp apps/web/.env.example apps/web/.env.local
+npm install
+python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -e 'apps/api[dev]'
+```
+
+### Start PostgreSQL and Apply Migrations
+
+```bash
+docker compose --env-file .env -f infra/compose.yaml up -d postgres
+.venv/bin/alembic -c apps/api/alembic.ini upgrade head
+```
+
+The first migration is intentionally empty. It creates only Alembic's infrastructure metadata and proves that a clean database can be migrated without introducing product-domain tables.
+
+### Start the API
+
+```bash
+.venv/bin/uvicorn --app-dir apps/api/src careeros_api.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+The API health endpoint is available at `http://localhost:8000/health`.
+
+### Start the Web Application
+
+In a second terminal:
+
+```bash
+npm run web:dev
+```
+
+Open `http://localhost:3000`. The page reports API and database health through the complete M0 connection path.
+
+### Run Checks
+
+With PostgreSQL running:
+
+```bash
+npm run web:lint
+npm run web:typecheck
+npm run web:test
+npm run web:format
+npm run web:build
+.venv/bin/ruff check apps/api
+.venv/bin/ruff format --check apps/api
+.venv/bin/mypy apps/api/src
+.venv/bin/pytest apps/api/tests
+```
+
+### Stop PostgreSQL
+
+```bash
+docker compose --env-file .env -f infra/compose.yaml down
+```

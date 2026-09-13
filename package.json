@@ -1,0 +1,17 @@
+{
+  "name": "careeros",
+  "private": true,
+  "workspaces": ["apps/web"],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "web:dev": "npm --workspace @careeros/web run dev",
+    "web:build": "npm --workspace @careeros/web run build",
+    "web:lint": "npm --workspace @careeros/web run lint",
+    "web:typecheck": "npm --workspace @careeros/web run typecheck",
+    "web:test": "npm --workspace @careeros/web run test",
+    "web:format": "npm --workspace @careeros/web run format"
+  }
+}
+
