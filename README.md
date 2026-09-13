@@ -1,0 +1,250 @@
+# CareerOS
+
+CareerOS is an AI-native job search operating system designed to help users understand opportunities, prepare stronger truthful applications, reduce repetitive application work, and preserve application context over time.
+
+The long-term product loop is:
+
+Discover → Understand → Decide → Tailor → Apply → Track → Learn
+
+CareerOS is currently in the product specification and Core V1 foundation stage.
+
+---
+
+## Product Principle
+
+CareerOS is built around one core idea:
+
+> Understand my career. Understand the opportunity. Help me make the strongest truthful move.
+
+CareerOS should not behave like a generic resume writer.
+
+It should understand:
+
+- what the user has actually done,
+- what a job actually requires,
+- what evidence supports the match,
+- what relevant experience is hidden or underrepresented,
+- what the user's genuine gaps are,
+- and how to prepare the strongest truthful application.
+
+---
+
+## Core Product Model
+
+CareerOS Core V1 is organized around five major capabilities:
+
+1. Career Brain
+2. Job Intelligence
+3. Application Intelligence
+4. Application Assistant
+5. Application Memory
+
+The core reasoning flow is:
+
+Career Brain
+→ Job Requirements
+→ Career Evidence
+→ Evidence Matching
+→ Application Strategy
+→ Resume Tailoring
+→ Application Assistance
+→ Application Memory
+
+---
+
+## Career Brain Is Not a Resume
+
+The Career Brain is the user's structured source of professional truth.
+
+It may include:
+
+- education,
+- experience,
+- projects,
+- skills,
+- technologies,
+- achievements,
+- metrics,
+- certifications,
+- professional links,
+- application information,
+- career preferences,
+- and supporting evidence.
+
+A resume is a presentation artifact generated or selected from this information for a particular purpose.
+
+One Career Brain may support many resume versions.
+
+---
+
+## Evidence-Based AI
+
+CareerOS follows one foundational AI rule:
+
+> Evidence before generation.
+
+AI must not invent:
+
+- employers,
+- responsibilities,
+- technologies,
+- skills,
+- achievements,
+- metrics,
+- education,
+- certifications,
+- seniority,
+- or other professional facts.
+
+CareerOS distinguishes between:
+
+- Strong Evidence
+- Hidden / Underrepresented Evidence
+- Weak Evidence
+- Genuine Gap
+
+Generated professional claims should be traceable to supporting Career Brain evidence.
+
+---
+
+## Core V1 Goal
+
+CareerOS Core V1 is focused on one complete application workflow:
+
+Create Account
+→ Upload Resume
+→ Build Career Brain
+→ Capture Job
+→ Analyze Job
+→ Review Evidence and Gaps
+→ Prepare Application
+→ Tailor Resume
+→ Assist With Application Form
+→ User Reviews
+→ User Submits
+→ Record Application
+
+Core V1 prioritizes reliability and trust over feature count.
+
+---
+
+## Repository Documentation
+
+The `/docs` directory is the source of truth for product and engineering decisions.
+
+### Product Definition
+
+`docs/PRODUCT.md`
+
+Defines:
+
+- product vision,
+- product thesis,
+- product principles,
+- long-term direction.
+
+### Product Requirements
+
+`docs/PRD.md`
+
+Defines:
+
+- CareerOS Core V1 scope,
+- features,
+- requirements,
+- acceptance criteria,
+- non-goals.
+
+### User Experience
+
+`docs/USER_FLOW.md`
+
+Defines:
+
+- onboarding,
+- Career Brain flow,
+- job analysis flow,
+- application preparation,
+- extension experience,
+- autofill,
+- application history.
+
+### Domain Data Model
+
+`docs/DATA_MODEL.md`
+
+Defines:
+
+- Career Brain entities,
+- Career Evidence,
+- Resume and Resume Version,
+- Job and Job Requirements,
+- Evidence Matches,
+- Application Strategy,
+- Applications.
+
+### AI Specification
+
+`docs/AI_SPEC.md`
+
+Defines:
+
+- AI responsibilities,
+- grounding,
+- job understanding,
+- evidence retrieval,
+- evidence evaluation,
+- hidden evidence,
+- gap detection,
+- application strategy,
+- resume tailoring,
+- hallucination prevention,
+- AI evaluation.
+
+### Technical Architecture
+
+`docs/ARCHITECTURE.md`
+
+Defines the approved Core V1 architecture and technical principles.
+
+Preferred stack:
+
+- Next.js
+- TypeScript
+- React
+- Tailwind CSS
+- Python
+- FastAPI
+- PostgreSQL
+- Chrome Manifest V3 extension
+- provider-independent AI layer
+
+### Roadmap
+
+`docs/ROADMAP.md`
+
+Defines:
+
+- milestone sequencing,
+- Core V1 delivery plan,
+- scope boundaries,
+- future product direction.
+
+---
+
+## Repository Structure
+
+The intended repository direction is:
+```text
+careeros/
+├── AGENTS.md
+├── README.md
+├── docs/
+├── apps/
+│   ├── web/
+│   ├── api/
+│   └── extension/
+├── packages/
+├── tests/
+└── infra/
+```
