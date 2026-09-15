@@ -1,3 +1,4 @@
+import os
 from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -68,6 +69,14 @@ def authenticated_client() -> Generator[TestClient]:
         yield client  # type: ignore[misc]
 
 
+def get_test_db_url() -> str:
+    """Return the database URL for integration tests.
+
+    Prefers ``TEST_DATABASE_URL``; falls back to ``DATABASE_URL`` via settings.
+    """
+    return os.environ.get("TEST_DATABASE_URL") or get_settings().database_url
+
+
 @asynccontextmanager
 async def make_integration_client(
     user_id: UUID | None = None,
@@ -77,14 +86,14 @@ async def make_integration_client(
 
     Inserts a real User and CareerBrain into the database, overrides
     ``get_current_user`` to return that user, and yields an httpx
-    AsyncClient.  Cleans up on exit.
+    AsyncClient.  Cleans up on exit (CASCADE deletes M1B entities).
     """
     uid = user_id or uuid4()
     bid = brain_id or uuid4()
     auth_subject = f"test_{uid.hex[:12]}"
 
-    settings = get_settings()
-    engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+    db_url = get_test_db_url()
+    engine = create_async_engine(db_url, pool_pre_ping=True)
     factory = async_sessionmaker(engine, expire_on_commit=False)
 
     # Insert real user+brain for FK integrity.
