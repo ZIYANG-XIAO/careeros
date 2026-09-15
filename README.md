@@ -263,6 +263,7 @@ Browser → Next.js Web → FastAPI API → PostgreSQL
 - npm 10 or newer
 - Python 3.13 or newer
 - Docker with Docker Compose
+- A Clerk application (for authentication)
 
 ### Initial Setup
 
@@ -276,6 +277,13 @@ python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -e 'apps/api[dev]'
 ```
+
+Edit `.env` and set `CLERK_ISSUER_URL` to your Clerk instance issuer URL.
+
+Edit `apps/web/.env.local` and set:
+
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` — your Clerk publishable key (browser-safe)
+- `CLERK_SECRET_KEY` — your Clerk secret key (server-only, never exposed to the browser)
 
 ### Start PostgreSQL and Apply Migrations
 

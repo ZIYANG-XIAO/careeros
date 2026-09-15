@@ -12,6 +12,7 @@ def make_settings() -> Settings:
         {
             "database_url": "postgresql+asyncpg://unused:unused@localhost/unused",
             "web_origin": "http://localhost:3000",
+            "clerk_issuer_url": "https://test.clerk.accounts.dev",
         }
     )
 
