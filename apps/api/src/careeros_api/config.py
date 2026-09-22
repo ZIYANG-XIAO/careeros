@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     clerk_issuer_url: str
     openai_api_key: str | None = None
     openai_resume_parser_model: str = "gpt-5-mini"
+    openai_job_parser_model: str = "gpt-5-mini"
+    openai_job_matcher_model: str = "gpt-5-mini"
     resume_storage_dir: str = ".local/resume-assets"
     max_resume_size_bytes: int = 5 * 1024 * 1024
 

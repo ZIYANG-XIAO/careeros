@@ -13,6 +13,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from careeros_api.auth import get_current_user
 from careeros_api.config import Settings, get_settings
 from careeros_api.db import get_db_session
+from careeros_api.job import job_parser_dependency
+from careeros_api.job_parser import JobParser
 from careeros_api.main import create_app
 from careeros_api.models import CareerBrain, User
 from careeros_api.resume import resume_parser_dependency
@@ -85,6 +87,7 @@ async def make_integration_client(
     user_id: UUID | None = None,
     brain_id: UUID | None = None,
     resume_parser: ResumeParser | None = None,
+    job_parser: JobParser | None = None,
     resume_storage_dir: str = "/tmp/careeros-test-resume-assets",
 ) -> AsyncGenerator[AsyncClient]:
     """Create an authenticated AsyncClient backed by a real DB user+brain.
@@ -137,6 +140,8 @@ async def make_integration_client(
     app.dependency_overrides[get_settings] = lambda: settings
     if resume_parser is not None:
         app.dependency_overrides[resume_parser_dependency] = lambda: resume_parser
+    if job_parser is not None:
+        app.dependency_overrides[job_parser_dependency] = lambda: job_parser
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

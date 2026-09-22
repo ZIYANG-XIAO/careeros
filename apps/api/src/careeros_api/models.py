@@ -73,6 +73,34 @@ class ResumeType(enum.StrEnum):
     BASE = "BASE"
 
 
+class JobSourceType(enum.StrEnum):
+    MANUAL_ENTRY = "MANUAL_ENTRY"
+
+
+class JobRequirementCategory(enum.StrEnum):
+    SKILL = "SKILL"
+    EXPERIENCE = "EXPERIENCE"
+    RESPONSIBILITY = "RESPONSIBILITY"
+    EDUCATION = "EDUCATION"
+    DOMAIN = "DOMAIN"
+    SENIORITY = "SENIORITY"
+    LOCATION = "LOCATION"
+    WORK_AUTHORIZATION = "WORK_AUTHORIZATION"
+    OTHER = "OTHER"
+
+
+class JobRequirementImportance(enum.StrEnum):
+    REQUIRED = "REQUIRED"
+    PREFERRED = "PREFERRED"
+    INFERRED_PRIORITY = "INFERRED_PRIORITY"
+
+
+class RequirementConfidence(enum.StrEnum):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
+
 # ---------------------------------------------------------------------------
 # M1A — Identity
 # ---------------------------------------------------------------------------
@@ -94,6 +122,7 @@ class User(Base):
 
     career_brain: Mapped["CareerBrain"] = relationship(back_populates="user")
     resumes: Mapped[list["Resume"]] = relationship(back_populates="user")
+    jobs: Mapped[list["Job"]] = relationship(back_populates="user")
 
     __table_args__ = (sa.UniqueConstraint("auth_provider", "auth_subject"),)
 
@@ -467,4 +496,90 @@ class ResumeDraftItem(Base):
     __table_args__ = (
         sa.Index("ix_resume_draft_items_resume_import_id", "resume_import_id"),
         sa.Index("ix_resume_draft_items_parent_item_id", "parent_item_id"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# M4 — Job capture and immutable parsed snapshots
+# ---------------------------------------------------------------------------
+
+
+class Job(Base):
+    __tablename__ = "jobs"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"))
+    company: Mapped[str] = mapped_column(sa.String(500))
+    title: Mapped[str] = mapped_column(sa.String(500))
+    location: Mapped[str | None] = mapped_column(sa.String(500))
+    source_url: Mapped[str | None] = mapped_column(sa.String(2000))
+    application_url: Mapped[str | None] = mapped_column(sa.String(2000))
+    source_type: Mapped[str] = mapped_column(sa.String(50))
+    captured_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+    user: Mapped["User"] = relationship(back_populates="jobs")
+    snapshots: Mapped[list["JobSnapshot"]] = relationship(
+        back_populates="job", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (sa.Index("ix_jobs_user_id", "user_id"),)
+
+
+class JobSnapshot(Base):
+    __tablename__ = "job_snapshots"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    job_id: Mapped[UUID] = mapped_column(sa.ForeignKey("jobs.id", ondelete="CASCADE"))
+    version_number: Mapped[int] = mapped_column(sa.Integer)
+    raw_description: Mapped[str] = mapped_column(sa.Text)
+    normalized_description: Mapped[str] = mapped_column(sa.Text)
+    content_sha256: Mapped[str] = mapped_column(sa.String(64))
+    parser_version: Mapped[str] = mapped_column(sa.String(100))
+    parser_model: Mapped[str] = mapped_column(sa.String(100))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    job: Mapped["Job"] = relationship(back_populates="snapshots")
+    requirements: Mapped[list["JobRequirement"]] = relationship(
+        back_populates="job_snapshot", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        sa.UniqueConstraint("job_id", "version_number"),
+        sa.Index("ix_job_snapshots_job_id", "job_id"),
+    )
+
+
+class JobRequirement(Base):
+    __tablename__ = "job_requirements"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    job_snapshot_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("job_snapshots.id", ondelete="CASCADE")
+    )
+    category: Mapped[str] = mapped_column(sa.String(50))
+    description: Mapped[str] = mapped_column(sa.Text)
+    normalized_value: Mapped[str | None] = mapped_column(sa.String(500))
+    importance: Mapped[str] = mapped_column(sa.String(50))
+    source_text: Mapped[str] = mapped_column(sa.Text)
+    confidence: Mapped[str] = mapped_column(sa.String(50))
+    position: Mapped[int] = mapped_column(sa.Integer)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    job_snapshot: Mapped["JobSnapshot"] = relationship(back_populates="requirements")
+
+    __table_args__ = (
+        sa.UniqueConstraint("job_snapshot_id", "position"),
+        sa.Index("ix_job_requirements_snapshot_id", "job_snapshot_id"),
     )
