@@ -249,7 +249,7 @@ careeros/
 └── infra/
 ```
 
-## M0 Local Development
+## Local Development
 
 M0 provides the smallest runnable CareerOS path:
 
@@ -264,6 +264,7 @@ Browser → Next.js Web → FastAPI API → PostgreSQL
 - Python 3.13 or newer
 - Docker with Docker Compose
 - A Clerk application (for authentication)
+- An OpenAI API key (for grounded resume extraction in M2)
 
 ### Initial Setup
 
@@ -278,7 +279,15 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e 'apps/api[dev]'
 ```
 
-Edit `.env` and set `CLERK_ISSUER_URL` to your Clerk instance issuer URL.
+Edit `.env` and set:
+
+- `CLERK_ISSUER_URL` — your Clerk instance issuer URL
+- `OPENAI_API_KEY` — a server-only API key used for structured resume parsing
+- `OPENAI_RESUME_PARSER_MODEL` — the structured-output model (defaults to `gpt-5-mini`)
+- `RESUME_STORAGE_DIR` — local private asset storage (defaults to `.local/resume-assets`)
+
+Never place `OPENAI_API_KEY` in `apps/web/.env.local` or prefix it with
+`NEXT_PUBLIC_`.
 
 Edit `apps/web/.env.local` and set:
 
@@ -310,7 +319,10 @@ In a second terminal:
 npm run web:dev
 ```
 
-Open `http://localhost:3000`. The page reports API and database health through the complete M0 connection path.
+Open `http://localhost:3000`. The Career Profile is at `/career`; resume upload,
+review, and version history are under `/resumes`. PDF and DOCX uploads are
+limited to 5 MB. Original files are stored under the configured local storage
+directory, which is git-ignored.
 
 ### Run Checks
 

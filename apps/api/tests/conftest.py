@@ -15,6 +15,8 @@ from careeros_api.config import Settings, get_settings
 from careeros_api.db import get_db_session
 from careeros_api.main import create_app
 from careeros_api.models import CareerBrain, User
+from careeros_api.resume import resume_parser_dependency
+from careeros_api.resume_parser import ResumeParser
 
 TEST_USER_ID = UUID("00000000-0000-4000-8000-000000000001")
 TEST_BRAIN_ID = UUID("00000000-0000-4000-8000-000000000002")
@@ -27,6 +29,7 @@ def make_test_settings() -> Settings:
             "database_url": "postgresql+asyncpg://unused:unused@localhost/unused",
             "web_origin": "http://localhost:3000",
             "clerk_issuer_url": "https://test.clerk.accounts.dev",
+            "resume_storage_dir": "/tmp/careeros-test-resume-assets",
         }
     )
 
@@ -81,6 +84,8 @@ def get_test_db_url() -> str:
 async def make_integration_client(
     user_id: UUID | None = None,
     brain_id: UUID | None = None,
+    resume_parser: ResumeParser | None = None,
+    resume_storage_dir: str = "/tmp/careeros-test-resume-assets",
 ) -> AsyncGenerator[AsyncClient]:
     """Create an authenticated AsyncClient backed by a real DB user+brain.
 
@@ -111,7 +116,9 @@ async def make_integration_client(
 
     test_user = make_test_user(user_id=uid, brain_id=bid, auth_subject=auth_subject)
 
-    app = create_app()
+    settings = make_test_settings()
+    settings.resume_storage_dir = resume_storage_dir
+    app = create_app(settings)
 
     async def override_auth() -> User:
         return test_user
@@ -127,6 +134,9 @@ async def make_integration_client(
 
     app.dependency_overrides[get_current_user] = override_auth
     app.dependency_overrides[get_db_session] = override_db
+    app.dependency_overrides[get_settings] = lambda: settings
+    if resume_parser is not None:
+        app.dependency_overrides[resume_parser_dependency] = lambda: resume_parser
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

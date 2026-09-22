@@ -27,6 +27,10 @@ async def create_evidence(
     source_type: SourceType,
     source_id: UUID,
     content: str,
+    *,
+    origin: EvidenceOrigin = EvidenceOrigin.USER_ENTERED,
+    confirmation_status: ConfirmationStatus = ConfirmationStatus.CONFIRMED,
+    created_by: CreatedBy = CreatedBy.USER,
 ) -> CareerEvidence:
     """Create a CareerEvidence with its first revision.
 
@@ -45,9 +49,9 @@ async def create_evidence(
         evidence_id=evidence.id,
         revision_number=1,
         content=content,
-        origin=EvidenceOrigin.USER_ENTERED.value,
-        confirmation_status=ConfirmationStatus.CONFIRMED.value,
-        created_by=CreatedBy.USER.value,
+        origin=origin.value,
+        confirmation_status=confirmation_status.value,
+        created_by=created_by.value,
     )
     session.add(revision)
     await session.flush()
@@ -64,6 +68,10 @@ async def update_evidence_content(
     source_type: SourceType,
     source_id: UUID,
     new_content: str,
+    *,
+    origin: EvidenceOrigin = EvidenceOrigin.USER_ENTERED,
+    confirmation_status: ConfirmationStatus = ConfirmationStatus.CONFIRMED,
+    created_by: CreatedBy = CreatedBy.USER,
 ) -> CareerEvidenceRevision:
     """Append a new revision to the evidence for the given source and advance
     the current_revision_id pointer.  The previous revision is never mutated.
@@ -79,6 +87,26 @@ async def update_evidence_content(
     )
     evidence = result.scalar_one()
 
+    return await append_evidence_revision(
+        session,
+        evidence,
+        new_content,
+        origin=origin,
+        confirmation_status=confirmation_status,
+        created_by=created_by,
+    )
+
+
+async def append_evidence_revision(
+    session: AsyncSession,
+    evidence: CareerEvidence,
+    new_content: str,
+    *,
+    origin: EvidenceOrigin,
+    confirmation_status: ConfirmationStatus,
+    created_by: CreatedBy,
+) -> CareerEvidenceRevision:
+    """Append a revision to an already loaded evidence record."""
     max_rev = await session.execute(
         select(sa.func.max(CareerEvidenceRevision.revision_number)).where(
             CareerEvidenceRevision.evidence_id == evidence.id
@@ -90,9 +118,9 @@ async def update_evidence_content(
         evidence_id=evidence.id,
         revision_number=current_max + 1,
         content=new_content,
-        origin=EvidenceOrigin.USER_ENTERED.value,
-        confirmation_status=ConfirmationStatus.CONFIRMED.value,
-        created_by=CreatedBy.USER.value,
+        origin=origin.value,
+        confirmation_status=confirmation_status.value,
+        created_by=created_by.value,
     )
     session.add(revision)
     await session.flush()

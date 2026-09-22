@@ -16,7 +16,11 @@ class Base(DeclarativeBase):
 
 
 class SourceType(enum.StrEnum):
+    RESUME_DRAFT_ITEM = "RESUME_DRAFT_ITEM"
+    EDUCATION = "EDUCATION"
+    EXPERIENCE = "EXPERIENCE"
     EXPERIENCE_DETAIL = "EXPERIENCE_DETAIL"
+    PROJECT = "PROJECT"
     PROJECT_DETAIL = "PROJECT_DETAIL"
     SKILL = "SKILL"
 
@@ -39,6 +43,36 @@ class CreatedBy(enum.StrEnum):
     AI = "AI"
 
 
+class ResumeImportStatus(enum.StrEnum):
+    PROCESSING = "PROCESSING"
+    READY_FOR_REVIEW = "READY_FOR_REVIEW"
+    CONFIRMED = "CONFIRMED"
+    FAILED = "FAILED"
+
+
+class ResumeDraftItemType(enum.StrEnum):
+    EDUCATION = "EDUCATION"
+    EXPERIENCE = "EXPERIENCE"
+    EXPERIENCE_DETAIL = "EXPERIENCE_DETAIL"
+    PROJECT = "PROJECT"
+    PROJECT_DETAIL = "PROJECT_DETAIL"
+    SKILL = "SKILL"
+
+
+class ResumeDraftItemStatus(enum.StrEnum):
+    ACTIVE = "ACTIVE"
+    REMOVED = "REMOVED"
+    CONFIRMED = "CONFIRMED"
+
+
+class ResumeVersionSource(enum.StrEnum):
+    UPLOADED = "UPLOADED"
+
+
+class ResumeType(enum.StrEnum):
+    BASE = "BASE"
+
+
 # ---------------------------------------------------------------------------
 # M1A — Identity
 # ---------------------------------------------------------------------------
@@ -59,6 +93,7 @@ class User(Base):
     )
 
     career_brain: Mapped["CareerBrain"] = relationship(back_populates="user")
+    resumes: Mapped[list["Resume"]] = relationship(back_populates="user")
 
     __table_args__ = (sa.UniqueConstraint("auth_provider", "auth_subject"),)
 
@@ -290,4 +325,146 @@ class CareerEvidenceRevision(Base):
     __table_args__ = (
         sa.UniqueConstraint("evidence_id", "revision_number"),
         sa.Index("ix_career_evidence_revisions_evidence_id", "evidence_id"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# M2/M3 — Resume ingestion and immutable resume versions
+# ---------------------------------------------------------------------------
+
+
+class Resume(Base):
+    __tablename__ = "resumes"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(sa.String(500))
+    type: Mapped[str] = mapped_column(sa.String(50))
+    is_primary: Mapped[bool] = mapped_column(sa.Boolean, default=False, server_default="false")
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+    user: Mapped["User"] = relationship(back_populates="resumes")
+    versions: Mapped[list["ResumeVersion"]] = relationship(
+        back_populates="resume", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (sa.Index("ix_resumes_user_id", "user_id"),)
+
+
+class ResumeAsset(Base):
+    __tablename__ = "resume_assets"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"))
+    storage_key: Mapped[str] = mapped_column(sa.String(255), unique=True)
+    original_filename: Mapped[str] = mapped_column(sa.String(500))
+    content_type: Mapped[str] = mapped_column(sa.String(100))
+    size_bytes: Mapped[int] = mapped_column(sa.BigInteger)
+    sha256: Mapped[str] = mapped_column(sa.String(64))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    __table_args__ = (sa.Index("ix_resume_assets_user_id", "user_id"),)
+
+
+class ResumeVersion(Base):
+    __tablename__ = "resume_versions"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    resume_id: Mapped[UUID] = mapped_column(sa.ForeignKey("resumes.id", ondelete="CASCADE"))
+    asset_id: Mapped[UUID] = mapped_column(sa.ForeignKey("resume_assets.id", ondelete="CASCADE"))
+    version_number: Mapped[int] = mapped_column(sa.Integer)
+    source: Mapped[str] = mapped_column(sa.String(50))
+    created_by: Mapped[str] = mapped_column(sa.String(50))
+    source_version_id: Mapped[UUID | None] = mapped_column(
+        sa.ForeignKey("resume_versions.id", ondelete="SET NULL")
+    )
+    extracted_text: Mapped[str] = mapped_column(sa.Text)
+    structured_content: Mapped[dict[str, object]] = mapped_column(sa.JSON)
+    parser_version: Mapped[str] = mapped_column(sa.String(100))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    resume: Mapped["Resume"] = relationship(back_populates="versions")
+    asset: Mapped["ResumeAsset"] = relationship()
+    source_version: Mapped["ResumeVersion | None"] = relationship(remote_side=[id])
+
+    __table_args__ = (
+        sa.UniqueConstraint("resume_id", "version_number"),
+        sa.Index("ix_resume_versions_resume_id", "resume_id"),
+    )
+
+
+class ResumeImport(Base):
+    __tablename__ = "resume_imports"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"))
+    career_brain_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("career_brains.id", ondelete="CASCADE")
+    )
+    resume_version_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("resume_versions.id", ondelete="CASCADE"), unique=True
+    )
+    status: Mapped[str] = mapped_column(sa.String(50))
+    error_code: Mapped[str | None] = mapped_column(sa.String(100))
+    error_message: Mapped[str | None] = mapped_column(sa.Text)
+    confirmed_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+    version: Mapped["ResumeVersion"] = relationship()
+    items: Mapped[list["ResumeDraftItem"]] = relationship(
+        back_populates="resume_import", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        sa.Index("ix_resume_imports_user_id", "user_id"),
+        sa.Index("ix_resume_imports_career_brain_id", "career_brain_id"),
+    )
+
+
+class ResumeDraftItem(Base):
+    __tablename__ = "resume_draft_items"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    resume_import_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("resume_imports.id", ondelete="CASCADE")
+    )
+    parent_item_id: Mapped[UUID | None] = mapped_column(
+        sa.ForeignKey("resume_draft_items.id", ondelete="CASCADE")
+    )
+    item_type: Mapped[str] = mapped_column(sa.String(50))
+    data: Mapped[dict[str, object]] = mapped_column(sa.JSON)
+    position: Mapped[int] = mapped_column(sa.Integer)
+    status: Mapped[str] = mapped_column(sa.String(50))
+    materialized_source_type: Mapped[str | None] = mapped_column(sa.String(50))
+    materialized_source_id: Mapped[UUID | None] = mapped_column(sa.Uuid)
+    evidence_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("career_evidence.id", ondelete="CASCADE"), unique=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+    resume_import: Mapped["ResumeImport"] = relationship(back_populates="items")
+    evidence: Mapped["CareerEvidence"] = relationship()
+
+    __table_args__ = (
+        sa.Index("ix_resume_draft_items_resume_import_id", "resume_import_id"),
+        sa.Index("ix_resume_draft_items_parent_item_id", "parent_item_id"),
     )

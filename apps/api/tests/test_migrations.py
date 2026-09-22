@@ -1,7 +1,7 @@
 """Integration tests for the Alembic migration chain.
 
-Verifies that applying base → 0001_m0_foundation → 0002_m1a_users_and_career_brains
-→ 0003_m1b_entities_evidence on a clean database produces the expected schema.
+Verifies that applying the complete migration chain on a clean database produces
+the expected identity, Career Brain, evidence, and resume-ingestion schema.
 
 SAFETY: These tests perform destructive operations (downgrade base) and require
 ``TEST_DATABASE_URL`` to be set to an explicitly disposable database.  They will
@@ -214,6 +214,54 @@ async def test_clean_migration_creates_expected_schema() -> None:
                     for uc in rev_uniques
                 )
                 assert has_rev_unique, "Missing unique constraint on (evidence_id, revision_number)"
+
+                # -----------------------------------------------------------
+                # M2/M3 resume ingestion and library
+                # -----------------------------------------------------------
+
+                resume_tables = [
+                    "resumes",
+                    "resume_assets",
+                    "resume_versions",
+                    "resume_imports",
+                    "resume_draft_items",
+                ]
+                for tbl in resume_tables:
+                    assert tbl in table_names, f"Missing resume table: {tbl}"
+
+                resume_cols = await conn.run_sync(
+                    lambda sync_conn: {
+                        c["name"]: c for c in inspect(sync_conn).get_columns("resumes")
+                    }
+                )
+                for col in ("id", "user_id", "name", "type", "is_primary"):
+                    assert col in resume_cols, f"Missing resumes column: {col}"
+
+                version_cols = await conn.run_sync(
+                    lambda sync_conn: {
+                        c["name"]: c for c in inspect(sync_conn).get_columns("resume_versions")
+                    }
+                )
+                for col in (
+                    "id",
+                    "resume_id",
+                    "asset_id",
+                    "version_number",
+                    "source",
+                    "created_by",
+                    "source_version_id",
+                    "extracted_text",
+                    "structured_content",
+                ):
+                    assert col in version_cols, f"Missing resume_versions column: {col}"
+
+                version_uniques = await conn.run_sync(
+                    lambda sync_conn: inspect(sync_conn).get_unique_constraints("resume_versions")
+                )
+                assert any(
+                    set(constraint["column_names"]) == {"resume_id", "version_number"}
+                    for constraint in version_uniques
+                ), "Missing unique constraint on resume version identity"
 
                 # --- FK educations.career_brain_id → career_brains.id ---
                 edu_fks = await conn.run_sync(

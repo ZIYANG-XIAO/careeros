@@ -1,4 +1,4 @@
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { Show, SignInButton, UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 
 import { getCareerBrain, getSystemHealth } from "@/lib/api";
@@ -39,16 +39,16 @@ export default async function Home() {
             CareerOS
           </p>
           <div>
-            <SignedIn>
+            <Show when="signed-in">
               <UserButton />
-            </SignedIn>
-            <SignedOut>
+            </Show>
+            <Show when="signed-out">
               <SignInButton>
                 <button className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800">
                   Sign in
                 </button>
               </SignInButton>
-            </SignedOut>
+            </Show>
           </div>
         </div>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
