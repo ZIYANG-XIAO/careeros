@@ -101,6 +101,32 @@ class RequirementConfidence(enum.StrEnum):
     LOW = "LOW"
 
 
+class EvidenceSupportStrength(enum.StrEnum):
+    STRONG = "STRONG"
+    WEAK = "WEAK"
+    NONE_OR_INSUFFICIENT = "NONE_OR_INSUFFICIENT"
+
+
+class ResumeRepresentation(enum.StrEnum):
+    REPRESENTED = "REPRESENTED"
+    UNDERREPRESENTED = "UNDERREPRESENTED"
+    ABSENT = "ABSENT"
+
+
+class IntelligenceClassification(enum.StrEnum):
+    STRONG_EVIDENCE = "STRONG_EVIDENCE"
+    HIDDEN_EVIDENCE = "HIDDEN_EVIDENCE"
+    WEAK_EVIDENCE = "WEAK_EVIDENCE"
+    GENUINE_GAP = "GENUINE_GAP"
+
+
+class ApplicationRecommendation(enum.StrEnum):
+    STRONG_APPLY = "STRONG_APPLY"
+    APPLY = "APPLY"
+    STRETCH = "STRETCH"
+    LOW_PRIORITY = "LOW_PRIORITY"
+
+
 # ---------------------------------------------------------------------------
 # M1A — Identity
 # ---------------------------------------------------------------------------
@@ -578,8 +604,106 @@ class JobRequirement(Base):
     )
 
     job_snapshot: Mapped["JobSnapshot"] = relationship(back_populates="requirements")
+    evidence_matches: Mapped[list["EvidenceMatch"]] = relationship(back_populates="job_requirement")
 
     __table_args__ = (
         sa.UniqueConstraint("job_snapshot_id", "position"),
         sa.Index("ix_job_requirements_snapshot_id", "job_snapshot_id"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# M5/M6 — Reproducible evidence matching and resume representation
+# ---------------------------------------------------------------------------
+
+
+class JobAnalysis(Base):
+    __tablename__ = "job_analyses"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"))
+    job_id: Mapped[UUID] = mapped_column(sa.ForeignKey("jobs.id", ondelete="CASCADE"))
+    job_snapshot_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("job_snapshots.id", ondelete="CASCADE")
+    )
+    career_brain_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("career_brains.id", ondelete="CASCADE")
+    )
+    resume_version_id: Mapped[UUID] = mapped_column(sa.ForeignKey("resume_versions.id"))
+    analysis_version: Mapped[int] = mapped_column(sa.Integer)
+    matcher_version: Mapped[str] = mapped_column(sa.String(100))
+    matcher_model: Mapped[str] = mapped_column(sa.String(100))
+    overall_recommendation: Mapped[str] = mapped_column(sa.String(50))
+    summary: Mapped[str] = mapped_column(sa.Text)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    job: Mapped["Job"] = relationship()
+    job_snapshot: Mapped["JobSnapshot"] = relationship()
+    resume_version: Mapped["ResumeVersion"] = relationship()
+    matches: Mapped[list["EvidenceMatch"]] = relationship(
+        back_populates="job_analysis", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        sa.UniqueConstraint("job_id", "analysis_version"),
+        sa.Index("ix_job_analyses_user_id", "user_id"),
+        sa.Index("ix_job_analyses_job_id", "job_id"),
+    )
+
+
+class EvidenceMatch(Base):
+    __tablename__ = "evidence_matches"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    job_analysis_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("job_analyses.id", ondelete="CASCADE")
+    )
+    job_requirement_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("job_requirements.id", ondelete="CASCADE")
+    )
+    support_strength: Mapped[str] = mapped_column(sa.String(50))
+    resume_representation: Mapped[str] = mapped_column(sa.String(50))
+    classification: Mapped[str] = mapped_column(sa.String(50))
+    explanation: Mapped[str] = mapped_column(sa.Text)
+    resume_source_text: Mapped[str | None] = mapped_column(sa.Text)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    job_analysis: Mapped["JobAnalysis"] = relationship(back_populates="matches")
+    job_requirement: Mapped["JobRequirement"] = relationship(back_populates="evidence_matches")
+    evidence_references: Mapped[list["EvidenceMatchReference"]] = relationship(
+        back_populates="evidence_match", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        sa.UniqueConstraint("job_analysis_id", "job_requirement_id"),
+        sa.Index("ix_evidence_matches_analysis_id", "job_analysis_id"),
+    )
+
+
+class EvidenceMatchReference(Base):
+    __tablename__ = "evidence_match_references"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    evidence_match_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("evidence_matches.id", ondelete="CASCADE")
+    )
+    career_evidence_id: Mapped[UUID] = mapped_column(sa.Uuid)
+    career_evidence_revision_id: Mapped[UUID] = mapped_column(sa.Uuid)
+    source_type: Mapped[str] = mapped_column(sa.String(50))
+    source_id: Mapped[UUID] = mapped_column(sa.Uuid)
+    evidence_content: Mapped[str] = mapped_column(sa.Text)
+    revision_number: Mapped[int] = mapped_column(sa.Integer)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    evidence_match: Mapped["EvidenceMatch"] = relationship(back_populates="evidence_references")
+
+    __table_args__ = (
+        sa.UniqueConstraint("evidence_match_id", "career_evidence_revision_id"),
+        sa.Index("ix_match_references_match_id", "evidence_match_id"),
     )

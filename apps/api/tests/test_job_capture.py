@@ -1,8 +1,8 @@
 from uuid import uuid4
 
 import pytest
-
 from conftest import make_integration_client
+
 from careeros_api.job_schemas import ParsedJobDescription, ParsedJobRequirement
 from careeros_api.models import (
     JobRequirementCategory,
