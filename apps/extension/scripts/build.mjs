@@ -40,6 +40,9 @@ const environment = {
   ...(await readEnvironment(path.join(extensionRoot, ".env.local"))),
   ...process.env,
 };
+const developmentCrxPublicKey = (
+  await readFile(path.join(extensionRoot, "crx-public-key.txt"), "utf8")
+).trim();
 
 const config = {
   apiUrl:
@@ -53,7 +56,7 @@ const config = {
   frontendApi:
     environment.EXTENSION_CLERK_FRONTEND_API ?? environment.CLERK_ISSUER_URL,
   syncHost: environment.EXTENSION_CLERK_SYNC_HOST ?? "http://localhost",
-  crxPublicKey: environment.EXTENSION_CRX_PUBLIC_KEY,
+  crxPublicKey: environment.EXTENSION_CRX_PUBLIC_KEY || developmentCrxPublicKey,
 };
 
 if (!config.publishableKey || !config.frontendApi) {
@@ -91,7 +94,7 @@ const manifest = {
   },
 };
 
-if (config.crxPublicKey) manifest.key = config.crxPublicKey;
+manifest.key = config.crxPublicKey;
 
 await mkdir(buildDir, { recursive: true });
 await Promise.all([

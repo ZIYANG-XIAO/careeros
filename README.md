@@ -198,6 +198,10 @@ npm run extension:build
 In Chrome, open `chrome://extensions`, enable Developer mode, choose **Load
 unpacked**, and select `apps/extension/build`.
 
+The checked-in development public key keeps the unpacked extension ID stable as
+`ibihlmjmbfjegkljfjihhakppeagbpkf`. It is an identity value, not a secret or a
+production signing key.
+
 Clerk extension authentication also requires two development-instance settings:
 
 1. enable the Native API under **Clerk Dashboard → Native applications**; and

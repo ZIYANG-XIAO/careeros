@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +11,22 @@ const buildDir = path.join(extensionRoot, "build");
 const manifest = JSON.parse(
   await readFile(path.join(buildDir, "manifest.json"), "utf8"),
 );
+
+if (typeof manifest.key !== "string" || manifest.key.length === 0) {
+  throw new Error(
+    "The development extension must have a stable CRX public key.",
+  );
+}
+const extensionId = createHash("sha256")
+  .update(Buffer.from(manifest.key, "base64"))
+  .digest("hex")
+  .slice(0, 32)
+  .replace(/[0-9a-f]/g, (character) =>
+    String.fromCharCode("a".charCodeAt(0) + Number.parseInt(character, 16)),
+  );
+if (extensionId !== "ibihlmjmbfjegkljfjihhakppeagbpkf") {
+  throw new Error("The development CRX ID changed unexpectedly.");
+}
 
 const expectedPermissions = ["activeTab", "cookies", "scripting", "storage"];
 if (
@@ -45,4 +62,6 @@ for (const file of ["background.js", "content.js", "popup.js"]) {
   }
 }
 
-console.log("Validated M10 extension permissions and credential boundaries.");
+console.log(
+  `Validated M10 permissions, credential boundaries, and CRX ID ${extensionId}.`,
+);
