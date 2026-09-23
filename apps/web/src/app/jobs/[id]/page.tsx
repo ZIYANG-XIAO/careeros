@@ -425,7 +425,7 @@ export default function JobDetailPage() {
           </h2>
           <p className="mt-2 text-sm text-slate-500">
             Analysis is optional. Choose a resume above if you want to compare
-            these requirements with confirmed Profile evidence.
+            these requirements with confirmed Career Brain evidence.
           </p>
         </section>
       ) : (

@@ -156,6 +156,11 @@ describe("JobDetailPage", () => {
     expect(
       screen.getByText("No Job Intelligence analysis yet"),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /compare these requirements with confirmed Career Brain evidence/i,
+      ),
+    ).toBeInTheDocument();
   });
 
   it("shows canonical source and unknown freshness honestly", async () => {

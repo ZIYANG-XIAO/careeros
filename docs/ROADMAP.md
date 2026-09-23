@@ -194,11 +194,17 @@ availability/freshness state, deterministic seed adapter, retry-safe ingestion,
 stable-signal deduplication, and immutable snapshots for changed descriptions.
 Manual Jobs remain valid and the Web consumes only the canonical Job contract.
 
-### Wave A validation gate — Jobs product
+### Wave A validation gate — Jobs product — completed
 
 Before proceeding aggressively, validate that users understand the product
 shell, can find and act on Jobs, and are not forced into Job Intelligence. Refine
 the experience if Jobs is merely a data table rather than a useful entry point.
+
+Representative signed-in product validation passed with canonical demo jobs.
+Browse, combined search/location filtering, save state, Job detail, honest
+source/freshness state, direct Apply, the no-application-link state, and optional
+Job Intelligence behavior were verified. See `docs/VALIDATION_WAVE_A.md` for the
+scope, evidence, and limitations.
 
 ## 6. V1 Formation — Wave B: Extension and Application Assistant
 
@@ -500,11 +506,8 @@ After a milestone:
 
 ## 14. Immediate next step
 
-Wave A implementation is complete through M9. The immediate next step is the
-Wave A Jobs product validation gate.
-
-After representative validation and any required focused refinements, the next
-approved implementation milestone is:
+Wave A implementation and its Jobs product validation gate are complete. The
+next approved implementation milestone is:
 
 > M10 — Extension Foundation and Secure API Boundary
 
