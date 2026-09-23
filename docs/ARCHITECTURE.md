@@ -1,8 +1,8 @@
 # CareerOS Core V1 — Technical Architecture
 
-> Version: 0.2
+> Version: 0.3
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-23
+> Last Updated: 2026-09-24
 
 ## 1. Purpose
 
@@ -14,7 +14,7 @@ KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
                        ENHANCE (optional)
 ```
 
-It preserves working M0–M8 behavior while defining minimal extension points for
+It preserves working M0–M10 behavior while defining minimal extension points for
 Jobs discovery, application assistance, Answer Engine, and Application Memory.
 
 The architectural principle is:
@@ -26,9 +26,10 @@ The architectural principle is:
 Implemented runtime:
 
 ```text
-Next.js Web → FastAPI API → PostgreSQL
-                       ├→ local resume asset storage
-                       └→ provider-isolated AI tasks
+Next.js Web ───────┐
+Chrome Extension ─┴→ FastAPI API → PostgreSQL
+                                ├→ local resume asset storage
+                                └→ provider-isolated AI tasks
 ```
 
 Implemented domains and workflows:
@@ -41,15 +42,18 @@ Implemented domains and workflows:
 - Jobs browse/search/location filtering, per-user saving, and safe direct Apply;
 - canonical source identity, retry-safe deduplication, observed timestamps, and
   explicit availability/freshness state;
-- the Jobs-first Web shell and honest Applications placeholder; and
-- optional Job Intelligence analyses and evidence matches.
+- the Jobs-first Web shell and honest Applications placeholder;
+- optional Job Intelligence analyses and evidence matches; and
+- a Manifest V3 extension with stable development identity, Clerk Sync Host,
+  a background-only authenticated API client, exact message validation,
+  active-tab script injection, application-page heuristics, and compact status
+  UI.
 
 Current Alembic head: `0008_m9_job_source_boundary`.
 
 Not implemented today:
 
 - production job-source ingestion;
-- browser extension;
 - normalized form/ATS adapters;
 - Answer Engine or autofill;
 - Application domain; or
@@ -111,8 +115,8 @@ External Job Sources ─► Job Source Adapters ─► normalized Job boundary �
 External ATS/Forms   ─► ATS/Generic Adapters ─► normalized Form model ───► API
 ```
 
-The extension and adapter boundaries are planned. The current repository does
-not yet contain `apps/extension`.
+The extension foundation is implemented. Normalized form, ATS adapter, Answer
+Engine, autofill, and Application Memory boundaries remain planned.
 
 ## 5. Core domains vs product services
 
@@ -145,7 +149,7 @@ careeros/
 ├── apps/
 │   ├── web/          # implemented
 │   ├── api/          # implemented
-│   └── extension/    # planned for extension milestone
+│   └── extension/    # implemented Manifest V3 foundation
 ├── packages/         # frontend-safe shared contracts when justified
 ├── tests/            # cross-surface fixtures when introduced
 ├── infra/            # proportional local/deployment definitions
@@ -274,30 +278,37 @@ Job Description
 Historical analysis references exact evidence revisions and snapshots. Job
 Intelligence is optional and does not gate Apply or extension assistance.
 
-## 14. Extension architecture — planned
+## 14. Extension architecture
 
 Approved stack direction: React, TypeScript, Chrome Manifest V3.
 
-Conceptual components:
+Implemented M10 components:
 
 - background service worker;
 - content scripts;
 - compact popup and/or side panel;
 - authenticated API client;
-- application/page detector;
+- application-page detector; and
+- supported/unsupported popup state.
+
+Planned components:
+
 - generic form adapter;
-- ATS adapter registry; and
+- ATS adapter registry;
+- normalized form contracts; and
 - form execution/review state.
 
-The extension collects narrowly scoped page/form data, requests canonical
-answers and policy decisions from the backend, executes supported changes in the
-page, and communicates results. It does not store a duplicate Career Brain or
-become an independent backend.
+M10 reads only narrowly scoped active-tab signals needed for page detection.
+Later milestones may request canonical answers and policy decisions from the
+backend and execute supported page changes. The extension does not store a
+duplicate Career Brain or become an independent backend.
 
 ### Trust boundary
 
-Page JavaScript and content are untrusted. Privileged credentials are not exposed
-to the page. Messages are typed and validated. Host permissions remain minimal.
+Page JavaScript and content are untrusted. Privileged credentials remain in the
+background service worker and are not exposed to the page or content script.
+Messages are typed and validated, privileged requests from content scripts are
+rejected, and host access is granted only to the active tab on user action.
 
 The extension must support an application page even when no CareerOS Job or Job
 Analysis exists.
@@ -392,8 +403,9 @@ silently rewrite history.
 The current Web/API uses Clerk-backed identity mapped to an internal User.
 Provider coupling stays at the authentication boundary.
 
-The extension milestone must define a secure supported Clerk/token flow without
-collecting raw passwords or exposing long-lived credentials to page scripts.
+The extension uses Clerk Sync Host and a background service worker to obtain a
+short-lived session token and call the protected API. It does not collect raw
+passwords or expose tokens to page scripts.
 
 Every user-owned resource enforces ownership server-side, including files,
 nested IDs, evidence returned by AI, answers, and extension-originated requests.

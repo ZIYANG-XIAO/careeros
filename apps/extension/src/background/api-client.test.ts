@@ -52,4 +52,29 @@ describe("CareerOsApiClient", () => {
       authenticated: false,
     });
   });
+
+  it("calls the native fetch implementation without an illegal receiver", async () => {
+    const nativeFetch = vi
+      .fn(function (this: unknown) {
+        if (this !== undefined) {
+          throw new TypeError("Illegal invocation");
+        }
+        return Promise.resolve(new Response("{}", { status: 200 }));
+      })
+      .mockName("fetch");
+    vi.stubGlobal("fetch", nativeFetch);
+
+    try {
+      const client = new CareerOsApiClient("http://localhost:8000", {
+        getToken: vi.fn().mockResolvedValue("session-token"),
+      });
+
+      await expect(client.getAuthStatus()).resolves.toEqual({
+        authenticated: true,
+      });
+      expect(nativeFetch).toHaveBeenCalledOnce();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

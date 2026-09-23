@@ -2,7 +2,7 @@
 
 > Version: 0.2
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-23
+> Last Updated: 2026-09-24
 
 ## 1. Experience model
 
@@ -34,9 +34,10 @@ browsing, application history, and detailed optional intelligence.
 
 ### Browser extension
 
-The planned extension is a thin assistant on external application pages. It
-detects supported forms, obtains approved answers, fills supported fields,
-surfaces uncertainty, and returns durable context to CareerOS.
+The extension foundation is a thin assistant on external application pages. It
+currently authenticates through CareerOS and distinguishes likely application,
+ordinary, and unsupported pages. Normalized form inspection, approved answers,
+autofill, review state, and durable application context remain planned.
 
 It is not a second full CareerOS application.
 
@@ -50,12 +51,14 @@ Implemented Web flows today:
 - manual Job creation;
 - Job browse/search/location filtering, durable save/unsave, detail, and safe
   direct Apply;
+- secure extension authentication, protected API access, and active-tab
+  application-page detection;
 - an Applications planned-state placeholder; and
 - Job Intelligence creation and review.
 
-Production job-source discovery, Application tracking, extension, Answer Engine,
-autofill, and external application capture are planned flows described below,
-not current behavior.
+Production job-source discovery, normalized form/ATS support, Application
+tracking, Answer Engine, autofill, and external application capture are planned
+flows described below, not current behavior.
 
 ## 4. First-time onboarding — Know Me
 
@@ -184,7 +187,8 @@ context must remain uncertain and reviewable.
 
 ## 8. Extension application flow
 
-This is a planned flow:
+M10 implements authentication and the initial page-detection states in this
+flow. Normalization, answer resolution, filling, and review remain planned:
 
 ```text
 Application Page

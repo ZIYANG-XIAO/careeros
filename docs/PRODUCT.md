@@ -2,7 +2,7 @@
 
 > Version: 0.3
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-23
+> Last Updated: 2026-09-24
 
 ## 1. Product vision
 
@@ -326,7 +326,7 @@ depends on it.
 
 ## 14. Current implementation boundary
 
-Implemented through M9:
+Implemented through M10:
 
 - project foundation;
 - Career Brain/Profile;
@@ -335,13 +335,14 @@ Implemented through M9:
 - manual Job capture and parsing;
 - evidence matching and hidden-evidence detection;
 - Job Intelligence experience;
-- the Jobs-first product shell, browse/search/filter/save/detail/Apply flow; and
+- the Jobs-first product shell, browse/search/filter/save/detail/Apply flow;
 - the provider-neutral Job source boundary with retry-safe ingestion and honest
-  freshness/availability state.
+  freshness/availability state; and
+- the secure Manifest V3 extension foundation, authenticated API boundary,
+  active-tab application-page detection, and honest unsupported states.
 
 Planned during V1 formation:
 
-- extension and application-page assistance;
 - normalized form and ATS adapter boundaries;
 - Answer Engine and autofill;
 - Application domain and Applications surface; and

@@ -8,7 +8,7 @@ export class CareerOsApiClient {
   constructor(
     private readonly apiUrl: string,
     private readonly tokenProvider: TokenProvider,
-    private readonly request: typeof fetch = fetch,
+    private readonly request: typeof fetch = (...args) => fetch(...args),
   ) {}
 
   async getAuthStatus(): Promise<AuthStatus> {

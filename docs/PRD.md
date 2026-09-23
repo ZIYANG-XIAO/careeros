@@ -2,7 +2,7 @@
 
 > Version: 0.2
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-23
+> Last Updated: 2026-09-24
 
 ## 1. Purpose
 
@@ -23,7 +23,7 @@ directly to application assistance.
 
 ## 2. Current and planned scope
 
-### Implemented now — M0–M9
+### Implemented now — M0–M10
 
 - authenticated Web/API/PostgreSQL foundation;
 - Career Brain/Profile management and user ownership;
@@ -35,14 +35,15 @@ directly to application assistance.
 - Strong, Hidden, Weak, and Genuine Gap classifications;
 - explainable Job Intelligence pages and recommendations;
 - the Jobs-first shell and browse/search/filter/save/detail/Apply experience;
-  and
 - a provider-neutral Job source boundary with retry-safe ingestion and explicit
-  source, freshness, and availability state.
+  source, freshness, and availability state; and
+- a secure Manifest V3 extension foundation with Clerk session sync,
+  authenticated API access, active-tab application-page detection, and explicit
+  unsupported behavior.
 
 ### Planned V1 formation
 
-- browser extension foundation and authentication;
-- application-page and form detection;
+- normalized form detection and inspection;
 - normalized fields/questions and ATS adapter boundary;
 - Answer Engine and Career Brain-backed autofill;
 - durable Application domain and Applications surface;

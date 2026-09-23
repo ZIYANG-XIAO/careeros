@@ -2,12 +2,13 @@
 
 > Version: 0.2
 > Status: Approved logical model; implementation status called out explicitly
-> Last Updated: 2026-09-23
+> Last Updated: 2026-09-24
 
 ## 1. Purpose
 
 This document defines CareerOS domain concepts for the re-baselined V1. It
-separates the implemented M0–M9 schema from planned V1 formation concepts.
+separates the implemented M0–M10 product state from planned V1 formation
+concepts. M10 adds no database migration.
 
 The model supports:
 

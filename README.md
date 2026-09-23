@@ -19,7 +19,7 @@ the user through the Career Brain.
 
 ## Current implementation
 
-M0–M9 are implemented at repository level. Today the repository supports:
+M0–M10 are implemented at repository level. Today the repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
 - Clerk authentication and server-side user ownership;
@@ -32,15 +32,18 @@ M0–M9 are implemented at repository level. Today the repository supports:
 - a provider-neutral job-source contract, canonical source attribution,
   retry-safe deduplication, and honest freshness/availability state;
 - evidence matching against a selected immutable resume version;
-- Strong Evidence, Hidden Evidence, Weak Evidence, and Genuine Gap results; and
-- explainable optional Job Intelligence recommendations; and
+- Strong Evidence, Hidden Evidence, Weak Evidence, and Genuine Gap results;
+- explainable optional Job Intelligence recommendations;
+- a least-privilege Manifest V3 extension foundation with stable development
+  identity, Clerk Sync Host authentication, protected API access, active-tab
+  application-page detection, and honest unsupported states; and
 - an honest Applications placeholder that does not simulate tracking.
 
 The following V1 capabilities are planned, not implemented:
 
 - production job acquisition and real external source adapters;
-- browser extension and application-page detection;
-- field normalization, Answer Engine, and autofill;
+- normalized form inspection and ATS adapters;
+- Answer Engine and autofill;
 - durable Application records and a functional Applications tracking surface;
   and
 - end-to-end Web/extension/Application Memory integration.
@@ -73,10 +76,11 @@ provider's schema.
 
 ### Apply Anywhere
 
-The planned extension is a first-class application assistant whether a job was
-found inside CareerOS or elsewhere. It will detect application forms, normalize
-fields, resolve answers from approved sources, fill supported fields, surface
-uncertainty, and leave final review and submission to the user.
+The implemented extension foundation is a first-class application entry point
+whether a job was found inside CareerOS or elsewhere. It securely shares the
+Web session and detects likely application pages without requiring a CareerOS
+Job. Field normalization, answer resolution, autofill, and review behavior are
+planned next; final submission remains the user's action.
 
 ### Remember
 

@@ -2,7 +2,7 @@
 
 > Version: 0.2
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-23
+> Last Updated: 2026-09-24
 
 ## 1. Purpose and authority
 
@@ -211,7 +211,7 @@ scope, evidence, and limitations.
 Wave B makes Apply Anywhere real. The external-job path is equal to the
 CareerOS-Job path.
 
-### M10 — Extension Foundation and Secure API Boundary
+### M10 — Extension Foundation and Secure API Boundary — completed
 
 #### Goal
 
@@ -240,6 +240,16 @@ Introduce the Manifest V3 extension and secure communication with CareerOS.
 - autofill;
 - universal page detection;
 - final submission.
+
+#### Delivered
+
+Implemented the Manifest V3 extension scaffold, background/content/popup
+boundaries, stable development CRX identity, Clerk Sync Host authentication,
+background-only protected API access, least-privilege active-tab injection,
+exact message validation, application-page heuristics, and clear application,
+ordinary, and unsupported states. Representative signed-in Chrome validation
+confirmed protected `/me` access and detection without a CareerOS Job. See
+`docs/VALIDATION_M10.md` for evidence and limitations.
 
 ### M11 — Form Detection and Normalization
 
@@ -506,10 +516,10 @@ After a milestone:
 
 ## 14. Immediate next step
 
-Wave A implementation and its Jobs product validation gate are complete. The
+M10 implementation and representative extension validation are complete. The
 next approved implementation milestone is:
 
-> M10 — Extension Foundation and Secure API Boundary
+> M11 — Form Detection and Normalization
 
-Do not begin Application Memory, Application Strategy, resume tailoring,
-autofill, or later extension behavior as part of the Wave A validation gate.
+Do not begin the Answer Engine, autofill, Application Memory, Application
+Strategy, or resume tailoring as part of M11.
