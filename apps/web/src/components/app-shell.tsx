@@ -8,6 +8,7 @@ import { type ReactNode, useState } from "react";
 const navItems = [
   { label: "Career Profile", href: "/career" },
   { label: "Resumes", href: "/resumes" },
+  { label: "Jobs", href: "/jobs" },
 ] as const;
 
 function AppShell({ children }: { children: ReactNode }) {

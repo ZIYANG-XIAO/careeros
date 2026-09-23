@@ -264,7 +264,8 @@ Browser → Next.js Web → FastAPI API → PostgreSQL
 - Python 3.13 or newer
 - Docker with Docker Compose
 - A Clerk application (for authentication)
-- An OpenAI API key (for grounded resume extraction in M2)
+- An OpenAI API key (for real resume extraction and Job Intelligence evaluation;
+  deterministic automated tests do not require one)
 
 ### Initial Setup
 
@@ -284,6 +285,8 @@ Edit `.env` and set:
 - `CLERK_ISSUER_URL` — your Clerk instance issuer URL
 - `OPENAI_API_KEY` — a server-only API key used for structured resume parsing
 - `OPENAI_RESUME_PARSER_MODEL` — the structured-output model (defaults to `gpt-5-mini`)
+- `OPENAI_JOB_PARSER_MODEL` — the grounded JD parser model (defaults to `gpt-5-mini`)
+- `OPENAI_JOB_MATCHER_MODEL` — the evidence evaluator model (defaults to `gpt-5-mini`)
 - `RESUME_STORAGE_DIR` — local private asset storage (defaults to `.local/resume-assets`)
 
 Never place `OPENAI_API_KEY` in `apps/web/.env.local` or prefix it with
@@ -320,9 +323,16 @@ npm run web:dev
 ```
 
 Open `http://localhost:3000`. The Career Profile is at `/career`; resume upload,
-review, and version history are under `/resumes`. PDF and DOCX uploads are
-limited to 5 MB. Original files are stored under the configured local storage
-directory, which is git-ignored.
+review, and version history are under `/resumes`; manual job capture and Job
+Intelligence are under `/jobs`. PDF and DOCX uploads are limited to 5 MB.
+Original files are stored under the configured local storage directory, which
+is git-ignored.
+
+To run Job Intelligence with real data, first upload and confirm a resume, add
+any strong evidence missing from that resume in the Career Profile, then paste a
+real job description under Jobs. Select the intended immutable resume version
+before running an analysis. Results preserve the JD snapshot, selected resume
+version, evidence revision references and evidence text at analysis time.
 
 ### Run Checks
 

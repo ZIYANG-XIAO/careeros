@@ -254,3 +254,96 @@ export type ResumeSummary = {
   updated_at: string;
   versions: ResumeVersion[];
 };
+
+// ---------------------------------------------------------------------------
+// Jobs and reproducible Job Intelligence.
+// ---------------------------------------------------------------------------
+
+export type JobRequirement = {
+  id: string;
+  category: string;
+  description: string;
+  normalized_value: string | null;
+  importance: string;
+  source_text: string;
+  confidence: string;
+  position: number;
+};
+
+export type JobSnapshot = {
+  id: string;
+  version_number: number;
+  raw_description: string;
+  normalized_description: string;
+  content_sha256: string;
+  parser_version: string;
+  parser_model: string;
+  created_at: string;
+  requirements: JobRequirement[];
+};
+
+export type Job = {
+  id: string;
+  company: string;
+  title: string;
+  location: string | null;
+  source_url: string | null;
+  application_url: string | null;
+  source_type: string;
+  captured_at: string;
+  created_at: string;
+  updated_at: string;
+  latest_snapshot: JobSnapshot;
+};
+
+export type CreateJobRequest = {
+  company: string;
+  title: string;
+  location?: string | null;
+  description: string;
+  source_url?: string | null;
+};
+
+export type EvidenceReference = {
+  career_evidence_id: string;
+  career_evidence_revision_id: string;
+  source_type: string;
+  source_id: string;
+  evidence_content: string;
+  revision_number: number;
+};
+
+export type RequirementAnalysis = {
+  id: string;
+  requirement_id: string;
+  category: string;
+  description: string;
+  normalized_value: string | null;
+  importance: string;
+  source_text: string;
+  support_strength: "STRONG" | "WEAK" | "NONE_OR_INSUFFICIENT";
+  resume_representation: "REPRESENTED" | "UNDERREPRESENTED" | "ABSENT";
+  classification:
+    "STRONG_EVIDENCE" | "HIDDEN_EVIDENCE" | "WEAK_EVIDENCE" | "GENUINE_GAP";
+  explanation: string;
+  resume_source_text: string | null;
+  evidence_references: EvidenceReference[];
+};
+
+export type JobAnalysis = {
+  id: string;
+  job_id: string;
+  job_snapshot_id: string;
+  company: string;
+  title: string;
+  resume_version_id: string;
+  resume_name: string;
+  resume_version_number: number;
+  analysis_version: number;
+  matcher_version: string;
+  matcher_model: string;
+  overall_recommendation: "STRONG_APPLY" | "APPLY" | "STRETCH" | "LOW_PRIORITY";
+  summary: string;
+  created_at: string;
+  matches: RequirementAnalysis[];
+};

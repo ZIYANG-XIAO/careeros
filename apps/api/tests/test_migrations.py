@@ -263,6 +263,64 @@ async def test_clean_migration_creates_expected_schema() -> None:
                     for constraint in version_uniques
                 ), "Missing unique constraint on resume version identity"
 
+                # -----------------------------------------------------------
+                # M4-M6 jobs and reproducible Job Intelligence
+                # -----------------------------------------------------------
+
+                intelligence_tables = [
+                    "jobs",
+                    "job_snapshots",
+                    "job_requirements",
+                    "job_analyses",
+                    "evidence_matches",
+                    "evidence_match_references",
+                ]
+                for tbl in intelligence_tables:
+                    assert tbl in table_names, f"Missing Job Intelligence table: {tbl}"
+
+                snapshot_cols = await conn.run_sync(
+                    lambda sync_conn: {
+                        c["name"]: c for c in inspect(sync_conn).get_columns("job_snapshots")
+                    }
+                )
+                for col in (
+                    "raw_description",
+                    "normalized_description",
+                    "content_sha256",
+                    "parser_version",
+                    "parser_model",
+                ):
+                    assert col in snapshot_cols, f"Missing job_snapshots column: {col}"
+
+                analysis_cols = await conn.run_sync(
+                    lambda sync_conn: {
+                        c["name"]: c for c in inspect(sync_conn).get_columns("job_analyses")
+                    }
+                )
+                for col in (
+                    "job_snapshot_id",
+                    "career_brain_id",
+                    "resume_version_id",
+                    "analysis_version",
+                    "matcher_version",
+                    "matcher_model",
+                ):
+                    assert col in analysis_cols, f"Missing job_analyses column: {col}"
+
+                reference_cols = await conn.run_sync(
+                    lambda sync_conn: {
+                        c["name"]: c
+                        for c in inspect(sync_conn).get_columns("evidence_match_references")
+                    }
+                )
+                for col in (
+                    "career_evidence_id",
+                    "career_evidence_revision_id",
+                    "evidence_content",
+                    "revision_number",
+                ):
+                    assert col in reference_cols, f"Missing evidence_match_references column: {col}"
+
                 # --- FK educations.career_brain_id → career_brains.id ---
                 edu_fks = await conn.run_sync(
                     lambda sync_conn: inspect(sync_conn).get_foreign_keys("educations")

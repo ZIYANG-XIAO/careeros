@@ -2,11 +2,14 @@ import type {
   CareerBrain,
   CreateEducationRequest,
   CreateExperienceRequest,
+  CreateJobRequest,
   CreateProjectRequest,
   CreateSkillRequest,
   Education,
   Experience,
   ExperienceDetailResponse,
+  Job,
+  JobAnalysis,
   Project,
   ProjectDetailResponse,
   ResumeDraftItem,
@@ -259,6 +262,62 @@ export async function getResumeVersion(
     },
   );
   return handleResponse<ResumeVersion>(response);
+}
+
+// ---------------------------------------------------------------------------
+// Jobs and Job Intelligence
+// ---------------------------------------------------------------------------
+
+export async function createJob(
+  token: string,
+  data: CreateJobRequest,
+): Promise<Job> {
+  const response = await fetch(`${apiBaseUrl()}/jobs`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<Job>(response);
+}
+
+export async function listJobs(token: string): Promise<Job[]> {
+  const response = await fetch(`${apiBaseUrl()}/jobs`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  return handleResponse<Job[]>(response);
+}
+
+export async function getJob(token: string, jobId: string): Promise<Job> {
+  const response = await fetch(`${apiBaseUrl()}/jobs/${jobId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  return handleResponse<Job>(response);
+}
+
+export async function createJobAnalysis(
+  token: string,
+  jobId: string,
+  resumeVersionId: string,
+): Promise<JobAnalysis> {
+  const response = await fetch(`${apiBaseUrl()}/jobs/${jobId}/analyses`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ resume_version_id: resumeVersionId }),
+  });
+  return handleResponse<JobAnalysis>(response);
+}
+
+export async function listJobAnalyses(
+  token: string,
+  jobId: string,
+): Promise<JobAnalysis[]> {
+  const response = await fetch(`${apiBaseUrl()}/jobs/${jobId}/analyses`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  return handleResponse<JobAnalysis[]>(response);
 }
 
 // ---------------------------------------------------------------------------
