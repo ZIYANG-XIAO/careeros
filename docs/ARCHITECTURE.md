@@ -1,1140 +1,489 @@
 # CareerOS Core V1 — Technical Architecture
 
-> Version: 0.1
-> Status: Draft
-> Last Updated: 2026-09-13
-> Product: CareerOS
+> Version: 0.2
+> Status: Approved V1 re-baseline
+> Last Updated: 2026-09-23
 
----
+## 1. Purpose
 
-# 1. Purpose
+This architecture supports the V1 product spine:
 
-This document defines the intended technical architecture for CareerOS Core V1.
-
-The architecture must support the primary product loop:
-
-Career Brain
-→ Job Capture
-→ Job Intelligence
-→ Evidence Matching
-→ Application Intelligence
-→ Resume Tailoring
-→ Application Assistant
-→ Application Memory
-
-The architecture should be:
-
-- simple enough for fast V1 development,
-- reliable enough for real user data,
-- modular enough for AI iteration,
-- compatible with browser extension workflows,
-- and extensible without prematurely building future infrastructure.
-
-CareerOS should begin as a well-structured modular application, not a distributed system.
-
----
-
-# 2. Architecture Principles
-
-## 2.1 Modular Monolith First
-
-CareerOS Core V1 should use a modular monolith architecture.
-
-The system may contain separately deployable web, API, extension, and worker processes, but business logic should not be fragmented into microservices.
-
-Avoid premature:
-
-- microservices,
-- service mesh,
-- Kubernetes,
-- event-driven distributed architecture,
-- Kafka,
-- complex RPC systems.
-
-The product is not yet operating at a scale that justifies these systems.
-
----
-
-## 2.2 Clear Domain Boundaries
-
-Code should reflect the major CareerOS domains:
-
-- Career Brain
-- Resume
-- Job
-- Intelligence
-- Application
-- AI
-- Browser Extension
-
-Boundaries should exist in code even if they share one backend application.
-
----
-
-## 2.3 Canonical Structured Data
-
-PostgreSQL is the canonical store for structured CareerOS data.
-
-AI output must not become the only representation of important product state.
-
-Important concepts should be represented using validated structured records.
-
----
-
-## 2.4 AI Is a Dependency, Not the Architecture
-
-The application must remain functional as a software system independent of any one model vendor.
-
-AI should be accessed through an internal abstraction layer.
-
-Business logic should not contain scattered provider-specific API calls.
-
----
-
-## 2.5 Evidence Is First-Class
-
-Architecture must preserve relationships between:
-
-Career Evidence
-
-Job Requirements
-
-Evidence Matches
-
-Resume Recommendations
-
-Applications
-
-The architecture must make evidence validation possible.
-
----
-
-## 2.6 Deterministic Logic Before AI
-
-Do not use AI for tasks that can be reliably performed through conventional software.
-
-Examples:
-
-- retrieving email,
-- mapping known form fields,
-- application status,
-- authorization,
-- evidence ownership validation.
-
-Use AI when semantic understanding is genuinely required.
-
----
-
-## 2.7 Progressive Complexity
-
-Start with the simplest system that correctly supports CareerOS Core V1.
-
-Introduce additional infrastructure only when a measured product or engineering need exists.
-
----
-
-# 3. High-Level System Architecture
-
-CareerOS Core V1 consists of the following primary components:
 ```text
-                    ┌──────────────────────┐
-                    │      Web App         │
-                    │ Next.js + TypeScript │
-                    └──────────┬───────────┘
-                               │
-                               │ HTTPS / REST
-                               │
-                    ┌──────────▼───────────┐
-                    │     Backend API      │
-                    │  FastAPI + Python    │
-                    └──────────┬───────────┘
-                               │
-              ┌────────────────┼────────────────┐
-              │                │                │
-              ▼                ▼                ▼
-       PostgreSQL        Object Storage       AI Layer
-              │                                  │
-              │                                  ▼
-              │                           Model Provider(s)
-              │
-              ▼
-        Background Jobs
-              ▲
-              │
-              │
-    ┌─────────┴──────────┐
-    │ Browser Extension  │
-    │ React + TypeScript │
-    │ Chrome Manifest V3 │
-    └────────────────────┘
+KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
+                         ↘
+                       ENHANCE (optional)
 ```
 
-The Web App and Browser Extension communicate with the Backend API over authenticated HTTPS. The Backend API owns domain behavior and canonical state. PostgreSQL stores structured records, Object Storage preserves file artifacts, the AI Layer mediates semantic tasks, and a simple Worker processes asynchronous work.
+It preserves working M0–M7 behavior while defining minimal extension points for
+Jobs discovery, application assistance, Answer Engine, and Application Memory.
 
-The initial system should remain understandable as one product even when Web, API, Worker, and Extension are separate runtime or distribution units.
+The architectural principle is:
 
----
+> Simple infrastructure, clear domain boundaries, extensible interfaces.
 
-# 4. Repository Direction
+## 2. Current implementation
 
-The intended repository direction is:
+Implemented runtime:
+
+```text
+Next.js Web → FastAPI API → PostgreSQL
+                       ├→ local resume asset storage
+                       └→ provider-isolated AI tasks
+```
+
+Implemented domains and workflows:
+
+- Identity and authentication mapping;
+- Career Brain/Profile and Career Evidence;
+- Resume ingestion and versioning;
+- manual Job capture and Job snapshots/requirements;
+- Job Intelligence analyses and evidence matches.
+
+Current Alembic head: `0006_m5_m6_job_intelligence`.
+
+Not implemented today:
+
+- production job-source ingestion;
+- browser extension;
+- normalized form/ATS adapters;
+- Answer Engine or autofill;
+- Application domain; or
+- Application Strategy/resume tailoring.
+
+## 3. Architecture principles
+
+### Modular monolith
+
+CareerOS remains a modular monolith. Web, API, a future worker, and extension may
+run separately, but business logic is not divided into microservices.
+
+### Canonical core domains
+
+PostgreSQL holds canonical structured state. Product services consume core
+domains rather than creating duplicate representations.
+
+### Adapters at external boundaries
+
+Provider-specific job sources, AI providers, storage systems, and ATS/site
+behavior stay behind narrow interfaces.
+
+### Deterministic before AI
+
+Authorization, known field mapping, status transitions, policy checks, and
+identifier validation use conventional logic. AI is used only for semantic tasks.
+
+### Preserve history
+
+Immutable evidence revisions, Resume Versions, Job snapshots, historical
+analyses, and future Application context remain attributable to what was used at
+the time.
+
+### Progressive complexity
+
+Do not introduce infrastructure before a measured requirement exists.
+
+## 4. Target V1 shape
+
+```text
+                         ┌─────────────────────┐
+                         │     Next.js Web     │
+                         │ Jobs / Applications│
+                         │ Resumes / Profile  │
+                         └──────────┬──────────┘
+                                    │ authenticated REST
+┌─────────────────────┐             ▼
+│ Browser Extension   │──────►┌──────────────────────┐
+│ detection + execute │       │   FastAPI Backend    │
+└─────────────────────┘       │ modular monolith     │
+                              └───────┬──────┬───────┘
+                                      │      │
+                              ┌───────▼──┐ ┌─▼───────────┐
+                              │PostgreSQL│ │AI Providers │
+                              └──────────┘ └─────────────┘
+
+External Job Sources ─► Job Source Adapters ─► normalized Job boundary ─► API
+External ATS/Forms   ─► ATS/Generic Adapters ─► normalized Form model ───► API
+```
+
+The extension and adapter boundaries are planned. The current repository does
+not yet contain `apps/extension`.
+
+## 5. Core domains vs product services
+
+### Core domains
+
+- Identity
+- Career Brain
+- Career Evidence
+- Resume
+- Job
+- Application (planned)
+
+### Product services/workflows
+
+- Job Discovery (planned)
+- Autofill (planned)
+- Answer Engine (planned)
+- Job Intelligence (implemented)
+- Resume Tailoring (deferred)
+- Application Q&A, Interview Preparation, Recommendation, Analytics, Career
+  Planning, and future agents (future)
+
+Services access canonical data through application-service/repository boundaries.
+They must not create alternate user profiles or source-specific Job models.
+
+## 6. Repository direction
 
 ```text
 careeros/
-├── AGENTS.md
-├── README.md
-├── docs/
 ├── apps/
-│   ├── web/
-│   ├── api/
-│   └── extension/
-├── packages/
-│   └── shared/
-├── tests/
-│   └── fixtures/
-└── infra/
+│   ├── web/          # implemented
+│   ├── api/          # implemented
+│   └── extension/    # planned for extension milestone
+├── packages/         # frontend-safe shared contracts when justified
+├── tests/            # cross-surface fixtures when introduced
+├── infra/            # proportional local/deployment definitions
+└── docs/
 ```
 
-Not every directory must exist immediately. Directories should be introduced when their approved milestone begins or when they materially simplify the current foundation.
+Directories are introduced only when their approved milestone begins.
 
-Conceptually:
+## 7. Web application
 
-- `apps/web` contains the Next.js web application.
-- `apps/api` contains the FastAPI backend and worker entry points.
-- `apps/extension` contains the browser extension.
-- `packages/shared` contains frontend-safe shared contracts where useful.
-- `tests/fixtures` contains reusable fixtures, including representative resumes, jobs, and ATS pages.
-- `infra` contains only the infrastructure definitions needed for approved environments.
+Stack: Next.js, TypeScript, React, Tailwind CSS.
 
-Repository organization should make domain ownership clear without forcing artificial package boundaries.
+Current routes cover system status, Career Profile, Resumes, and manually captured
+Jobs/Job Intelligence.
 
----
+Planned primary navigation:
 
-# 5. Core Domain Boundaries
+- Jobs
+- Applications
+- Resumes
+- Profile
 
-The modular monolith should preserve the following conceptual boundaries.
+The Web application handles presentation, interaction, and local UI state. It is
+not authoritative for ownership, professional truth, answer policy, or
+Application state.
 
-## 5.1 Career Brain
+User-facing surfaces should hide implementation vocabulary unless needed for
+trust or debugging.
 
-Owns structured professional truth, provenance, confirmation state, career evidence, application information, and career preferences.
+## 8. Backend application
 
-## 5.2 Resume
+Stack: FastAPI, Python, Pydantic, SQLAlchemy, Alembic.
 
-Owns resume assets, structured resume content, versions, source relationships, rendering, exports, and links between resume claims and Career Evidence.
+The API owns:
 
-## 5.3 Job
+- authentication-derived user context;
+- authorization and ownership;
+- core domain behavior;
+- persistence and transactions;
+- AI task boundaries and validation;
+- future answer policy;
+- future Application state; and
+- provider/source adapter orchestration.
 
-Owns captured opportunities, source content, normalized job data, and structured Job Requirements.
+HTTP handlers should remain thin: validate transport input, establish user
+context, invoke an application service, and return a typed contract.
 
-## 5.4 Intelligence
+## 9. API contracts
 
-Owns Job Analysis, evidence retrieval, Evidence Matches, hidden evidence detection, application recommendations, and Application Strategy.
+Use authenticated REST/JSON with FastAPI OpenAPI. Requests, responses, errors,
+task status, and domain operations use explicit schemas.
 
-## 5.5 Application
+Persistence models are not exposed arbitrarily. API contracts protect private
+fields and remain stable when storage or external providers change.
 
-Owns application records, the exact Resume Version used, strategy references, answers, state, and history.
+Extension endpoints must enforce the same ownership and validation as Web
+endpoints. Idempotency is required where retries could duplicate Applications or
+other durable records.
 
-## 5.6 AI
+## 10. PostgreSQL and migrations
 
-Owns task-oriented AI interfaces, provider adapters, structured output validation, prompt versions, and grounding validation.
+PostgreSQL is canonical for structured domain state. Use relational modeling,
+foreign keys, ownership indexes, timestamps, constrained values, and transactions.
 
-## 5.7 Browser Extension
+Alembic manages all schema changes. A planned entity in product documentation is
+not permission to add a migration before its milestone.
 
-Owns page detection, extraction, form inspection, supported autofill, lightweight contextual UI, and communication with the Backend API.
+JSONB may store validated bounded metadata, but not an opaque replacement for
+Career Brain, Application, Job, or answer history.
 
-These domains may share a database and deployment unit. They should communicate through explicit application services and contracts rather than reaching across boundaries unpredictably.
+## 11. File storage
 
----
+Original and generated file artifacts are stored behind a storage abstraction.
+PostgreSQL stores ownership and metadata. Storage keys are not authorization.
 
-# 6. Web Application
+Current local development uses private local resume storage. A managed object
+store may replace it when deployment requirements justify the change.
 
-The Web App is the CareerOS command center.
+## 12. Job architecture
 
-The approved V1 stack is:
+The canonical Job is provider-independent. Current manually created Jobs remain
+valid.
 
-- Next.js,
-- TypeScript,
-- React,
-- Tailwind CSS.
-
-The Web App is responsible for:
-
-- onboarding,
-- Career Brain review and management,
-- Resume Library and tailoring workflows,
-- detailed Job Intelligence,
-- Application Intelligence,
-- Jobs and Applications views,
-- settings,
-- and user-visible progress and recovery states.
-
-Conceptual routes may include:
+Planned boundary:
 
 ```text
-/login
-/onboarding
-/dashboard
-/profile
-/resumes
-/jobs
-/applications
-/settings
+Job Source
+→ Source Adapter
+→ provider-neutral normalized candidate
+→ deduplication
+→ freshness/availability
+→ canonical CareerOS Job
 ```
 
-These routes describe product areas, not a locked routing implementation.
+Source adapters may eventually support permitted feeds/APIs, company sites, ATS
+sources, extension capture, and manual entry.
 
-Business rules must remain in backend domain or application services rather than being duplicated in UI components. The Web App may perform presentation validation and local interaction logic, but it must not become an independent source of Career Brain, evidence, application, or authorization truth.
+Requirements:
 
----
+- isolate provider-specific schemas;
+- preserve source attribution and external identifiers where useful;
+- normalize only what the canonical domain requires;
+- keep unknown fields unknown;
+- avoid obvious duplicates using available stable signals;
+- represent freshness without claiming knowledge CareerOS lacks; and
+- make ingestion retry-safe.
 
-# 7. Backend Application
+Current product formation may use seed/demo/test jobs. Do not build a generic
+ingestion platform, mass scraper, or source plugin framework now.
 
-The Backend API is the authoritative application boundary for CareerOS data and business behavior.
+## 13. Job Intelligence architecture
 
-The preferred V1 backend stack is:
-
-- FastAPI,
-- Python,
-- Pydantic,
-- SQLAlchemy,
-- Alembic.
-
-The internal modular layout should conceptually support:
+The implemented flow is:
 
 ```text
-api/
-domain/
-services/
-ai/
-db/
-jobs/
-core/
+Job Description
+→ immutable Job Snapshot
+→ source-grounded Requirements
+→ confirmed Career Evidence + selected Resume Version
+→ validated matches
+→ historical Job Analysis
 ```
 
-The exact package structure may be refined during implementation planning.
+Historical analysis references exact evidence revisions and snapshots. Job
+Intelligence is optional and does not gate Apply or extension assistance.
 
-Conceptual responsibilities are:
+## 14. Extension architecture — planned
 
-- `api/` — HTTP routes, request parsing, response schemas, and transport concerns.
-- `domain/` — domain concepts, invariants, and stable business rules.
-- `services/` — application workflows coordinating domains and infrastructure.
-- `ai/` — task contracts, prompts, provider adapters, and AI validation.
-- `db/` — persistence models, repositories, sessions, and migrations.
-- `jobs/` — asynchronous task records and worker behavior.
-- `core/` — configuration, security primitives, logging, and shared backend infrastructure.
+Approved stack direction: React, TypeScript, Chrome Manifest V3.
 
-HTTP handlers should remain thin. They should validate the request, establish user context, call an application service, and return a typed response.
+Conceptual components:
 
----
+- background service worker;
+- content scripts;
+- compact popup and/or side panel;
+- authenticated API client;
+- application/page detector;
+- generic form adapter;
+- ATS adapter registry; and
+- form execution/review state.
 
-# 8. API Style and Contracts
+The extension collects narrowly scoped page/form data, requests canonical
+answers and policy decisions from the backend, executes supported changes in the
+page, and communicates results. It does not store a duplicate Career Brain or
+become an independent backend.
 
-CareerOS Core V1 should use REST over HTTPS with JSON payloads.
+### Trust boundary
 
-FastAPI should expose an OpenAPI description that can support API documentation and typed client generation or validation.
+Page JavaScript and content are untrusted. Privileged credentials are not exposed
+to the page. Messages are typed and validated. Host permissions remain minimal.
 
-The API should use explicit schemas for:
+The extension must support an application page even when no CareerOS Job or Job
+Analysis exists.
 
-- requests,
-- responses,
-- errors,
-- asynchronous task status,
-- and structured domain operations.
-
-Database persistence models must not be exposed directly as arbitrary API models. API contracts should reflect product behavior, protect private fields, and remain stable when physical storage changes.
-
-GraphQL should not be introduced unless a real product or engineering need appears.
-
-API evolution should favor additive, typed changes and explicit compatibility decisions.
-
----
-
-# 9. PostgreSQL and Structured Persistence
-
-PostgreSQL is the canonical structured source of truth for CareerOS Core V1.
-
-Core entities defined by the domain model should live in PostgreSQL, including:
-
-- User ownership references,
-- Career Brain entities and confirmation state,
-- Career Evidence references,
-- Resumes and Resume Versions,
-- Jobs and Job Requirements,
-- Job Analyses and Evidence Matches,
-- Application Strategies and Resume Recommendations,
-- Applications, answers, and statuses,
-- asynchronous job records,
-- and relevant AI version metadata.
-
-The physical schema should prefer:
-
-- relational modeling,
-- explicit foreign keys,
-- server-enforced ownership boundaries,
-- stable enums or constrained values where concepts are stable,
-- timestamps and historical references where required,
-- and transactions around related state changes.
-
-JSONB may be used when flexibility provides meaningful value, such as validated intermediate structured content or provider-neutral metadata. It must not turn the entire Career Brain or all important AI output into opaque documents.
-
-Alembic should manage schema evolution. Migration design belongs to implementation planning and must follow the approved logical data model.
-
----
-
-# 10. Semantic Retrieval
-
-CareerOS Core V1 does not require a standalone vector database.
-
-Evidence retrieval should develop in this order:
-
-1. structured and direct domain relationships,
-2. normalized terminology and conventional text retrieval,
-3. embeddings only when evaluation demonstrates a meaningful need.
-
-If embedding retrieval becomes justified, PostgreSQL with `pgvector` is preferred before introducing external vector infrastructure.
-
-Embeddings are an index over evidence, not the canonical evidence store. The referenced Career Brain records remain authoritative.
-
-Retrieval is not proof. A retrieved item is only a candidate for Evidence Evaluation. The system must still validate relevance, confirmation state, ownership, context, and the strength of support before classifying a requirement or generating a claim.
-
----
-
-# 11. Object Storage
-
-Object Storage should preserve file artifacts, including:
-
-- original uploaded resumes,
-- generated resume artifacts,
-- exported files,
-- and other approved document outputs.
-
-PostgreSQL should store references and metadata such as ownership, content type, size, hash, creation source, and related Resume Version.
-
-Object keys and download access must not be treated as authorization. Access should be mediated through server-side ownership checks or appropriately scoped temporary access.
-
-Original user artifacts should be preserved where required by the product flow. Generated artifacts must remain connected to their structured source and historical Resume Version.
-
----
-
-# 12. Resume Ingestion and Resume Architecture
-
-## 12.1 Ingestion Pipeline
-
-The approved conceptual ingestion pipeline is:
-
-Upload
-→ Store Original
-→ Extract Content
-→ Structured Parse
-→ Validate
-→ Career Brain Draft
-→ User Review
-→ User Confirmation
-
-Each stage should preserve enough status and error information for the user to recover without re-entering unrelated data.
-
-The original artifact should be stored before lossy parsing. Extracted and AI-parsed information remains a draft until the product's confirmation rules are satisfied.
-
-AI parsing must never silently overwrite confirmed Career Brain truth. Conflicts or uncertain extraction should be surfaced for review.
-
-## 12.2 Resume Representation
-
-CareerOS should preserve three related concerns:
-
-- the original file artifact,
-- a validated structured resume representation,
-- and historically preserved Resume Versions.
-
-The Career Brain remains separate from all three. Resume content selects and presents Career Brain evidence.
-
-## 12.3 Resume Generation
-
-Resume generation should follow:
-
-Structured Content
-→ Renderer
-→ Export
-
-An LLM may recommend or rewrite evidence-grounded content. It should not directly generate arbitrary PDF layout as the canonical resume representation.
-
-Rendering should be deterministic enough to reproduce an accepted Resume Version. Exported files should reference that version, and historical applications should continue to reference the exact version used.
-
----
-
-# 13. AI Layer
-
-The AI Layer should expose task-oriented internal interfaces such as:
-
-- `parse_resume`,
-- `parse_job`,
-- `retrieve_evidence`,
-- `evaluate_evidence`,
-- `recommend_application`,
-- `create_application_strategy`,
-- `generate_resume_recommendation`,
-- `rewrite_resume_claim`,
-- `classify_form_field`.
-
-These are logical responsibilities. They do not require one service, class, or model call per task.
-
-Domain and application services should depend on these internal task contracts rather than provider-specific APIs.
-
-## 13.1 Provider Adapter
-
-The provider adapter should handle:
-
-- authentication,
-- model request and response translation,
-- provider-specific retries,
-- usage metadata,
-- model selection,
-- and normalized provider errors.
-
-The abstraction should remain thin. CareerOS should not build a generalized AI framework before the product requires one.
-
-## 13.2 Structured Outputs
-
-AI operations that drive product logic should return validated structured outputs.
-
-Validation must include, where relevant:
-
-- schema conformance,
-- allowed enum values,
-- referenced entity existence,
-- user ownership,
-- evidence eligibility,
-- evidence compatibility,
-- and task-specific invariants.
-
-Invalid output should be rejected, safely repaired, or regenerated. It must not be persisted or acted upon blindly.
-
-## 13.3 Prompt Management
-
-Prompts are versioned product logic.
-
-They should live in dedicated task prompt modules rather than being scattered through UI components, routes, or unrelated services.
-
-Persisted AI outputs should record the relevant task or prompt version when that information is needed to explain results or detect staleness.
-
-Provider selection and prompt content should remain separable.
-
----
-
-# 14. Grounding Validation
-
-Grounding validation is a required boundary between AI generation and accepted product output.
-
-For professional claims and important recommendations, validators should check where applicable:
-
-- evidence references exist,
-- evidence belongs to the current user,
-- evidence is eligible and confirmed as required,
-- evidence belongs to a compatible context,
-- metrics are explicitly supported,
-- technologies are supported,
-- ownership and seniority are not inflated,
-- prototype, coursework, or local work is not silently converted into production experience,
-- and unrelated evidence is not combined into a false claim.
-
-Conceptually:
-
-Generated Claim
-→ Validate Evidence IDs
-→ Validate Ownership
-→ Validate Context
-→ Validate Protected Facts
-→ Accept or Reject
-
-Grounding validation may combine deterministic checks with narrowly scoped AI evaluation. Deterministic checks should enforce everything that can be enforced reliably.
-
----
-
-# 15. Background Jobs
-
-Resume parsing and job analysis may be asynchronous because they can involve file processing, AI calls, validation, and multiple persisted outputs.
-
-The initial V1 approach should use:
-
-- database-backed task or job records,
-- a simple worker process,
-- explicit task types,
-- persisted input references,
-- and persisted lifecycle state.
-
-Initial statuses are:
-
-- `pending`,
-- `processing`,
-- `completed`,
-- `failed`.
-
-## 15.1 Task Lifecycle
-
-A worker should safely claim eligible work, mark it processing, execute the task, validate results, and persist either completion or failure.
-
-The design should include:
-
-- idempotency for retryable operations,
-- safe task claiming so work is not unintentionally processed concurrently,
-- bounded retry behavior for transient failures,
-- persisted attempt and failure information,
-- recovery from abandoned processing state,
-- and user-visible progress or status.
-
-Retries must not duplicate Resume Versions, Job Analyses, or other durable outputs.
-
-## 15.2 Queue Boundary
-
-Redis and Celery should not be introduced unless measured throughput, latency, scheduling, or operational needs justify them.
-
-The task contract should be explicit enough that the queue implementation can evolve later without moving domain rules into queue handlers.
-
----
-
-# 16. Authentication and Authorization
-
-## 16.1 Authentication
-
-The exact authentication provider may be selected during implementation planning.
-
-The architecture must support:
-
-- web authentication,
-- backend identity verification,
-- browser extension authentication,
-- secure sessions or tokens,
-- expiration and revocation behavior,
-- and safe sign-out.
-
-The CareerOS domain model must not be tightly coupled to one authentication vendor. Provider identity should map to the internal User ownership context.
-
-The browser extension should use an approved authentication flow. It must not collect or store the user's raw password.
-
-## 16.2 Authorization
-
-Every user-owned resource must enforce ownership server-side.
-
-This includes:
-
-- Career Brain records,
-- Career Evidence,
-- resumes and files,
-- jobs and analyses,
-- application strategies,
-- applications and answers,
-- asynchronous tasks,
-- and generated artifacts.
-
-Frontend hiding is not authorization.
-
-Ownership checks must apply to direct identifiers, nested relationships, object-storage access, and IDs returned by AI. An AI-supplied Evidence ID must be verified to exist, belong to the current user, and be valid for the current task before it is accepted.
-
----
-
-# 17. Browser Extension Architecture
-
-The approved extension stack is:
-
-- React,
-- TypeScript,
-- Chrome Manifest V3.
-
-The extension should conceptually contain:
-
-- a background service worker,
-- content scripts,
-- a popup and/or side panel,
-- ATS adapters,
-- an authenticated API client,
-- and shared schemas or types where useful.
-
-## 17.1 Responsibilities
-
-The extension is responsible for:
-
-- detecting supported job pages,
-- extracting job context,
-- presenting lightweight contextual information,
-- launching full CareerOS analysis,
-- detecting and inspecting application forms,
-- performing supported autofill,
-- and reporting clear unsupported or failure states.
-
-The extension is not a second CareerOS backend. Canonical Career Brain, Job, Analysis, Resume, and Application state remains in the Backend API and PostgreSQL.
-
-## 17.2 Trust Boundary
-
-Web page content is untrusted. Content scripts should collect narrowly scoped page data and send structured messages across explicit extension boundaries.
-
-Long-lived privileged credentials must not be exposed to page JavaScript or stored unnecessarily in content scripts.
-
-Host permissions should be minimized and expanded only for approved supported workflows.
-
-Messages between page-facing code, extension components, and the backend should be validated.
-
----
-
-# 18. Job Detection and ATS Adapters
-
-## 18.1 Layered Job Detection
-
-Job detection should use a layered approach:
-
-ATS-Specific Adapter
-→ Structured Metadata
-→ DOM Extraction
-→ Generic Fallback
-→ AI Fallback Only When Justified
-
-Deterministic structured sources should be preferred over AI interpretation. The extension should report uncertainty or failure rather than claiming successful extraction from unreliable content.
-
-## 18.2 Adapter Contract
-
-An ATS adapter should conceptually support capabilities such as:
-
-- `detect`,
-- `extract_job`,
-- `detect_form`,
-- `map_fields`,
-- `fill_field`,
-- `upload_resume`.
-
-Not every adapter must support every capability immediately. Unsupported capabilities should be explicit.
-
-Adapter-specific DOM knowledge should remain isolated behind the adapter boundary and be covered by representative fixtures.
-
-## 18.3 Initial Coverage Direction
-
-The initial direction is:
-
-1. Generic limited fallback,
-2. Greenhouse,
-3. Lever,
-4. Ashby.
-
-Workday may be added later after the adapter architecture is validated. Workday is not a CareerOS Core V1 exit criterion and must not block the Golden Path on the approved initial environments.
-
----
-
-# 19. Autofill and Answer Resolution
-
-The Application Assistant autofill pipeline is:
-
-Detect Fields
-→ Classify Field
-→ Map Canonical Key
-→ Resolve Answer
-→ Apply Safety and Confidence Rules
-→ Fill Supported Field
-→ User Review
-
-Known fields should use deterministic mappings. AI field classification may be used when wording or structure requires semantic interpretation.
-
-## 19.1 Answer Resolution Priority
-
-Answer resolution should follow this priority:
-
-1. explicit Career Brain or Application Information,
-2. saved user-confirmed Reusable Application Answer,
-3. deterministic display value derived from confirmed data,
-4. allowed AI suggestion,
-5. unknown.
-
-An application-specific answer must not automatically become a reusable answer without user intent.
-
-When confidence is insufficient, the field should remain unresolved or require review.
-
-## 19.2 Consequential Fields
-
-AI must not infer protected, sensitive, legal, or consequential attributes and answers, including demographic disclosures, disability, veteran status, work authorization, sponsorship, salary expectations, legal attestations, or signatures.
-
-Such values may only be reused according to approved product behavior when they originate from explicit user input.
-
-## 19.3 Submission Boundary
-
-CareerOS Core V1 does not automatically perform final application submission.
-
-The user reviews the application and performs the final intentional submit action.
-
----
-
-# 20. Application Architecture
-
-The Backend API is the canonical source for Application state.
-
-An Application should retain references to:
-
-- the Job,
-- the relevant Application Strategy,
-- the exact Resume Version used,
-- application-specific answers where retained,
-- current status,
-- and historical timestamps or state context required by the approved product model.
-
-Application state transitions should remain simple and explicit:
+## 15. Form and ATS adapter architecture — planned
 
 ```text
-Preparing
-Applied
-Assessment
-Interview
-Final Round
-Rejected
-Offer
-Withdrawn
+Application Page
+→ application/form detection
+→ Generic or ATS Adapter
+→ normalized Form model
+→ Answer Engine
+→ fill plan
+→ form execution
+→ user review
 ```
 
-The initial implementation may store current status plus relevant timestamps while preserving a reasonable path to status history.
+An adapter may conceptually provide:
 
-Later Career Brain or Resume changes must not mutate the historical Resume Version or application context used for an earlier application.
+- detect application/form;
+- inspect fields/questions;
+- map or normalize fields;
+- fill supported controls;
+- select/upload a resume; and
+- recognize a confirmation state where reliable.
 
----
+Generic behavior is preferred when reliable. Greenhouse, Lever, and Ashby are
+initial specific targets. Workday is not an initial V1 exit requirement.
 
-# 21. Shared Contracts and Server State
+Adapter-specific DOM knowledge stays isolated and fixture-tested. Do not place
+all ATS behavior in one monolithic conditional block.
 
-A TypeScript shared package may contain frontend-safe types, constants, and schemas when this reduces duplication between the Web App and Browser Extension.
+## 16. Normalized form model — planned
 
-OpenAPI may generate or validate TypeScript API client types.
+The provider-neutral form model should contain only what Answer Engine and form
+execution require, such as:
 
-Business logic must not be duplicated between TypeScript and Python merely to share types. The Backend API remains authoritative for domain invariants, authorization, grounding, and state transitions.
+- field identity and control type;
+- visible label/question and options;
+- required state;
+- normalized/canonical key when known;
+- page/form context;
+- adapter/source identity; and
+- confidence or support metadata.
 
-Canonical server state belongs in the Backend API and PostgreSQL.
+Raw page content remains untrusted and should not be persisted unnecessarily.
 
-Local UI state should remain local to the relevant interface. The Browser Extension may cache small amounts of temporary context, but it must not become a second source of truth.
+## 17. Answer Engine architecture — planned
 
----
+The Answer Engine is a backend product service reusable outside the extension.
 
-# 22. Caching and Staleness
+```text
+Normalized field/question
+→ deterministic classifier first
+→ semantic classifier if necessary
+→ source retrieval
+→ answer policy
+→ confidence/sensitivity decision
+→ Fill / Suggest / Ask / Confirm / Unknown
+```
 
-Caching should remain simple and explicit.
+Sources may include confirmed Career Brain/profile data, application preferences,
+reusable confirmed answers, selected Resume Version, and current Application
+context.
 
-Good initial candidates include stable or expensive outputs such as:
+Policy must distinguish professional truth, preferences, reusable answers,
+application-specific answers, and sensitive answers.
 
-- extracted content for an unchanged resume,
-- structured parsing for an unchanged file,
-- parsed Job Requirements for an unchanged job description,
-- and analysis intermediates whose source versions have not changed.
+AI does not own authorization or policy. Sensitive and consequential categories
+require deterministic guardrails and explicit user origin. Unknown remains
+unknown.
 
-File hashing may help avoid repeated parsing of identical files.
+## 18. Application architecture — planned
 
-Cache invalidation should consider the source versions that affect an output, including:
+Application becomes the canonical record of application work and history.
 
-- Career Brain changes,
-- confirmation-state changes,
-- selected Resume Version changes,
-- Job Description changes,
-- prompt or task version changes,
-- model or matching version changes where material.
+It must support both:
 
-Persisted metadata should allow CareerOS to determine when a Job Analysis, Evidence Match, Application Strategy, or Resume Recommendation may be stale.
+- an Application linked to a CareerOS Job; and
+- an Application originating from an external page without prior CareerOS
+  discovery or analysis.
 
-A stale result should not be silently represented as current.
+Application references the exact Resume Version and preserves approved answer
+history, external/canonical job context, status, and timestamps.
 
----
+Creation and update operations must be transactionally safe and idempotent across
+extension retries. Later profile, Job, resume, or reusable-answer changes do not
+silently rewrite history.
 
-# 23. Observability and Error Handling
+## 19. Authentication and authorization
 
-## 23.1 Observability
+The current Web/API uses Clerk-backed identity mapped to an internal User.
+Provider coupling stays at the authentication boundary.
 
-The system should support correlation across synchronous requests, asynchronous jobs, and AI tasks using information such as:
+The extension milestone must define a secure supported Clerk/token flow without
+collecting raw passwords or exposing long-lived credentials to page scripts.
 
-- request IDs,
-- task IDs,
-- user-safe resource IDs,
-- AI task and prompt versions,
-- model and provider metadata,
-- latency,
-- retry counts,
-- validation outcomes,
-- and failure categories.
+Every user-owned resource enforces ownership server-side, including files,
+nested IDs, evidence returned by AI, answers, and extension-originated requests.
 
-Private resume, Career Brain, job application, and sensitive answer content should not be logged by default.
+## 20. Security and prompt injection
 
-## 23.2 Error Categories
+Untrusted inputs include resumes, job descriptions, external source data, web
+pages, forms, metadata, and model output.
 
-The architecture should distinguish failures such as:
+Controls include:
 
-- user input failure,
-- upload or file validation failure,
-- extraction or parsing failure,
-- AI provider failure,
-- structured output or grounding validation failure,
-- authentication failure,
-- authorization failure,
-- extension extraction failure,
-- unsupported job page or form,
-- and persistence failure.
+- size/type/resource limits;
+- separation of trusted instructions and untrusted data;
+- explicit schemas;
+- least-privilege extension permissions;
+- ownership validation;
+- sensitive-answer policy;
+- no private content in logs by default;
+- bounded retries and idempotency; and
+- no tool privilege granted because untrusted content requests it.
 
-Error responses should be typed enough for the Web App and Extension to provide useful recovery actions.
+Security begins in the milestone where each risk appears; it is not deferred to
+final hardening.
 
-Retry should be limited to operations that are safe and plausibly transient. Idempotency must prevent duplicate durable outputs. Failures should preserve original files, confirmed Career Brain truth, captured Jobs, and accepted Resume Versions.
+## 21. AI layer
 
----
+Use task-oriented internal interfaces and thin provider adapters. The provider
+layer handles authentication, translation, retries, usage metadata, and errors.
 
-# 24. Security
+Structured outputs pass schema, ownership, identifier, and grounding validation.
+Prompts are versioned product logic. Do not scatter provider calls through routes
+or UI components.
 
-Security is part of every relevant milestone and must not be postponed entirely to final hardening.
+## 22. Background work
 
-Core V1 requires practical controls including:
+Long-running resume parsing, job normalization, future ingestion, or analysis may
+use explicit database-backed task records and a simple worker when required.
 
-- HTTPS,
-- authentication,
-- server-side authorization,
-- secure session or token handling,
-- secret management,
-- file type and size validation,
-- safe file processing,
-- safe object-storage access,
-- common web protections,
-- dependency and configuration hygiene,
-- and least-privilege access.
+Task behavior should be idempotent, retry-bounded, observable, and safe against
+duplicate durable outputs. Redis/Celery or distributed queues require measured
+need.
 
-Uploaded documents and web content should be processed with explicit size and resource limits. File names, MIME declarations, extensions, and extracted content must not be treated as trusted merely because a user uploaded them.
+## 23. Shared contracts
 
-Extension permissions, storage, and messaging must follow least privilege. Backend endpoints used by the extension require the same ownership and validation controls as web endpoints.
+A small TypeScript shared package may hold frontend-safe normalized form, API,
+or adapter contracts when it materially reduces duplication between Web and
+extension. OpenAPI may generate or validate clients.
 
-Security-sensitive events and failures should be observable without logging private document content.
+Business invariants remain authoritative in the backend; sharing types must not
+duplicate domain logic across languages.
 
----
+## 24. Observability and privacy
 
-# 25. Prompt Injection and Untrusted Content
+Correlate Web/API/extension and future task operations with request, task,
+application, and safe resource IDs. Record versions, adapter identity, latency,
+retry, validation, and failure category where useful.
 
-The following inputs are untrusted:
+Do not log resumes, Career Brain content, page/form content, application answers,
+tokens, or sensitive data by default. Send only task-relevant data to AI
+providers.
 
-- resumes,
-- job descriptions,
-- web pages,
-- application forms,
-- extracted metadata,
-- and text produced by external systems.
+## 25. Testing strategy
 
-Prompt injection protection must begin when resume or job AI processing begins. It is not deferred to the final hardening milestone.
+- Unit tests: domain rules, answer policy, mappings, normalization, transitions.
+- Integration tests: PostgreSQL, migrations, ownership, idempotency, APIs.
+- AI evaluation: extraction, matching, grounding, unknown and sensitive policy.
+- Job-source fixtures: normalization, deduplication, freshness, failure.
+- ATS/form fixtures: detection, normalized model, filling, graceful unsupported
+  behavior, hostile page content.
+- End-to-end: both CareerOS Jobs and external-job application scenarios.
 
-Untrusted content must never override trusted system or task instructions.
+Tests must verify that final submission is not automated.
 
-CareerOS should not concatenate arbitrary page or document text into privileged instructions. AI tasks should receive clearly separated structured inputs, narrowly scoped context, and explicit output schemas.
+## 26. Explicit non-goals
 
-Provider output must still pass schema, ownership, evidence, and grounding validation. Instructions found inside a resume, job description, page, or form are data unless the approved CareerOS task explicitly treats them otherwise.
+Without measured need and explicit approval, do not introduce:
 
-Tool access, if introduced for an AI task, should be narrowly scoped and must not be granted merely because untrusted content requests an action.
+- microservices;
+- Kubernetes;
+- Kafka or generic event infrastructure;
+- service mesh;
+- Neo4j;
+- standalone vector database;
+- generalized plugin framework;
+- multi-region architecture; or
+- generalized autonomous-agent infrastructure.
 
----
+## 27. Architecture review checklist
 
-# 26. Privacy
+Before implementation, verify:
 
-CareerOS should minimize the collection, transmission, logging, and retention of private career and application information.
-
-Privacy principles include:
-
-- send only task-relevant data to AI providers,
-- avoid transmitting the entire Career Brain when a narrower evidence set is sufficient,
-- avoid private content in logs and error reports,
-- restrict access to uploaded and generated files,
-- support correction and deletion behavior required by the product,
-- preserve user ownership and isolation,
-- and treat sensitive application answers with additional care.
-
-Provider requests should be assembled around the current task and validated evidence context. Operational metadata should be separated from private content where practical.
-
-Historical application preservation must be balanced with approved correction and deletion behavior. The exact retention policy requires an explicit product and legal decision rather than an architectural guess.
-
----
-
-# 27. Testing Strategy
-
-CareerOS Core V1 should use complementary testing layers.
-
-## 27.1 Unit Tests
-
-Cover domain rules, state transitions, deterministic field mappings, validators, normalization, authorization decisions, and other isolated logic.
-
-## 27.2 Integration Tests
-
-Cover API and PostgreSQL behavior, migrations, object-storage boundaries, authentication verification, ownership enforcement, asynchronous task lifecycle, and provider-adapter boundaries.
-
-## 27.3 AI Evaluation Tests
-
-Use representative Career Brain, resume, and job cases to evaluate parsing, evidence retrieval, classification, hidden evidence, genuine gaps, grounding, context mixing, and hallucination resistance.
-
-AI evaluation should test product correctness, not only schema validity or fluent prose.
-
-## 27.4 Extension Adapter Fixtures
-
-Use reproducible HTML fixtures for supported ATS and generic pages. Test job detection, extraction, form detection, field mapping, graceful unsupported behavior, and DOM change resilience.
-
-## 27.5 End-to-End Tests
-
-Exercise the approved Golden Path from Career Brain creation through job analysis, application preparation, supported autofill, user review, and Application Memory.
-
-Tests should verify that the user remains in control and that automatic final submission does not occur.
-
----
-
-# 28. Local Development
-
-The initial local development environment should remain simple.
-
-It should support:
-
-- Web,
-- API,
-- Worker,
-- PostgreSQL,
-- and the Extension when its milestone begins.
-
-Object Storage may use a simple approved local-compatible setup or development abstraction when that milestone requires it.
-
-The development experience should minimize the number of commands and external services required to exercise the current vertical slice.
-
-Developers should be able to start required components, verify API health and database connectivity, run tests, and understand failures without hidden manual setup.
-
----
-
-# 29. Environment Configuration
-
-Runtime configuration should use environment variables or an equivalent approved secret-injection mechanism.
-
-The repository should provide a `.env.example` when implementation begins, containing names and safe example values but no real secrets.
-
-Secrets must not be committed.
-
-The application should fail clearly when required configuration is missing or invalid. Environment-specific values must not be scattered through source code.
-
-Configuration should distinguish local development, tests, and deployed environments without changing domain behavior.
-
----
-
-# 30. Deployment Direction
-
-CareerOS Core V1 should prefer managed services and simple independent deployment units:
-
-- Web,
-- API and Worker,
-- PostgreSQL,
-- Object Storage,
-- Browser Extension distribution.
-
-API and Worker may share the same application codebase and domain modules while running as distinct processes.
-
-Deployment should support HTTPS, environment configuration, migrations, health checks, logs, and safe access to required managed services.
-
-There is no Kubernetes requirement. Deployment infrastructure should remain proportional to actual traffic, reliability, and operational needs.
-
-Multi-region architecture is not required for V1.
-
----
-
-# 31. Performance and Cost
-
-CareerOS should prioritize correctness and product reliability before aggressive optimization.
-
-Initial principles are:
-
-- show user-visible progress for long-running AI tasks,
-- send narrow task-relevant context to AI providers,
-- avoid unnecessary repeated parsing and model calls,
-- reuse stable validated intermediates where safe,
-- measure latency and usage metadata,
-- and preserve graceful recovery from provider or worker failures.
-
-Optimization decisions should be based on observed latency, cost, throughput, and user experience.
-
-Performance shortcuts must not bypass authorization, evidence validation, or grounding checks.
-
----
-
-# 32. Future Extension Points
-
-The architecture may preserve reasonable extension points for:
-
-- localization,
-- personalization based on real application history,
-- broader Career Intelligence,
-- expanded ATS support,
-- and richer outcome learning.
-
-These are not Core V1 implementation requirements.
-
-Future capabilities should build on the existing Career Brain, Career Evidence, Resume Version, Job Analysis, Application Strategy, and Application Memory boundaries rather than creating disconnected systems.
-
-Extension points should consist of clean contracts and stable data relationships, not speculative infrastructure.
-
----
-
-# 33. Architecture Non-Goals
-
-CareerOS Core V1 explicitly does not require:
-
-- microservices,
-- Kubernetes,
-- Kafka,
-- service mesh,
-- Elasticsearch,
-- Neo4j,
-- a standalone vector database,
-- multi-region architecture,
-- custom model training infrastructure,
-- a feature store,
-- a data warehouse,
-- a streaming platform,
-- or a generalized AI framework.
-
-These systems should not be introduced without a measured need and explicit approval.
-
----
-
-# 34. First Implementation Slice
-
-The M0 foundation should establish the smallest working system connection:
-
-Web
-→ API
-→ PostgreSQL
-
-The first product vertical slice after the foundation should be:
-
-Create / Read Career Profile
-
-This validates the primary application boundaries, typed API path, persistence, user ownership, and local development flow before AI or extension complexity is added.
-
-Security basics, configuration validation, tests, and ownership enforcement should begin with the slices that first require them rather than being deferred to final hardening.
-
----
-
-# 35. Architecture Review Checklist
-
-Before approving an implementation plan, verify:
-
-1. What is the canonical source of truth for each affected concept?
-2. Where is user ownership enforced server-side?
-3. Can important intelligence and generated claims trace back to valid Career Evidence?
-4. Do grounding validators protect metrics, technologies, ownership, seniority, and context boundaries?
-5. Are original resumes and historical Resume Versions preserved?
-6. Does the Browser Extension maintain a clear trust boundary with untrusted page content?
-7. Can asynchronous work fail and retry without corrupting or duplicating durable state?
-8. Are resume, job, page, and form contents treated as untrusted against prompt injection?
-9. Can the behavior be tested at unit, integration, AI evaluation, adapter-fixture, and Golden Path levels as appropriate?
-10. Is local development understandable and proportional to the current milestone?
-11. Does the design preserve reasonable future extension without introducing premature infrastructure?
-12. Does the user retain control of consequential answers and final submission?
-
-If these questions cannot be answered clearly, the implementation plan should be revised before coding.
-
----
-
-# 36. Final Architecture Standard
-
-CareerOS should prefer:
-
-- simple infrastructure,
-- explicit domain modeling,
-- canonical structured state,
-- evidence-grounded AI,
-- thin provider abstraction,
-- reliable and recoverable workflows,
-- practical security and privacy from the relevant milestone onward,
-- clear extension trust boundaries,
-- user control,
-- and gradual complexity only when justified.
-
-The architecture succeeds when it supports one complete, intelligent, trustworthy application workflow without obscuring the product behind unnecessary infrastructure.
+1. Is the behavior in the approved current milestone?
+2. Is each concept core domain truth or product-service state?
+3. Does Apply Anywhere work without a pre-existing Job Analysis?
+4. Are provider and ATS schemas isolated behind adapters?
+5. Are unknown and sensitive answers handled by explicit policy?
+6. Is user ownership enforced for every resource/reference?
+7. Are historical evidence, resume, analysis, and application records stable?
+8. Is untrusted content separated from trusted instructions?
+9. Are retries idempotent and failures recoverable?
+10. Is the infrastructure proportional to current requirements?

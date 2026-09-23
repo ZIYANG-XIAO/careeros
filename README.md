@@ -1,261 +1,133 @@
 # CareerOS
 
-CareerOS is an AI-native job search operating system designed to help users understand opportunities, prepare stronger truthful applications, reduce repetitive application work, and preserve application context over time.
+CareerOS is an AI-native job-search operating system that learns a user's
+professional identity once, helps them discover opportunities, helps them apply
+wherever they find a job, remembers their applications, and can provide deeper
+evidence-based optimization when an opportunity matters.
 
-The long-term product loop is:
+The approved V1 product spine is:
 
-Discover → Understand → Decide → Tailor → Apply → Track → Learn
+```text
+KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
+                         ↘
+                       ENHANCE (optional)
+```
 
-CareerOS is currently in the product specification and Core V1 foundation stage.
+CareerOS is not merely a resume builder, autofill extension, job board, ATS
+score, or resume-tailoring tool. Its services share a common understanding of
+the user through the Career Brain.
 
----
+## Current implementation
 
-## Product Principle
+M0–M7 are implemented at commit history level. Today the repository supports:
 
-CareerOS is built around one core idea:
+- Next.js Web → FastAPI API → PostgreSQL;
+- Clerk authentication and server-side user ownership;
+- Career Profile management backed by the Career Brain;
+- stable Career Evidence with immutable revisions;
+- PDF and DOCX resume upload, parsing, review, confirmation, and versioning;
+- manual job capture and structured requirement parsing;
+- evidence matching against a selected immutable resume version;
+- Strong Evidence, Hidden Evidence, Weak Evidence, and Genuine Gap results; and
+- explainable Job Intelligence recommendations.
 
-> Understand my career. Understand the opportunity. Help me make the strongest truthful move.
+The following V1 capabilities are planned, not implemented:
 
-CareerOS should not behave like a generic resume writer.
+- a fuller Jobs discovery experience and provider-independent job-source
+  boundary;
+- browser extension and application-page detection;
+- field normalization, Answer Engine, and autofill;
+- durable Application records and the Applications Web surface; and
+- end-to-end Web/extension/Application Memory integration.
 
-It should understand:
+Application Strategy and resume tailoring are deferred optional enhancements.
+Existing Job Intelligence remains available and must not become a mandatory
+step before applying.
 
-- what the user has actually done,
-- what a job actually requires,
-- what evidence supports the match,
-- what relevant experience is hidden or underrepresented,
-- what the user's genuine gaps are,
-- and how to prepare the strongest truthful application.
+## Product model
 
----
+### Know Me
 
-## Core Product Model
+Resume-first onboarding builds a durable Career Brain:
 
-CareerOS Core V1 is organized around five major capabilities:
+```text
+Sign up → Upload resume → Parse → Review/correct → Confirm → Career Brain
+```
 
-1. Career Brain
-2. Job Intelligence
-3. Application Intelligence
-4. Application Assistant
-5. Application Memory
+Career Brain is the canonical professional truth layer. A resume is a
+presentation artifact; it is not the complete representation of the user.
 
-The core reasoning flow is:
+### Discover
 
-Career Brain
-→ Job Requirements
-→ Career Evidence
-→ Evidence Matching
-→ Application Strategy
-→ Resume Tailoring
-→ Application Assistance
-→ Application Memory
+The planned Jobs surface will support browsing, search, filters, job detail,
+saving, and applying. Jobs may eventually originate from multiple external
+sources, but production job-data acquisition is not part of the current
+formation phase. The Web product must remain independent of any provider's
+schema.
 
----
+### Apply Anywhere
 
-## Career Brain Is Not a Resume
+The planned extension is a first-class application assistant whether a job was
+found inside CareerOS or elsewhere. It will detect application forms, normalize
+fields, resolve answers from approved sources, fill supported fields, surface
+uncertainty, and leave final review and submission to the user.
 
-The Career Brain is the user's structured source of professional truth.
+### Remember
 
-It may include:
+The planned Application domain will preserve the company, role, source or URL,
+selected Resume Version, relevant answers, status, and timestamps. Future
+features can attach to the Application without redefining its historical truth.
 
-- education,
-- experience,
-- projects,
-- skills,
-- technologies,
-- achievements,
-- metrics,
-- certifications,
-- professional links,
-- application information,
-- career preferences,
-- and supporting evidence.
+### Enhance
 
-A resume is a presentation artifact generated or selected from this information for a particular purpose.
+Job Intelligence is the implemented foundation of an optional deeper workflow.
+Application Strategy, resume tailoring, application Q&A, and interview
+preparation are not required for routine applications and are not implemented
+yet.
 
-One Career Brain may support many resume versions.
+## Core principles
 
----
+- Evidence before generated professional claims.
+- Career Brain is not a resume.
+- Unknown information remains unknown.
+- Unsupported skills, experience, ownership, metrics, or seniority are never
+  invented.
+- User corrections and confirmations are authoritative.
+- Historical evidence revisions, resume versions, and analyses remain stable.
+- Sensitive and consequential answers require explicit user input and policy.
+- Final application submission remains a user action.
+- External documents, jobs, pages, and forms are untrusted input.
+- Simple infrastructure, clear domain boundaries, extensible interfaces.
 
-## Evidence-Based AI
+## Repository documentation
 
-CareerOS follows one foundational AI rule:
+The `docs/` directory is the product and engineering source of truth:
 
-> Evidence before generation.
+- `docs/PRODUCT.md` — product constitution and V1 spine
+- `docs/PRD.md` — V1 functional requirements and non-goals
+- `docs/USER_FLOW.md` — primary user journeys
+- `docs/DATA_MODEL.md` — implemented and planned domain concepts
+- `docs/AI_SPEC.md` — evidence and Answer Engine AI policy
+- `docs/ARCHITECTURE.md` — approved modular architecture
+- `docs/ROADMAP.md` — authoritative milestone sequence
 
-AI must not invent:
+## Repository structure
 
-- employers,
-- responsibilities,
-- technologies,
-- skills,
-- achievements,
-- metrics,
-- education,
-- certifications,
-- seniority,
-- or other professional facts.
-
-CareerOS distinguishes between:
-
-- Strong Evidence
-- Hidden / Underrepresented Evidence
-- Weak Evidence
-- Genuine Gap
-
-Generated professional claims should be traceable to supporting Career Brain evidence.
-
----
-
-## Core V1 Goal
-
-CareerOS Core V1 is focused on one complete application workflow:
-
-Create Account
-→ Upload Resume
-→ Build Career Brain
-→ Capture Job
-→ Analyze Job
-→ Review Evidence and Gaps
-→ Prepare Application
-→ Tailor Resume
-→ Assist With Application Form
-→ User Reviews
-→ User Submits
-→ Record Application
-
-Core V1 prioritizes reliability and trust over feature count.
-
----
-
-## Repository Documentation
-
-The `/docs` directory is the source of truth for product and engineering decisions.
-
-### Product Definition
-
-`docs/PRODUCT.md`
-
-Defines:
-
-- product vision,
-- product thesis,
-- product principles,
-- long-term direction.
-
-### Product Requirements
-
-`docs/PRD.md`
-
-Defines:
-
-- CareerOS Core V1 scope,
-- features,
-- requirements,
-- acceptance criteria,
-- non-goals.
-
-### User Experience
-
-`docs/USER_FLOW.md`
-
-Defines:
-
-- onboarding,
-- Career Brain flow,
-- job analysis flow,
-- application preparation,
-- extension experience,
-- autofill,
-- application history.
-
-### Domain Data Model
-
-`docs/DATA_MODEL.md`
-
-Defines:
-
-- Career Brain entities,
-- Career Evidence,
-- Resume and Resume Version,
-- Job and Job Requirements,
-- Evidence Matches,
-- Application Strategy,
-- Applications.
-
-### AI Specification
-
-`docs/AI_SPEC.md`
-
-Defines:
-
-- AI responsibilities,
-- grounding,
-- job understanding,
-- evidence retrieval,
-- evidence evaluation,
-- hidden evidence,
-- gap detection,
-- application strategy,
-- resume tailoring,
-- hallucination prevention,
-- AI evaluation.
-
-### Technical Architecture
-
-`docs/ARCHITECTURE.md`
-
-Defines the approved Core V1 architecture and technical principles.
-
-Preferred stack:
-
-- Next.js
-- TypeScript
-- React
-- Tailwind CSS
-- Python
-- FastAPI
-- PostgreSQL
-- Chrome Manifest V3 extension
-- provider-independent AI layer
-
-### Roadmap
-
-`docs/ROADMAP.md`
-
-Defines:
-
-- milestone sequencing,
-- Core V1 delivery plan,
-- scope boundaries,
-- future product direction.
-
----
-
-## Repository Structure
-
-The intended repository direction is:
 ```text
 careeros/
-├── AGENTS.md
-├── README.md
-├── docs/
 ├── apps/
-│   ├── web/
-│   ├── api/
-│   └── extension/
-├── packages/
-├── tests/
-└── infra/
+│   ├── api/          # FastAPI backend and Alembic migrations
+│   └── web/          # Next.js Web application
+├── docs/             # Product and engineering source of truth
+├── infra/            # Local PostgreSQL Compose configuration
+├── packages/         # Shared packages when justified
+└── tests/            # Cross-application fixtures when introduced
 ```
 
-## Local Development
+`apps/extension` will be introduced during the approved extension milestone; it
+does not exist today.
 
-M0 provides the smallest runnable CareerOS path:
-
-```text
-Browser → Next.js Web → FastAPI API → PostgreSQL
-```
+## Local development
 
 ### Prerequisites
 
@@ -263,13 +135,11 @@ Browser → Next.js Web → FastAPI API → PostgreSQL
 - npm 10 or newer
 - Python 3.13 or newer
 - Docker with Docker Compose
-- A Clerk application (for authentication)
-- An OpenAI API key (for real resume extraction and Job Intelligence evaluation;
-  deterministic automated tests do not require one)
+- a Clerk application for authenticated Web use
+- an OpenAI API key for real resume parsing and Job Intelligence; deterministic
+  tests do not require one
 
-### Initial Setup
-
-From the repository root:
+### Initial setup
 
 ```bash
 cp .env.example .env
@@ -280,31 +150,18 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e 'apps/api[dev]'
 ```
 
-Edit `.env` and set:
+Set the Clerk variables in the local environment files. Keep
+`OPENAI_API_KEY` server-only; never place it in the Web environment or prefix it
+with `NEXT_PUBLIC_`.
 
-- `CLERK_ISSUER_URL` — your Clerk instance issuer URL
-- `OPENAI_API_KEY` — a server-only API key used for structured resume parsing
-- `OPENAI_RESUME_PARSER_MODEL` — the structured-output model (defaults to `gpt-5-mini`)
-- `OPENAI_JOB_PARSER_MODEL` — the grounded JD parser model (defaults to `gpt-5-mini`)
-- `OPENAI_JOB_MATCHER_MODEL` — the evidence evaluator model (defaults to `gpt-5-mini`)
-- `RESUME_STORAGE_DIR` — local private asset storage (defaults to `.local/resume-assets`)
-
-Never place `OPENAI_API_KEY` in `apps/web/.env.local` or prefix it with
-`NEXT_PUBLIC_`.
-
-Edit `apps/web/.env.local` and set:
-
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` — your Clerk publishable key (browser-safe)
-- `CLERK_SECRET_KEY` — your Clerk secret key (server-only, never exposed to the browser)
-
-### Start PostgreSQL and Apply Migrations
+### Start PostgreSQL and migrate
 
 ```bash
 docker compose --env-file .env -f infra/compose.yaml up -d postgres
 .venv/bin/alembic -c apps/api/alembic.ini upgrade head
 ```
 
-The first migration is intentionally empty. It creates only Alembic's infrastructure metadata and proves that a clean database can be migrated without introducing product-domain tables.
+The current migration head is `0006_m5_m6_job_intelligence`.
 
 ### Start the API
 
@@ -312,31 +169,18 @@ The first migration is intentionally empty. It creates only Alembic's infrastruc
 .venv/bin/uvicorn --app-dir apps/api/src careeros_api.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-The API health endpoint is available at `http://localhost:8000/health`.
+Health check: `http://localhost:8000/health`.
 
-### Start the Web Application
-
-In a second terminal:
+### Start the Web application
 
 ```bash
 npm run web:dev
 ```
 
-Open `http://localhost:3000`. The Career Profile is at `/career`; resume upload,
-review, and version history are under `/resumes`; manual job capture and Job
-Intelligence are under `/jobs`. PDF and DOCX uploads are limited to 5 MB.
-Original files are stored under the configured local storage directory, which
-is git-ignored.
+Open `http://localhost:3000`. Implemented routes include `/career`, `/resumes`,
+and `/jobs`.
 
-To run Job Intelligence with real data, first upload and confirm a resume, add
-any strong evidence missing from that resume in the Career Profile, then paste a
-real job description under Jobs. Select the intended immutable resume version
-before running an analysis. Results preserve the JD snapshot, selected resume
-version, evidence revision references and evidence text at analysis time.
-
-### Run Checks
-
-With PostgreSQL running:
+### Verification
 
 ```bash
 npm run web:lint
@@ -348,6 +192,7 @@ npm run web:build
 .venv/bin/ruff format --check apps/api
 .venv/bin/mypy apps/api/src
 .venv/bin/pytest apps/api/tests
+git diff --check
 ```
 
 ### Stop PostgreSQL

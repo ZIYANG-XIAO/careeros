@@ -1,250 +1,215 @@
 # CareerOS — Agent Instructions
 
-## 1. Purpose
+## 1. Purpose and source of truth
 
-This repository contains CareerOS, an AI-native job search operating system.
+CareerOS is an AI-native job-search operating system. The repository and its
+`docs/` directory are the source of truth for implemented behavior, product
+requirements, architecture, and sequencing.
 
-Product decisions are defined in the repository documentation. Coding agents are responsible for implementing approved specifications, not inventing product requirements.
+Before meaningful work, read the relevant documents:
 
-Before making meaningful changes, read the relevant project documentation.
+- `docs/PRODUCT.md` — product constitution and V1 spine
+- `docs/PRD.md` — approved V1 requirements and non-goals
+- `docs/USER_FLOW.md` — user journeys
+- `docs/DATA_MODEL.md` — implemented and planned domain concepts
+- `docs/AI_SPEC.md` — AI, grounding, and Answer Engine policy
+- `docs/ARCHITECTURE.md` — system boundaries and technical direction
+- `docs/ROADMAP.md` — authoritative implementation sequence
 
----
+When documents conflict, surface the conflict. Do not silently invent a
+requirement. The roadmap controls implementation order; a future capability in
+another document is not authorization to implement it.
 
-## 2. Source of Truth
+## 2. Current baseline
 
-The `/docs` directory is the product and engineering source of truth.
+M0–M7 are implemented. The repository currently contains:
 
-Documents include:
+- the Web, API, and PostgreSQL foundation;
+- authenticated user ownership and Career Brain/Profile editing;
+- stable Career Evidence and immutable evidence revisions;
+- resume upload, parsing, review, confirmation, and resume versioning;
+- manual job capture and structured job parsing;
+- evidence matching, hidden-evidence detection, genuine-gap preservation; and
+- the Job Intelligence Web experience.
 
-- `docs/PRODUCT.md` — product vision and principles
-- `docs/PRD.md` — V1 requirements and scope
-- `docs/USER_FLOW.md` — user experience and workflows
-- `docs/DATA_MODEL.md` — domain model
-- `docs/AI_SPEC.md` — AI behavior and evidence rules
-- `docs/ARCHITECTURE.md` — technical architecture
-- `docs/ROADMAP.md` — future direction
+Not currently implemented:
 
-When documentation conflicts with assumptions, follow the documentation.
+- a production job-discovery feed or external job-source ingestion;
+- the browser extension, form detection, Answer Engine, or autofill;
+- the durable Application domain and Applications UI;
+- Application Strategy or resume tailoring.
 
-When documents appear to conflict with each other, do not silently choose one interpretation. Surface the conflict before implementation.
+Do not describe planned behavior as if it exists. Do not blindly continue the
+old assumption that Application Intelligence and resume tailoring are the next
+milestones.
 
-Do not invent missing product requirements.
+## 3. Approved V1 product direction
 
----
+The V1 product spine is:
 
-## 3. Core Product Model
+```text
+KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
+```
 
-CareerOS is built around five connected capabilities:
+`ENHANCE` is an optional intelligence layer, not a required step before an
+application.
 
-1. Career Brain
-2. Job Intelligence
-3. Application Intelligence
-4. Application Assistant
-5. Application Memory
+CareerOS should learn the user's professional identity once, help them discover
+opportunities, help them apply wherever they find a job, remember what happened,
+and offer deeper optimization when the user chooses it.
 
-These capabilities form a loop:
+The immediate priority is V1 product formation:
 
-Career Brain
-→ Understand Job
-→ Decide
-→ Prepare Application
-→ Assist Application
-→ Record Outcome
-→ Learn
+1. Product shell and Jobs experience.
+2. Extension and Application Assistant.
+3. Application Memory and cross-surface integration.
+4. V1 hardening and both required end-to-end scenarios.
 
----
+Existing Job Intelligence remains supported as optional enhancement
+functionality. Application Strategy and resume tailoring are deferred until
+after product formation unless the roadmap is explicitly changed.
 
-## 4. Career Brain Is Not a Resume
+## 4. Core domains and product services
 
-This is a foundational rule.
+Relatively stable core domains are:
 
-The Career Brain represents the user's structured professional truth.
+- Identity
+- Career Brain
+- Career Evidence
+- Resume
+- Job
+- Application (planned)
 
-The Career Profile is the user-facing UI surface used to manage Career Brain data.
+Product services and workflows consume those domains:
 
-The Career Brain may contain:
+- Job Discovery (planned)
+- Autofill (planned)
+- Answer Engine (planned)
+- Job Intelligence (implemented foundation)
+- Resume Tailoring (deferred)
+- Application Q&A, Interview Preparation, Recommendation, Analytics, Career
+  Planning, and future agents (future)
 
-- education,
-- work experience,
-- projects,
-- skills,
-- technologies,
-- achievements,
-- metrics,
-- certifications,
-- professional links,
-- preferences,
-- work authorization information,
-- and supporting evidence.
+Services must share canonical domain data instead of creating duplicate user,
+resume, job, or application truth.
 
-A resume is a presentation artifact derived from a subset of this information.
+## 5. Career Brain is not a resume
 
-Do not design the system as if a resume were the complete representation of the user.
+Career Brain is the canonical structured professional truth layer. Career
+Profile is the user-facing surface for managing it. A resume is an immutable or
+historically preserved presentation artifact derived from a subset of that
+truth. One Career Brain may support many resumes.
 
----
+Resume-first onboarding remains preferred:
 
-## 5. Evidence-Based AI
+```text
+Sign up → Upload resume → Parse → Review/correct → Confirm → Career Brain
+```
 
-CareerOS must never fabricate professional information.
+Do not replace this with a large blank-profile requirement.
 
-AI-generated recommendations and application content must be grounded in user-provided or user-approved evidence.
+## 6. Evidence and history invariants
 
-Never invent:
+CareerOS must never fabricate professional information. Preserve these rules:
 
-- employers,
-- experience,
-- responsibilities,
-- projects,
-- skills,
-- technologies,
-- achievements,
-- metrics,
-- education,
-- certifications,
-- or professional claims.
+- Evidence precedes generated professional claims.
+- Unsupported skills, employers, projects, achievements, metrics, seniority,
+  ownership, or production context remain unsupported.
+- AI-extracted resume information is not authoritative until confirmed.
+- `CareerEvidence` has stable identity.
+- `CareerEvidenceRevision` is immutable.
+- Historical `ResumeVersion` records remain stable.
+- Historical Job Intelligence results remain attributable to the exact job
+  snapshot, resume version, and evidence revisions used.
+- User corrections override lower-priority AI interpretation.
 
-The system should distinguish between:
+Distinguish strong evidence, hidden or underrepresented evidence, weak evidence,
+and genuine gaps. Never convert a genuine gap into a fabricated claim.
 
-- strong evidence,
-- hidden or underrepresented evidence,
-- weak evidence,
-- and genuine gaps.
+## 7. Apply Anywhere and user control
 
-When evidence is insufficient, communicate uncertainty rather than inventing information.
+The extension must eventually support two equal paths:
 
-Where practical, AI recommendations should be traceable to supporting evidence.
+```text
+CareerOS Job → external application page → extension → autofill
+```
 
----
+and:
 
-## 6. Intelligence Before Generation
+```text
+Job found anywhere → external application page → extension → autofill
+```
 
-Do not reduce CareerOS to:
+Discovery or saving inside CareerOS must not be a prerequisite for assistance.
+The extension is a thin contextual assistant, not a second full application.
 
-Resume + Job Description → LLM → Rewritten Resume
+Final submission is always an explicit user action in V1. Never implement
+automatic final submission unless an approved future requirement changes this.
 
-The intended reasoning flow is:
+## 8. Answers and sensitive information
 
-Understand User
-→ Understand Job
-→ Compare Requirements with Evidence
-→ Determine Application Strategy
-→ Select Relevant Evidence
-→ Generate or Modify Application Materials
+Do not collapse all answers into Career Evidence. Preserve the conceptual
+boundaries among:
 
-Generation is downstream of understanding and evidence retrieval.
+- professional truth;
+- application preferences;
+- reusable confirmed answers;
+- application-specific answers; and
+- sensitive answers.
 
----
+Unknown remains unknown. Legal, demographic, disability, veteran, work
+authorization, sponsorship, compensation, signature, and other consequential
+answers must not be inferred. Protected traits must never be inferred from
+names, resumes, locations, education, photos, or other indirect signals.
 
-## 7. Intelligence + Execution
+## 9. External and untrusted inputs
 
-CareerOS is not only a resume analysis tool.
+Resumes, job descriptions, external job records, web pages, application forms,
+and provider responses are untrusted input. Their content must not override
+trusted CareerOS instructions. Validate schemas, ownership, identifiers, and
+grounding before accepting derived data.
 
-The core product is intended to connect intelligence with the actual application workflow.
+Use adapters at external boundaries:
 
-The product should eventually support:
+- Job sources normalize into a provider-independent canonical Job.
+- ATS/site behavior normalizes into a provider-independent form model.
 
-Career Brain
-→ Job Intelligence
-→ Application Intelligence
-→ Browser Integration
-→ Application Assistance
-→ Autofill
-→ User Review
-→ Application Memory
+Do not bind core models to one provider or place every ATS rule in one
+conditional block. Do not build production job acquisition or a generic plugin
+framework before its approved milestone.
 
-However, implementation must follow approved milestones.
+## 10. Architecture discipline
 
-Do not implement future capabilities merely because they appear in the product vision.
+Prefer simple infrastructure, clear domain boundaries, and narrow extensible
+interfaces. Preserve the modular monolith.
 
----
+Do not introduce without measured need and explicit approval:
 
-## 8. User Control
+- microservices;
+- Kafka or generic event infrastructure;
+- Kubernetes;
+- Neo4j;
+- a standalone vector database; or
+- speculative plugin systems.
 
-CareerOS assists users with consequential career decisions and application information.
+Use stable IDs, explicit ownership, immutable history where appropriate,
+provider isolation, and adapters at genuine external boundaries.
 
-Important actions should remain transparent.
+## 11. Engineering workflow
 
-Sensitive, legal, demographic, work authorization, compensation, signature, and submission-related information must not be guessed.
-
-Automation should follow the principle:
-
-Suggest
-→ Assist
-→ Automate
-→ Learn
-
-Do not introduce automatic final submission unless explicitly specified in an approved requirement.
-
----
-
-## 9. Engineering Discipline
-
-Work milestone by milestone.
-
-Do not attempt to implement the entire product in one pass.
-
-For each milestone:
+Work milestone by milestone:
 
 1. Read the relevant specifications.
-2. Understand the requested scope.
+2. Verify implemented state rather than relying on memory.
 3. Identify ambiguity before coding.
-4. Propose an implementation plan when requested.
-5. Implement only the approved scope.
-6. Add or update tests.
-7. Verify acceptance criteria.
-8. Summarize changes and remaining issues.
+4. Implement only the approved scope.
+5. Add or update tests.
+6. Verify acceptance criteria and invariants.
+7. Summarize changes and remaining issues.
+8. Stop before expanding into the next milestone.
 
-Avoid unnecessary abstractions and premature infrastructure.
+Prefer a small reliable workflow over many shallow features. The roadmap is not
+permission to implement all future capabilities at once.
 
-Preserve reasonable extension points without over-engineering future features.
-
----
-
-## 10. Scope Discipline
-
-The roadmap is not the current implementation scope.
-
-Future ideas may include:
-
-- broader ATS support,
-- deeper browser automation,
-- localization,
-- country-specific recruiting intelligence,
-- personalization,
-- outcome learning,
-- interview intelligence,
-- market intelligence,
-- and broader career intelligence.
-
-Do not implement roadmap features unless they are explicitly included in the current approved milestone.
-
----
-
-## 11. Product Quality
-
-A feature is not complete merely because the UI renders or an API returns successfully.
-
-Evaluate:
-
-- product usefulness,
-- correctness,
-- evidence grounding,
-- AI output quality,
-- user experience,
-- failure behavior,
-- maintainability,
-- and test coverage.
-
-Prefer a small workflow that works reliably over many shallow features.
-
----
-
-## 12. Working Rule
-
-When uncertain:
-
-Do not guess.
-Do not silently expand scope.
-Do not fabricate requirements.
-
+When uncertain: do not guess, silently expand scope, or fabricate requirements.
 Explain the ambiguity and ask for a decision.

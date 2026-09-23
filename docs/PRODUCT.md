@@ -1,509 +1,363 @@
-# CareerOS — Product Definition
+# CareerOS — Product Constitution
 
-> Version: 0.2
-> Status: Draft
-> Last Updated: 2026-09-13
+> Version: 0.3
+> Status: Approved V1 re-baseline
+> Last Updated: 2026-09-23
 
----
+## 1. Product vision
 
-# 1. Product Vision
+CareerOS is an AI-native job-search operating system that develops a durable
+understanding of the user and applies that shared understanding across the job
+search.
 
-CareerOS is an AI-native job search operating system that understands a user's career, understands each opportunity, and helps the user prepare, execute, and improve every application.
+The product promise is:
 
-The long-term vision is:
+> CareerOS learns your professional identity once, helps you discover
+> opportunities, helps you apply wherever you find them, remembers what you did,
+> and can go deeper when an opportunity matters.
 
-> Make job searching intelligent and effortless.
+CareerOS should become more useful as it learns from user-confirmed professional
+truth, application preferences, reusable answers, applications, and outcomes.
 
-Job searching is fragmented across job discovery, company career sites, resumes, application forms, notes, and general-purpose tools. Candidates repeatedly interpret opportunities, compare requirements with their experience, modify resumes, enter the same information, track applications, and try to learn from outcomes.
+## 2. V1 product spine
 
-CareerOS connects these activities into one intelligent system.
+The approved V1 spine is:
 
-The long-term product loop is:
+```text
+KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
+                         ↘
+                       ENHANCE (optional)
+```
 
-Discover
-→ Understand
-→ Decide
-→ Tailor
-→ Apply
-→ Track
-→ Learn
+This replaces the assumption that every application must pass through deep Job
+Intelligence, Application Strategy, and resume tailoring.
 
-The product should become more useful as it understands more about the user's career, target opportunities, applications, and outcomes.
+Many users already know they want to apply. CareerOS should let them move
+quickly. Deeper intelligence is available by choice, not imposed as a toll gate.
 
----
+## 3. The connected problem
 
-# 2. Product Promise
+Job searching is fragmented across profiles, resumes, job sites, company career
+pages, application forms, and tracking tools. Users repeatedly:
 
-CareerOS is built around one promise:
+- explain the same professional history;
+- search across disconnected sources;
+- enter the same application information;
+- lose track of which resume and answers they used; and
+- use isolated optimization tools that lack durable context.
 
-> Understand my career. Understand the opportunity. Help me make the strongest truthful move.
+CareerOS connects these activities through shared core domains. A user should
+not need to reconstruct their professional identity for every service.
 
-Every major product decision should strengthen this promise.
+## 4. Know Me
 
----
+CareerOS first builds a durable understanding of the user.
 
-# 3. Core Problem
+The preferred V1 onboarding is resume-first:
 
-The job search process has four connected problems.
+```text
+Sign up
+→ Upload resume
+→ Parse resume
+→ Review extracted information
+→ Correct or remove information
+→ Confirm
+→ Career Brain
+```
 
-## 3.1 Fragmentation
+The resume provides a fast initial context. Users should not be forced through a
+large blank profile form before receiving value.
 
-Candidates move between job discovery, company websites, resumes, documents, application systems, and tracking tools. Context is repeatedly lost between them.
+### Career Brain is not a resume
 
-## 3.2 Repetitive Work
+Career Brain is the canonical structured professional truth layer. It may
+contain education, experience, projects, skills, achievements, metrics,
+certifications, professional links, and other confirmed facts.
 
-Candidates repeatedly enter the same information, interpret similar job descriptions, modify similar resume content, answer recurring application questions, and maintain application records.
+A resume is a presentation artifact containing a selected subset of that truth.
+One Career Brain may support many resumes and resume versions.
 
-Much of this work adds little value.
+Career Brain can grow through resume imports, direct edits, confirmed answers
+that genuinely represent professional truth, and future approved interactions.
 
-## 3.3 Incomplete Understanding of the Candidate
+AI-extracted information is a draft, not authoritative truth. User confirmation
+and correction are authoritative.
 
-A resume is a compressed presentation of a person's professional history. It is not the person's complete professional history.
+## 5. Discover
 
-Relevant experience may exist in previous roles, projects, achievements, coursework, or other resume versions without appearing in the resume currently being used.
+CareerOS Web should become a useful place to browse opportunities.
 
-CareerOS should reason about the candidate's broader career context.
+The V1 product experience should support:
 
-## 3.4 Disconnected Intelligence and Execution
+- Jobs overview;
+- latest jobs;
+- search and filters;
+- job detail;
+- save job; and
+- apply.
 
-Understanding a job is useful. Improving a resume is useful. Completing an application is useful.
+Jobs may eventually come from permitted feeds, APIs, company sites, ATS sources,
+extension capture, or manual entry. The CareerOS experience must not depend on a
+single provider's schema.
 
-These activities become substantially more valuable when they share the same understanding of the user and the opportunity.
+Real production job-data acquisition is separate from current product
+formation. Seed, demo, and test jobs are acceptable while the experience and
+canonical boundaries are formed. CareerOS is not attempting to become a
+large-scale scraping platform or a universal job marketplace in V1.
 
-CareerOS should connect intelligence with execution.
+## 6. Apply Anywhere
 
----
+Application assistance is a core V1 capability and must work independently of
+CareerOS Jobs.
 
-# 4. Product Thesis
+Both paths are first-class:
 
-CareerOS is based on a simple thesis:
+```text
+CareerOS Jobs → Job Detail → Apply → external application → extension
+```
+
+```text
+Job found elsewhere → external application → extension
+```
+
+The user must not be required to discover, analyze, or save a job inside
+CareerOS before using application assistance.
+
+The intended assistance flow is:
+
+```text
+Application Page
+→ Detect application/form
+→ Normalize fields and questions
+→ Resolve approved answer sources
+→ Apply confidence and sensitivity policy
+→ Fill supported fields
+→ Ask or flag uncertain fields
+→ User review
+→ User submits
+```
+
+Final submission remains an explicit user action. V1 does not auto-submit or
+mass apply.
 
-> The better a system understands both the candidate and the opportunity, the better it can assist the job search.
+## 7. Remember
 
-The product therefore combines:
+An Application is a durable record, not a transient UI state.
 
-## Career Intelligence
+Application Memory should preserve, where available:
 
-Understanding the user's education, experience, projects, skills, achievements, evidence, resumes, goals, preferences, and eventually application history and outcomes.
+- company and role;
+- a canonical or externally captured Job reference;
+- application URL and source;
+- the selected immutable Resume Version;
+- relevant confirmed or application-specific answers;
+- current status;
+- applied timestamp; and
+- creation and update timestamps.
 
-## Job Intelligence
+Supported V1 statuses are conceptually:
 
-Understanding the opportunity's role, responsibilities, qualifications, skills, seniority, location, constraints, and other relevant signals.
+- Preparing
+- Applied
+- Assessment
+- Interview
+- Final
+- Rejected
+- Offer
+- Withdrawn
 
-## Application Intelligence
+Future strategy, tailored resumes, recruiter interactions, interview rounds,
+analytics, and learning may attach to the Application. Those are not required
+for current product formation.
 
-Understanding whether an opportunity deserves attention, which evidence best supports the user, what is underrepresented, what gaps are genuine, and how the application should be positioned.
+## 8. Enhance is optional
 
-## Application Execution
+Enhance is the optional deeper-intelligence layer for opportunities that deserve
+additional effort.
 
-Reducing repetitive application work while keeping the user in control.
+The existing Job Intelligence foundation can help users understand:
 
-## Application Learning
+- structured requirements;
+- Strong Evidence;
+- Hidden or Underrepresented Evidence;
+- Weak Evidence;
+- Genuine Gaps; and
+- an explainable application recommendation.
 
-Preserving structured application context so future recommendations can improve.
+A future optional action such as “Optimize for this job” may lead to Application
+Strategy, evidence selection, resume tailoring, application Q&A, or interview
+preparation.
 
----
+Application Strategy and resume tailoring are deferred. Existing Job
+Intelligence must be preserved, but it must not be represented as mandatory
+before Apply.
 
-# 5. Career Brain
+## 9. Core domains and product services
 
-The Career Brain is the persistent structured source of professional truth for the user.
+CareerOS distinguishes relatively stable core domains from evolving product
+services.
 
-It may include:
+### Core domains
 
-- personal and professional information,
-- education,
-- employment and internships,
-- projects,
-- skills and technologies,
-- responsibilities,
-- achievements and measurable outcomes,
-- certifications,
-- professional links,
-- reusable application information,
-- career goals and preferences,
-- supporting evidence,
-- career assets such as resume variants,
-- and, over time, application context and outcomes.
+- Identity
+- Career Brain
+- Career Evidence
+- Resume
+- Job
+- Application
 
-The Career Brain should reduce repeated entry, prevent inconsistent professional information, and provide the evidence used by CareerOS intelligence.
+### Product services and workflows
 
-AI-extracted information is not automatically professional truth. User confirmation and correction remain authoritative.
+- Job Discovery
+- Autofill
+- Answer Engine
+- Job Intelligence
+- Resume Tailoring
+- Application Q&A
+- Interview Preparation
+- Recommendation
+- Analytics
+- Career Planning
+- future agents
 
----
+Product services consume shared core domain data. They must not create separate,
+incompatible representations of the user.
 
-# 6. Career Brain Is Not Resume
+## 10. Answer boundaries
 
-This is a foundational product principle.
+Not every answer is professional evidence. CareerOS must distinguish:
 
-A Career Brain represents what the user has actually done and explicitly confirmed.
+- professional truth — facts about the user's career;
+- application preferences — user choices that may change by search or context;
+- reusable confirmed answers — answers the user explicitly chooses to reuse;
+- application-specific answers — what was used for one application; and
+- sensitive answers — data requiring explicit policy and greater protection.
 
-A resume represents what the user chooses to present for a particular purpose.
+Unknown remains unknown. CareerOS must not infer demographic, disability,
+veteran, legal, work-authorization, sponsorship, compensation, signature, or
+other consequential answers from indirect signals.
 
-Therefore, one Career Brain may support many resume forms and versions, including general, role-specific, market-specific, and job-specific resumes.
+## 11. Product principles
 
-A resume is a presentation artifact derived from selected Career Brain evidence. It is not the complete representation of the user and must not become the sole source of professional truth.
+### Shared understanding
 
-This distinction allows CareerOS to discover relevant evidence that may not appear in the current resume while preserving the original context of that evidence.
+Services should reuse canonical Career Brain, Resume, Job, and Application data.
 
----
+### Evidence before generation
 
-# 7. Evidence-Based Intelligence
+Generated professional claims must be supported by user-provided or
+user-confirmed evidence.
 
-CareerOS must distinguish between different relationships between job requirements and the user's career evidence.
+### Speed without forced optimization
 
-## Strong Evidence
+Users can apply quickly without completing a deep analysis. Enhance is available
+when useful.
 
-Clear supporting career evidence exists for the requirement.
+### Apply anywhere
 
-## Hidden / Underrepresented Evidence
+CareerOS assistance is not limited to jobs discovered inside CareerOS.
 
-Relevant evidence exists in the Career Brain but is missing or insufficiently represented in the selected resume.
+### User control
 
-## Weak Evidence
+Users review uncertain information and intentionally submit applications.
 
-Related evidence exists, but the connection to the requirement is indirect, incomplete, or uncertain.
+### Preserve originals and history
 
-## Genuine Gap
+Original files, immutable revisions, resume versions, analyses, and historical
+application context must not be silently rewritten.
 
-No sufficient supporting evidence exists.
+### Unknown is valid
 
-CareerOS must never convert a Genuine Gap into a fabricated professional claim.
+Missing or uncertain information must not be converted into fact.
 
-AI-generated professional content must remain grounded in user-provided or user-confirmed evidence. Where practical, important conclusions and generated claims should be traceable to supporting evidence.
+### Fail clearly
 
-CareerOS must never fabricate employers, roles, dates, responsibilities, projects, skills, technologies, achievements, metrics, education, certifications, seniority, ownership, production context, or other professional facts.
+Unsupported pages, fields, jobs, or AI operations should have understandable
+fallbacks.
 
-When evidence is insufficient, CareerOS should communicate uncertainty or preserve the gap.
+### Progressive capability
 
----
+Prefer suggest → assist → automate → learn, with policy and trust appropriate to
+the action.
 
-# 8. Five Core Capabilities
+### Simple and extensible
 
-CareerOS Core is organized around five connected capabilities.
+Use clear domain boundaries and adapters at genuine external boundaries rather
+than speculative infrastructure.
 
-## 8.1 Career Brain
+## 12. What CareerOS is not
 
-Answers:
+CareerOS is not merely:
 
-> Who is this candidate?
+- a resume builder;
+- a resume-tailoring tool;
+- an autofill extension;
+- a job board;
+- an ATS score;
+- a generic career chatbot; or
+- an autonomous mass-application system.
 
-Maintains the structured professional source of truth and its supporting evidence.
+It is also not an excuse to infer sensitive answers, fabricate professional
+claims, or remove the user's control of final submission.
 
-## 8.2 Job Intelligence
+## 13. V1 definition
 
-Answers:
+V1 product formation is successful when representative users can complete both
+scenarios reliably.
 
-> What is this opportunity, and how does it relate to this candidate?
+### Scenario A — CareerOS-discovered job
 
-Understands the job and compares its requirements with the Career Brain.
+```text
+Resume → Career Brain → CareerOS Jobs → Job → Apply
+→ external application → extension → autofill
+→ review → user submit → Application Memory
+```
 
-## 8.3 Application Intelligence
+### Scenario B — independently discovered job
 
-Answers:
+```text
+Resume → Career Brain → job found elsewhere
+→ external application → extension → autofill
+→ review → user submit → Application Memory
+```
 
-> How should this candidate approach this specific application?
+Optional Job Intelligence may be used in either scenario, but neither scenario
+depends on it.
 
-Determines positioning, evidence selection, resume strategy, genuine gaps, and recommended changes.
+## 14. Current implementation boundary
 
-## 8.4 Application Assistant
+Implemented through M7:
 
-Answers:
+- project foundation;
+- Career Brain/Profile;
+- Career Evidence and immutable revisions;
+- resume ingestion and immutable versions;
+- manual Job capture and parsing;
+- evidence matching and hidden-evidence detection; and
+- Job Intelligence experience.
 
-> How can CareerOS reduce the repetitive work required to complete this application?
+Planned during V1 formation:
 
-Connects CareerOS intelligence to the real application workflow while keeping important information reviewable.
+- Jobs discovery experience;
+- job-source boundary;
+- extension and application-page assistance;
+- normalized form and ATS adapter boundaries;
+- Answer Engine and autofill;
+- Application domain and Applications surface; and
+- end-to-end integration and hardening.
 
-## 8.5 Application Memory
+Deferred until after formation unless explicitly reprioritized:
 
-Answers:
+- real multi-market job-source acquisition;
+- Application Strategy and resume tailoring;
+- cover letters and interview preparation;
+- sophisticated recommendations and outcome learning;
+- career planning, localization, personalization, and autonomous agents.
 
-> What happened during this application, and what can be learned from it?
+## 15. North star
 
-Preserves the job, strategy, resume used, application state, and eventual outcome context.
+CareerOS should make this statement true:
 
-Together, these capabilities form a continuous product loop rather than a collection of disconnected features.
-
----
-
-# 9. Core Experience
-
-The intended core experience is:
-
-User establishes Career Brain
-→ User encounters a job
-→ CareerOS understands the opportunity
-→ CareerOS compares requirements with career evidence
-→ CareerOS explains fit, evidence, uncertainty, and gaps
-→ User decides whether to apply
-→ CareerOS recommends an application strategy
-→ CareerOS prepares a truthful tailored application
-→ CareerOS assists with repetitive application work
-→ User reviews consequential information
-→ User submits the application
-→ CareerOS preserves the application context
-→ The system can eventually learn from outcomes
-
-The user should establish career context once and reuse it throughout future applications.
-
----
-
-# 10. Job Intelligence
-
-CareerOS should go beyond shallow keyword matching.
-
-Job Intelligence should help the user understand:
-
-- what the job actually requires,
-- which requirements are required or preferred,
-- which career evidence supports the user's fit,
-- which useful evidence is missing from the current resume,
-- which apparent matches are weak,
-- which gaps are genuine,
-- and whether the opportunity deserves attention.
-
-A match score, if used, is a summary signal rather than the product itself. It must not be presented as interview or offer probability.
-
-The explanation and evidence behind a recommendation are more important than the number.
-
----
-
-# 11. Application Intelligence
-
-Application Intelligence translates understanding into a specific strategy for a specific opportunity.
-
-It may recommend:
-
-- truthful candidate positioning,
-- the strongest base resume,
-- experiences and evidence to prioritize,
-- content to de-emphasize,
-- hidden evidence to surface,
-- content to preserve,
-- resume changes to consider,
-- and genuine gaps that must not be fabricated.
-
-Intelligence must come before generation.
-
-The desired sequence is:
-
-Understand Candidate
-→ Understand Job
-→ Retrieve Evidence
-→ Evaluate Evidence
-→ Determine Strategy
-→ Select Evidence
-→ Generate
-
-Generation may select, organize, summarize, rewrite, and emphasize professional truth. It cannot create professional truth.
-
----
-
-# 12. Application Assistant
-
-CareerOS should exist where job searching and applications actually happen.
-
-The Application Assistant connects intelligence to execution by progressively reducing repetitive application work.
-
-Its long-term direction includes:
-
-- job-page detection,
-- structured field understanding,
-- retrieval of confirmed information,
-- reusable answers,
-- resume selection,
-- resume upload assistance,
-- and supported autofill.
-
-The product should prefer deterministic mappings for known information and use AI only where interpretation is required.
-
-Reliability and user trust are more important than claiming universal automation.
-
-Consequential, legal, demographic, compensation, work authorization, sponsorship, signature, and other sensitive information must never be guessed.
-
-Final submission remains an intentional user action unless a future approved requirement explicitly changes this principle.
-
----
-
-# 13. Application Memory and Learning
-
-Each application can produce useful structured context, including:
-
-- the target job,
-- company and role,
-- application date,
-- job analysis,
-- application strategy,
-- resume version used,
-- relevant evidence used,
-- application answers where appropriate,
-- status,
-- and eventual outcomes.
-
-Application Memory should preserve what actually happened at the time of application. Later Career Brain or resume changes must not silently rewrite historical application context.
-
-Over time, real application history may help CareerOS understand which opportunities, positioning, evidence, and resume choices produce stronger outcomes.
-
-Personalization must be earned from real information and outcomes rather than simulated through generic AI language.
-
----
-
-# 14. Product Principles
-
-## Evidence Before Generation
-
-Professional claims must be grounded in user evidence.
-
-## Intelligence Before Automation
-
-Understand what should happen before automating it.
-
-## Intelligence and Execution
-
-Insights should connect naturally to real job-search actions.
-
-## User Control
-
-Important career decisions, resume changes, consequential answers, and final submission remain transparent and reviewable.
-
-## One Source of Truth
-
-The Career Brain should minimize repeated entry and inconsistent professional information.
-
-## Progressive Automation
-
-Suggest
-→ Assist
-→ Automate
-→ Learn
-
-## Explainability Over Arbitrary Scores
-
-Recommendations should explain their reasoning and evidence.
-
-## Preserve Originals and History
-
-AI should not destructively overwrite original resumes or historical application context.
-
-## Fail Clearly
-
-When CareerOS cannot detect, understand, or support something reliably, it should communicate the limitation and preserve a reasonable fallback.
-
-## Quality Over Feature Count
-
-One reliable workflow is more valuable than many shallow features.
-
-## Extensible, Not Overbuilt
-
-Preserve reasonable future extension points without prematurely building future products or infrastructure.
-
----
-
-# 15. Core Scope Direction
-
-The first complete CareerOS core product should establish the main loop rather than stopping at resume analysis.
-
-The core direction includes:
-
-- Career Brain,
-- resume management,
-- Job Intelligence,
-- evidence-based matching,
-- Application Intelligence,
-- evidence-grounded resume tailoring,
-- browser integration,
-- Application Assistant,
-- initial autofill capabilities,
-- and basic Application Memory.
-
-These capabilities do not need to be implemented simultaneously. Detailed V1 requirements, boundaries, acceptance criteria, and sequencing belong in the PRD and roadmap.
-
-The roadmap is not automatic current implementation scope.
-
----
-
-# 16. What CareerOS Is Not
-
-CareerOS is not:
-
-## A Generic Resume Writer
-
-Resume generation is one downstream output of a broader intelligence system.
-
-## Keyword Stuffing Software
-
-Unsupported claims must not be introduced simply to improve apparent matching.
-
-## A Resume-Only Product
-
-Resume intelligence is a capability within the broader product loop, not the entire product.
-
-## Blind Mass Apply
-
-The goal is not to maximize application count regardless of relevance, quality, or user intent.
-
-## Autonomous Submission Software
-
-Consequential information and final application submission remain under user control.
-
-## A Collection of Disconnected AI Features
-
-New capabilities should strengthen the shared Career Brain and job-search loop.
-
----
-
-# 17. Future Direction
-
-After the CareerOS core workflow is established, the product may expand through three broader layers.
-
-## Localization
-
-Adapt career presentation and application intelligence to different recruiting markets rather than merely translating text.
-
-## Personalization
-
-Learn from user preferences, behavior, applications, resume choices, and real outcomes.
-
-## Broader Career Intelligence
-
-Use accumulated career, opportunity, and outcome context to help users understand role fit, opportunity priorities, recurring gaps, career positioning, and potential next moves.
-
-These are future strategic directions, not automatic current implementation requirements. They should build on the Career Brain and Application Memory rather than becoming disconnected products.
-
----
-
-# 18. Product Success
-
-CareerOS should not measure early success by feature count.
-
-The first meaningful test is whether a real user can:
-
-- establish their real career context,
-- encounter a real job,
-- receive useful and explainable analysis,
-- identify relevant evidence they may have overlooked,
-- distinguish weak evidence from genuine gaps,
-- prepare a stronger truthful application,
-- reduce repetitive application work,
-- retain control of consequential actions,
-- and preserve useful application context.
-
-The product should feel like one connected workflow, not a series of isolated AI text interactions.
-
-Long-term success means CareerOS becomes a persistent part of the user's job-search workflow and becomes more useful as it learns from the user's career and application history.
-
----
-
-# 19. North Star
-
-CareerOS should continuously move toward one promise:
-
-> Understand my career. Understand the opportunity. Help me make the strongest truthful move.
-
-The product should:
-
-Know Me
-→ Understand Jobs
-→ Help Me Apply Better
-→ Learn
-
-Every major capability should strengthen this loop while preserving truth, evidence, user control, and product coherence.
+> CareerOS knows my confirmed professional context, helps me find opportunities,
+> helps me apply wherever I encounter them, remembers what I used and what
+> happened, and offers deeper truthful intelligence when I ask for it.
