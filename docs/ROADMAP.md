@@ -157,7 +157,7 @@ filtering, durable per-user save state, decision-focused job detail, safe direct
 Apply, optional Job Intelligence, and an honest Applications placeholder.
 Production job acquisition and the canonical source-adapter boundary remain M9.
 
-### M9 — Canonical Job Source Boundary
+### M9 — Canonical Job Source Boundary — completed
 
 #### Goal
 
@@ -185,6 +185,14 @@ Ensure the Job product is provider-independent before real source acquisition.
 - real U.S./China production ingestion;
 - broad provider coverage;
 - scraping infrastructure.
+
+#### Delivered
+
+Implemented the narrow job-source adapter contract, provider-neutral normalized
+candidate, source/external identity, canonical URL, observed timestamps,
+availability/freshness state, deterministic seed adapter, retry-safe ingestion,
+stable-signal deduplication, and immutable snapshots for changed descriptions.
+Manual Jobs remain valid and the Web consumes only the canonical Job contract.
 
 ### Wave A validation gate — Jobs product
 
@@ -490,11 +498,15 @@ After a milestone:
 5. create a focused commit; and
 6. stop before expanding scope.
 
-## 14. Immediate next wave
+## 14. Immediate next step
 
-The next approved development wave is Wave A, beginning with:
+Wave A implementation is complete through M9. The immediate next step is the
+Wave A Jobs product validation gate.
 
-> M8 — Product Shell and Jobs Experience
+After representative validation and any required focused refinements, the next
+approved implementation milestone is:
 
-Do not begin extension, Application, Application Strategy, or resume-tailoring
-implementation as part of M8 unless the roadmap is explicitly changed.
+> M10 — Extension Foundation and Secure API Boundary
+
+Do not begin Application Memory, Application Strategy, resume tailoring,
+autofill, or later extension behavior as part of the Wave A validation gate.

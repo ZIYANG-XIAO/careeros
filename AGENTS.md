@@ -22,19 +22,20 @@ another document is not authorization to implement it.
 
 ## 2. Current baseline
 
-M0–M7 are implemented. The repository currently contains:
+M0–M9 are implemented. The repository currently contains:
 
 - the Web, API, and PostgreSQL foundation;
 - authenticated user ownership and Career Brain/Profile editing;
 - stable Career Evidence and immutable evidence revisions;
 - resume upload, parsing, review, confirmation, and resume versioning;
-- manual job capture and structured job parsing;
+- manual job capture, provider-neutral source ingestion, structured parsing,
+  retry-safe deduplication, and source/freshness attribution;
 - evidence matching, hidden-evidence detection, genuine-gap preservation; and
-- the Job Intelligence Web experience.
+- the Jobs-first product shell and optional Job Intelligence experience.
 
 Not currently implemented:
 
-- a production job-discovery feed or external job-source ingestion;
+- a production job-discovery feed or real external source adapter;
 - the browser extension, form detection, Answer Engine, or autofill;
 - the durable Application domain and Applications UI;
 - Application Strategy or resume tailoring.

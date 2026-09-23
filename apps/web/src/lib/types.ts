@@ -290,6 +290,13 @@ export type Job = {
   source_url: string | null;
   application_url: string | null;
   source_type: string;
+  source_key: string;
+  external_job_id: string | null;
+  canonical_url: string | null;
+  first_observed_at: string | null;
+  last_observed_at: string | null;
+  availability_status: "UNKNOWN" | "AVAILABLE" | "UNAVAILABLE";
+  freshness_status: "UNKNOWN" | "CURRENT" | "STALE";
   captured_at: string;
   created_at: string;
   updated_at: string;

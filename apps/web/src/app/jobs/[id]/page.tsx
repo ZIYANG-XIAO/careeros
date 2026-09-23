@@ -16,6 +16,7 @@ import {
   unsaveJob,
 } from "@/lib/api";
 import { safeExternalUrl } from "@/lib/external-url";
+import { jobSourceSummary } from "@/lib/job-source";
 import type {
   Job,
   JobAnalysis,
@@ -224,7 +225,7 @@ export default function JobDetailPage() {
   }
 
   const applicationUrl = safeExternalUrl(job.application_url);
-  const sourceUrl = safeExternalUrl(job.source_url);
+  const sourceUrl = safeExternalUrl(job.source_url ?? job.canonical_url);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -247,7 +248,7 @@ export default function JobDetailPage() {
               <p className="mt-2 text-sm text-slate-500">{job.location}</p>
             )}
             <p className="mt-4 text-xs text-slate-400">
-              Added manually · not a live job feed
+              {jobSourceSummary(job)}
             </p>
           </div>
           <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:max-w-sm">

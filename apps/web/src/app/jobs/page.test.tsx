@@ -34,6 +34,13 @@ const job = {
   source_url: "https://example.com/job",
   application_url: "https://example.com/apply",
   source_type: "MANUAL_ENTRY",
+  source_key: "manual",
+  external_job_id: null,
+  canonical_url: null,
+  first_observed_at: "2026-09-23T00:00:00Z",
+  last_observed_at: "2026-09-23T00:00:00Z",
+  availability_status: "UNKNOWN" as const,
+  freshness_status: "UNKNOWN" as const,
   captured_at: "2026-09-23T00:00:00Z",
   created_at: "2026-09-23T00:00:00Z",
   updated_at: "2026-09-23T00:00:00Z",
@@ -92,6 +99,23 @@ describe("JobsPage", () => {
       "href",
       "/jobs/job-1",
     );
+  });
+
+  it("renders canonical source attribution without claiming freshness", async () => {
+    mockListJobs.mockResolvedValue([
+      {
+        ...job,
+        source_type: "EXTERNAL_SOURCE",
+        source_key: "demo",
+        external_job_id: "demo-1",
+        canonical_url: "https://example.com/job",
+        availability_status: "AVAILABLE",
+      },
+    ]);
+    render(<JobsPage />);
+    expect(
+      await screen.findByText("Demo source · available · freshness unknown"),
+    ).toBeInTheDocument();
   });
 
   it("passes search, location, and saved filters to the server", async () => {

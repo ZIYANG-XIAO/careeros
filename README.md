@@ -19,7 +19,7 @@ the user through the Career Brain.
 
 ## Current implementation
 
-M0–M8 are implemented at commit history level. Today the repository supports:
+M0–M9 are implemented at repository level. Today the repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
 - Clerk authentication and server-side user ownership;
@@ -29,6 +29,8 @@ M0–M8 are implemented at commit history level. Today the repository supports:
 - a Jobs-first product shell with Jobs, Applications, Resumes, and Profile;
 - manual job capture, server-owned search/location filters, detail, durable
   per-user saved state, and safe direct-apply links;
+- a provider-neutral job-source contract, canonical source attribution,
+  retry-safe deduplication, and honest freshness/availability state;
 - evidence matching against a selected immutable resume version;
 - Strong Evidence, Hidden Evidence, Weak Evidence, and Genuine Gap results; and
 - explainable optional Job Intelligence recommendations; and
@@ -36,7 +38,7 @@ M0–M8 are implemented at commit history level. Today the repository supports:
 
 The following V1 capabilities are planned, not implemented:
 
-- a provider-independent job-source boundary and production job acquisition;
+- production job acquisition and real external source adapters;
 - browser extension and application-page detection;
 - field normalization, Answer Engine, and autofill;
 - durable Application records and a functional Applications tracking surface;

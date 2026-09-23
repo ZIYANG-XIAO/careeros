@@ -34,6 +34,17 @@ const job = {
   location: "Remote",
   source_url: "https://example.com/job",
   application_url: "https://example.com/apply",
+  source_type: "MANUAL_ENTRY",
+  source_key: "manual",
+  external_job_id: null,
+  canonical_url: null,
+  first_observed_at: "2026-09-23T00:00:00Z",
+  last_observed_at: "2026-09-23T00:00:00Z",
+  availability_status: "UNKNOWN" as const,
+  freshness_status: "UNKNOWN" as const,
+  captured_at: "2026-09-23T00:00:00Z",
+  created_at: "2026-09-23T00:00:00Z",
+  updated_at: "2026-09-23T00:00:00Z",
   is_saved: false,
   latest_snapshot: {
     raw_description:
@@ -144,6 +155,21 @@ describe("JobDetailPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText("No Job Intelligence analysis yet"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows canonical source and unknown freshness honestly", async () => {
+    mockGetJob.mockResolvedValue({
+      ...job,
+      source_type: "EXTERNAL_SOURCE",
+      source_key: "demo",
+      external_job_id: "demo-1",
+      canonical_url: "https://example.com/job",
+      availability_status: "AVAILABLE",
+    });
+    render(<JobDetailPage />);
+    expect(
+      await screen.findByText("Demo source · available · freshness unknown"),
     ).toBeInTheDocument();
   });
 

@@ -168,8 +168,10 @@ edits and confirmation determine their downstream eligibility.
 `Job` represents an opportunity independent of how it was acquired.
 
 The implemented Job contains user ownership, company, title, location, source
-and application URLs, source type, and timestamps. Current production behavior
-creates manually entered Jobs.
+and application URLs, source type/key, optional external identity and canonical
+URL, observed timestamps, explicit availability/freshness state, and timestamps.
+Current user-facing behavior creates manually entered Jobs; the M9 source
+boundary also supports normalized seed/demo/test ingestion.
 
 The logical Job should remain capable of representing:
 
@@ -181,7 +183,7 @@ The logical Job should remain capable of representing:
 
 Source-specific payloads must not become the canonical model.
 
-### 10.1 Planned job-source boundary
+### 10.1 Implemented job-source boundary
 
 Conceptually:
 
@@ -194,18 +196,20 @@ External Job Source
 → Canonical Job
 ```
 
-Potential future supporting concepts may include a source key, external job ID,
-canonical URL, observed timestamps, availability/freshness state, and provider
-metadata. The Jobs formation milestone must define the minimum necessary model.
+The minimum implemented model uses source key, optional external job ID,
+canonical URL, first/last observed timestamps, and explicit
+availability/freshness state. Provider payloads are not stored as canonical Job
+truth.
 
 Do not add a large generic ingestion schema before actual source requirements are
 known.
 
 ### 10.2 Deduplication and freshness
 
-Possible deduplication signals include canonical URL, external source ID,
-company, title, and location. V1 should avoid obvious duplicates without
-claiming perfect global identity resolution.
+Implemented deduplication prefers source key plus external source ID, then
+canonical URL. It avoids obvious retry duplicates without claiming perfect
+global identity resolution. Description changes append immutable Job Snapshots
+instead of creating another canonical Job.
 
 Freshness should indicate what CareerOS knows about when a source was observed or
 whether a job appears available. Unknown freshness must remain unknown.

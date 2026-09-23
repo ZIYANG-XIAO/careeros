@@ -56,6 +56,11 @@ async def test_capture_job_preserves_raw_snapshot_and_grounded_requirements() ->
         assert response.status_code == 201
         body = response.json()
         assert body["source_type"] == "MANUAL_ENTRY"
+        assert body["source_key"] == "manual"
+        assert body["external_job_id"] is None
+        assert body["canonical_url"] is None
+        assert body["availability_status"] == "UNKNOWN"
+        assert body["freshness_status"] == "UNKNOWN"
         assert body["application_url"] == "https://example.com/jobs/123/apply"
         assert body["is_saved"] is False
         assert body["latest_snapshot"]["raw_description"] == payload()["description"]

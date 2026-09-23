@@ -75,6 +75,19 @@ class ResumeType(enum.StrEnum):
 
 class JobSourceType(enum.StrEnum):
     MANUAL_ENTRY = "MANUAL_ENTRY"
+    EXTERNAL_SOURCE = "EXTERNAL_SOURCE"
+
+
+class JobAvailabilityStatus(enum.StrEnum):
+    UNKNOWN = "UNKNOWN"
+    AVAILABLE = "AVAILABLE"
+    UNAVAILABLE = "UNAVAILABLE"
+
+
+class JobFreshnessStatus(enum.StrEnum):
+    UNKNOWN = "UNKNOWN"
+    CURRENT = "CURRENT"
+    STALE = "STALE"
 
 
 class JobRequirementCategory(enum.StrEnum):
@@ -544,6 +557,13 @@ class Job(Base):
     source_url: Mapped[str | None] = mapped_column(sa.String(2000))
     application_url: Mapped[str | None] = mapped_column(sa.String(2000))
     source_type: Mapped[str] = mapped_column(sa.String(50))
+    source_key: Mapped[str] = mapped_column(sa.String(100), default="manual")
+    external_job_id: Mapped[str | None] = mapped_column(sa.String(500))
+    canonical_url: Mapped[str | None] = mapped_column(sa.String(2000))
+    first_observed_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    last_observed_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    availability_status: Mapped[str] = mapped_column(sa.String(50), default="UNKNOWN")
+    freshness_status: Mapped[str] = mapped_column(sa.String(50), default="UNKNOWN")
     captured_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=sa.func.now()
     )
@@ -562,7 +582,24 @@ class Job(Base):
         back_populates="job", cascade="all, delete-orphan"
     )
 
-    __table_args__ = (sa.Index("ix_jobs_user_id", "user_id"),)
+    __table_args__ = (
+        sa.Index("ix_jobs_user_id", "user_id"),
+        sa.Index(
+            "uq_jobs_user_source_external_id",
+            "user_id",
+            "source_key",
+            "external_job_id",
+            unique=True,
+            postgresql_where=sa.text("external_job_id IS NOT NULL"),
+        ),
+        sa.Index(
+            "uq_jobs_user_canonical_url",
+            "user_id",
+            "canonical_url",
+            unique=True,
+            postgresql_where=sa.text("canonical_url IS NOT NULL"),
+        ),
+    )
 
 
 class SavedJob(Base):

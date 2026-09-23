@@ -307,6 +307,27 @@ async def test_clean_migration_creates_expected_schema() -> None:
                     for fk in saved_job_fks
                 ), "Missing saved_jobs.job_id FK"
 
+                job_cols = await conn.run_sync(
+                    lambda sync_conn: {c["name"]: c for c in inspect(sync_conn).get_columns("jobs")}
+                )
+                for col in (
+                    "source_key",
+                    "external_job_id",
+                    "canonical_url",
+                    "first_observed_at",
+                    "last_observed_at",
+                    "availability_status",
+                    "freshness_status",
+                ):
+                    assert col in job_cols, f"Missing M9 jobs column: {col}"
+
+                job_indexes = await conn.run_sync(
+                    lambda sync_conn: inspect(sync_conn).get_indexes("jobs")
+                )
+                job_index_names = {index["name"] for index in job_indexes}
+                assert "uq_jobs_user_source_external_id" in job_index_names
+                assert "uq_jobs_user_canonical_url" in job_index_names
+
                 snapshot_cols = await conn.run_sync(
                     lambda sync_conn: {
                         c["name"]: c for c in inspect(sync_conn).get_columns("job_snapshots")

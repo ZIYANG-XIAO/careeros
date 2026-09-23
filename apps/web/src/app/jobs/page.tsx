@@ -11,6 +11,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { createJob, listJobs, saveJob, unsaveJob } from "@/lib/api";
 import { safeExternalUrl } from "@/lib/external-url";
+import { jobSourceSummary } from "@/lib/job-source";
 import type { Job } from "@/lib/types";
 
 type View = "all" | "saved";
@@ -125,7 +126,7 @@ function JobCard({
         </Link>
       </div>
       <p className="mt-4 border-t border-slate-100 pt-3 text-[11px] text-slate-400">
-        Added manually · not a live job feed
+        {jobSourceSummary(job)}
       </p>
     </article>
   );

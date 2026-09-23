@@ -36,12 +36,15 @@ Implemented domains and workflows:
 - Identity and authentication mapping;
 - Career Brain/Profile and Career Evidence;
 - Resume ingestion and versioning;
-- manual Job capture and Job snapshots/requirements;
+- manual Job capture, provider-neutral source ingestion, and Job
+  snapshots/requirements;
 - Jobs browse/search/location filtering, per-user saving, and safe direct Apply;
+- canonical source identity, retry-safe deduplication, observed timestamps, and
+  explicit availability/freshness state;
 - the Jobs-first Web shell and honest Applications placeholder; and
 - optional Job Intelligence analyses and evidence matches.
 
-Current Alembic head: `0007_m8_saved_jobs`.
+Current Alembic head: `0008_m9_job_source_boundary`.
 
 Not implemented today:
 
@@ -67,7 +70,8 @@ domains rather than creating duplicate representations.
 ### Adapters at external boundaries
 
 Provider-specific job sources, AI providers, storage systems, and ATS/site
-behavior stay behind narrow interfaces.
+behavior stay behind narrow interfaces. The job-source boundary is implemented;
+real production source adapters remain future work.
 
 ### Deterministic before AI
 
@@ -225,7 +229,7 @@ store may replace it when deployment requirements justify the change.
 The canonical Job is provider-independent. Current manually created Jobs remain
 valid.
 
-Planned boundary:
+Implemented boundary:
 
 ```text
 Job Source
@@ -236,8 +240,10 @@ Job Source
 → canonical CareerOS Job
 ```
 
-Source adapters may eventually support permitted feeds/APIs, company sites, ATS
-sources, extension capture, and manual entry.
+The current formation implementation includes a deterministic seed adapter and
+canonical ingestion service. Real adapters may eventually support permitted
+feeds/APIs, company sites, ATS sources, and extension capture. Manual entry
+continues to create canonical Jobs without pretending to be a live source.
 
 Requirements:
 
