@@ -1,7 +1,10 @@
 {
   "name": "careeros",
   "private": true,
-  "workspaces": ["apps/web"],
+  "workspaces": [
+    "apps/web",
+    "apps/extension"
+  ],
   "engines": {
     "node": ">=22"
   },
@@ -11,7 +14,11 @@
     "web:lint": "npm --workspace @careeros/web run lint",
     "web:typecheck": "npm --workspace @careeros/web run typecheck",
     "web:test": "npm --workspace @careeros/web run test",
-    "web:format": "npm --workspace @careeros/web run format"
+    "web:format": "npm --workspace @careeros/web run format",
+    "extension:build": "npm --workspace @careeros/extension run build",
+    "extension:dev": "npm --workspace @careeros/extension run dev",
+    "extension:typecheck": "npm --workspace @careeros/extension run typecheck",
+    "extension:test": "npm --workspace @careeros/extension run test",
+    "extension:format": "npm --workspace @careeros/extension run format"
   }
 }
-

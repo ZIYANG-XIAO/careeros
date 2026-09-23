@@ -123,15 +123,13 @@ The `docs/` directory is the product and engineering source of truth:
 careeros/
 ├── apps/
 │   ├── api/          # FastAPI backend and Alembic migrations
+│   ├── extension/    # Chrome Manifest V3 application assistant
 │   └── web/          # Next.js Web application
 ├── docs/             # Product and engineering source of truth
 ├── infra/            # Local PostgreSQL Compose configuration
 ├── packages/         # Shared packages when justified
 └── tests/            # Cross-application fixtures when introduced
 ```
-
-`apps/extension` will be introduced during the approved extension milestone; it
-does not exist today.
 
 ## Local development
 
@@ -141,7 +139,7 @@ does not exist today.
 - npm 10 or newer
 - Python 3.13 or newer
 - Docker with Docker Compose
-- a Clerk application for authenticated Web use
+- a Clerk application for authenticated Web and extension use
 - an OpenAI API key for real resume parsing and Job Intelligence; deterministic
   tests do not require one
 
@@ -186,6 +184,45 @@ npm run web:dev
 Open `http://localhost:3000`. Implemented routes include `/jobs`,
 `/applications`, `/career`, and `/resumes`.
 
+### Build the browser extension
+
+The extension build reads the existing local Web publishable key and root Clerk
+issuer by default. Production or isolated builds can copy
+`apps/extension/.env.example` to `apps/extension/.env.local` and set only public
+extension values there. Never add `CLERK_SECRET_KEY` to the extension.
+
+```bash
+npm run extension:build
+```
+
+In Chrome, open `chrome://extensions`, enable Developer mode, choose **Load
+unpacked**, and select `apps/extension/build`.
+
+Clerk extension authentication also requires two development-instance settings:
+
+1. enable the Native API under **Clerk Dashboard → Native applications**; and
+2. use Clerk's documented instance update to append the loaded extension's
+   `chrome-extension://<extension-id>` origin to `allowed_origins`.
+
+The second step uses the server-only Clerk secret key. Preserve any existing
+allowed origins, never paste the secret into extension configuration, and never
+commit it.
+
+The extension uses Clerk Sync Host to share the Web session. Its background
+service worker obtains short-lived session tokens and calls the protected API;
+tokens are never sent to page content scripts. Page access is granted only for
+the active tab when the user opens the extension.
+
+For a local detection fixture:
+
+```bash
+npm --workspace @careeros/extension run fixture
+```
+
+Then open `http://localhost:4173/application-page.html` and open the extension.
+The fixture contains no real applicant data, and M10 does not autofill or submit
+the form.
+
 ### Verification
 
 ```bash
@@ -194,6 +231,10 @@ npm run web:typecheck
 npm run web:test
 npm run web:format
 npm run web:build
+npm run extension:typecheck
+npm run extension:test
+npm run extension:format
+npm run extension:build
 .venv/bin/ruff check apps/api
 .venv/bin/ruff format --check apps/api
 .venv/bin/mypy apps/api/src

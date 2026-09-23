@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CareerOS Application Detection Fixture</title>
+    <style>
+      body {
+        max-width: 640px;
+        margin: 40px auto;
+        padding: 0 20px;
+        font-family: system-ui, sans-serif;
+      }
+      form,
+      label {
+        display: grid;
+        gap: 10px;
+      }
+      input,
+      button {
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Example Engineer Application</h1>
+    <p>This local fixture contains no real applicant or employer data.</p>
+    <form aria-label="Job application" action="#" method="post">
+      <label>
+        Email
+        <input type="email" name="email" autocomplete="email" />
+      </label>
+      <label>
+        Resume
+        <input type="file" name="resume" />
+      </label>
+      <button type="submit">Continue application</button>
+    </form>
+  </body>
+</html>
