@@ -280,8 +280,22 @@ export async function createJob(
   return handleResponse<Job>(response);
 }
 
-export async function listJobs(token: string): Promise<Job[]> {
-  const response = await fetch(`${apiBaseUrl()}/jobs`, {
+export type JobListFilters = {
+  search?: string;
+  location?: string;
+  savedOnly?: boolean;
+};
+
+export async function listJobs(
+  token: string,
+  filters: JobListFilters = {},
+): Promise<Job[]> {
+  const query = new URLSearchParams();
+  if (filters.search?.trim()) query.set("search", filters.search.trim());
+  if (filters.location?.trim()) query.set("location", filters.location.trim());
+  if (filters.savedOnly) query.set("saved_only", "true");
+  const suffix = query.size ? `?${query.toString()}` : "";
+  const response = await fetch(`${apiBaseUrl()}/jobs${suffix}`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
@@ -294,6 +308,24 @@ export async function getJob(token: string, jobId: string): Promise<Job> {
     cache: "no-store",
   });
   return handleResponse<Job>(response);
+}
+
+export async function saveJob(token: string, jobId: string): Promise<Job> {
+  const response = await fetch(`${apiBaseUrl()}/jobs/${jobId}/save`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleResponse<Job>(response);
+}
+
+export async function unsaveJob(token: string, jobId: string): Promise<void> {
+  const response = await fetch(`${apiBaseUrl()}/jobs/${jobId}/save`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to remove saved job");
+  }
 }
 
 export async function createJobAnalysis(

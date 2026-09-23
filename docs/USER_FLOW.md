@@ -22,7 +22,7 @@ must remain fast.
 
 ### Web application
 
-Primary planned navigation:
+Primary navigation:
 
 - Jobs
 - Applications
@@ -48,11 +48,14 @@ Implemented Web flows today:
 - Career Profile editing;
 - resume upload, structured review, confirmation, library, and version detail;
 - manual Job creation;
-- Job list/detail; and
+- Job browse/search/location filtering, durable save/unsave, detail, and safe
+  direct Apply;
+- an Applications planned-state placeholder; and
 - Job Intelligence creation and review.
 
-Jobs discovery, Applications, extension, Answer Engine, autofill, and external
-application capture are planned flows described below, not current behavior.
+Production job-source discovery, Application tracking, extension, Answer Engine,
+autofill, and external application capture are planned flows described below,
+not current behavior.
 
 ## 4. First-time onboarding — Know Me
 

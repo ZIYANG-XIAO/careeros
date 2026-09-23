@@ -17,8 +17,11 @@ import {
   getCurrentUser,
   getResumeImport,
   getSystemHealth,
+  listJobs,
   listResumes,
   removeResumeDraftItem,
+  saveJob,
+  unsaveJob,
   updateEducation,
   updateExperience,
   updateExperienceDetail,
@@ -181,6 +184,41 @@ describe("API client", () => {
       expect(f).toHaveBeenCalledWith(`${BASE}/resumes`, {
         headers: { Authorization: `Bearer ${TOKEN}` },
         cache: "no-store",
+      });
+    });
+  });
+
+  describe("Jobs", () => {
+    it("encodes server-owned browse filters", async () => {
+      const f = setup([]);
+      await listJobs(TOKEN, {
+        search: " platform engineer ",
+        location: "New York",
+        savedOnly: true,
+      });
+      expect(f).toHaveBeenCalledWith(
+        `${BASE}/jobs?search=platform+engineer&location=New+York&saved_only=true`,
+        {
+          headers: { Authorization: `Bearer ${TOKEN}` },
+          cache: "no-store",
+        },
+      );
+    });
+
+    it("saves and unsaves through authenticated endpoints", async () => {
+      const saved = { id: "job-1", is_saved: true };
+      const f = setup(saved);
+      expect(await saveJob(TOKEN, "job-1")).toEqual(saved);
+      expect(f).toHaveBeenLastCalledWith(`${BASE}/jobs/job-1/save`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${TOKEN}` },
+      });
+
+      const deleteFetch = setup(null, 204);
+      await unsaveJob(TOKEN, "job-1");
+      expect(deleteFetch).toHaveBeenCalledWith(`${BASE}/jobs/job-1/save`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${TOKEN}` },
       });
     });
   });

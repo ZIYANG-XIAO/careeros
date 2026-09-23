@@ -45,6 +45,7 @@ def payload(description: str | None = None) -> dict[str, object]:
         "description": description
         or "Join our platform team. 5+ years of Python experience required for this role.",
         "source_url": "https://example.com/jobs/123",
+        "application_url": "https://example.com/jobs/123/apply",
     }
 
 
@@ -55,6 +56,8 @@ async def test_capture_job_preserves_raw_snapshot_and_grounded_requirements() ->
         assert response.status_code == 201
         body = response.json()
         assert body["source_type"] == "MANUAL_ENTRY"
+        assert body["application_url"] == "https://example.com/jobs/123/apply"
+        assert body["is_saved"] is False
         assert body["latest_snapshot"]["raw_description"] == payload()["description"]
         assert len(body["latest_snapshot"]["content_sha256"]) == 64
         requirement = body["latest_snapshot"]["requirements"][0]
@@ -124,3 +127,76 @@ async def test_job_ownership_isolation() -> None:
         ) as other:
             assert (await other.get(f"/jobs/{job_id}")).status_code == 404
             assert all(job["id"] != job_id for job in (await other.get("/jobs")).json())
+            assert (await other.post(f"/jobs/{job_id}/save")).status_code == 404
+            assert (await other.delete(f"/jobs/{job_id}/save")).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_job_search_and_location_filters_are_server_owned() -> None:
+    async with make_integration_client(job_parser=FakeJobParser()) as client:
+        first_payload = payload()
+        first_payload.update(
+            company="Northwind Labs",
+            title="Platform Engineer",
+            location="Remote — Canada",
+        )
+        second_payload = payload()
+        second_payload.update(
+            company="Contoso",
+            title="Data Engineer",
+            location="London",
+        )
+        first = await client.post("/jobs", json=first_payload)
+        second = await client.post("/jobs", json=second_payload)
+        assert first.status_code == 201
+        assert second.status_code == 201
+
+        by_title = await client.get("/jobs", params={"search": "platform"})
+        assert [item["id"] for item in by_title.json()] == [first.json()["id"]]
+
+        by_company = await client.get("/jobs", params={"search": "contoso"})
+        assert [item["id"] for item in by_company.json()] == [second.json()["id"]]
+
+        by_location = await client.get("/jobs", params={"location": "canada"})
+        assert [item["id"] for item in by_location.json()] == [first.json()["id"]]
+
+
+@pytest.mark.asyncio
+async def test_save_and_unsave_are_durable_idempotent_and_filterable() -> None:
+    async with make_integration_client(job_parser=FakeJobParser()) as client:
+        created = await client.post("/jobs", json=payload())
+        job_id = created.json()["id"]
+
+        first_save = await client.post(f"/jobs/{job_id}/save")
+        second_save = await client.post(f"/jobs/{job_id}/save")
+        assert first_save.status_code == 200
+        assert second_save.status_code == 200
+        assert first_save.json()["is_saved"] is True
+        assert second_save.json()["is_saved"] is True
+
+        detail = await client.get(f"/jobs/{job_id}")
+        saved = await client.get("/jobs", params={"saved_only": True})
+        assert detail.json()["is_saved"] is True
+        assert [item["id"] for item in saved.json()] == [job_id]
+
+        assert (await client.delete(f"/jobs/{job_id}/save")).status_code == 204
+        assert (await client.delete(f"/jobs/{job_id}/save")).status_code == 204
+        assert (await client.get(f"/jobs/{job_id}")).json()["is_saved"] is False
+        assert (await client.get("/jobs", params={"saved_only": True})).json() == []
+
+
+@pytest.mark.asyncio
+async def test_job_urls_only_accept_http_or_https() -> None:
+    async with make_integration_client(job_parser=FakeJobParser()) as client:
+        unsafe = payload()
+        unsafe["application_url"] = "javascript:alert(1)"
+        response = await client.post("/jobs", json=unsafe)
+        assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_missing_and_malformed_job_ids_are_rejected() -> None:
+    async with make_integration_client(job_parser=FakeJobParser()) as client:
+        assert (await client.get(f"/jobs/{uuid4()}")).status_code == 404
+        assert (await client.post(f"/jobs/{uuid4()}/save")).status_code == 404
+        assert (await client.get("/jobs/not-a-uuid")).status_code == 422

@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "CareerOS",
-  description: "CareerOS engineering foundation",
+  description: "A grounded workspace for your job search",
 };
 
 export default function RootLayout({

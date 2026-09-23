@@ -115,7 +115,7 @@ Priority recommendations.
 Wave A makes Jobs a primary product surface without blocking on production data
 acquisition.
 
-### M8 — Product Shell and Jobs Experience
+### M8 — Product Shell and Jobs Experience — completed
 
 #### Goal
 
@@ -149,6 +149,13 @@ production feed.
 - production multi-source acquisition;
 - extension or autofill;
 - Application Strategy or resume tailoring.
+
+#### Delivered
+
+Implemented the Jobs-first product shell, manual-data-aware browse/search/location
+filtering, durable per-user save state, decision-focused job detail, safe direct
+Apply, optional Job Intelligence, and an honest Applications placeholder.
+Production job acquisition and the canonical source-adapter boundary remain M9.
 
 ### M9 — Canonical Job Source Boundary
 

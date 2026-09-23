@@ -1,11 +1,15 @@
 function Spinner() {
   return (
-    <div className="flex items-center justify-center py-12" role="status">
+    <div
+      className="flex items-center justify-center py-12"
+      role="status"
+      aria-label="Loading"
+    >
       <svg
         className="h-8 w-8 animate-spin text-blue-600"
         viewBox="0 0 24 24"
         fill="none"
-        aria-label="Loading"
+        aria-hidden="true"
       >
         <circle
           className="opacity-25"

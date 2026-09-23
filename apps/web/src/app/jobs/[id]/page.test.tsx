@@ -8,25 +8,23 @@ const mockGetJob = vi.fn();
 const mockListResumes = vi.fn();
 const mockListAnalyses = vi.fn();
 const mockCreateAnalysis = vi.fn();
+const mockSaveJob = vi.fn();
+const mockUnsaveJob = vi.fn();
 const mockGetToken = vi.fn().mockResolvedValue("token");
 
 vi.mock("@clerk/nextjs", () => ({
-  useAuth: () => ({
-    isLoaded: true,
-    isSignedIn: true,
-    getToken: mockGetToken,
-  }),
+  useAuth: () => ({ isLoaded: true, isSignedIn: true, getToken: mockGetToken }),
 }));
 
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ id: "job-1" }),
-}));
+vi.mock("next/navigation", () => ({ useParams: () => ({ id: "job-1" }) }));
 
 vi.mock("@/lib/api", () => ({
   getJob: (...args: unknown[]) => mockGetJob(...args),
   listResumes: (...args: unknown[]) => mockListResumes(...args),
   listJobAnalyses: (...args: unknown[]) => mockListAnalyses(...args),
   createJobAnalysis: (...args: unknown[]) => mockCreateAnalysis(...args),
+  saveJob: (...args: unknown[]) => mockSaveJob(...args),
+  unsaveJob: (...args: unknown[]) => mockUnsaveJob(...args),
 }));
 
 const job = {
@@ -34,6 +32,9 @@ const job = {
   company: "Acme",
   title: "Platform Engineer",
   location: "Remote",
+  source_url: "https://example.com/job",
+  application_url: "https://example.com/apply",
+  is_saved: false,
   latest_snapshot: {
     raw_description:
       "Kafka required. Kubernetes preferred. GCP required. SQL required.",
@@ -127,15 +128,44 @@ describe("JobDetailPage", () => {
     mockListResumes.mockReset().mockResolvedValue(resumes);
     mockListAnalyses.mockReset().mockResolvedValue([]);
     mockCreateAnalysis.mockReset();
+    mockSaveJob.mockReset().mockResolvedValue({ ...job, is_saved: true });
+    mockUnsaveJob.mockReset().mockResolvedValue(undefined);
   });
 
-  it("shows parsed requirements and the pre-analysis empty state", async () => {
+  it("prioritizes direct application and makes intelligence optional", async () => {
     render(<JobDetailPage />);
     expect(await screen.findByText("Platform Engineer")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Apply on company site/i }),
+    ).toHaveAttribute("href", "https://example.com/apply");
     expect(screen.getByText("Grounded requirements")).toBeInTheDocument();
+    expect(
+      screen.getByText(/You can apply without running an analysis/i),
+    ).toBeInTheDocument();
     expect(
       screen.getByText("No Job Intelligence analysis yet"),
     ).toBeInTheDocument();
+  });
+
+  it("saves the job without creating an application", async () => {
+    const user = userEvent.setup();
+    render(<JobDetailPage />);
+    await user.click(await screen.findByRole("button", { name: "Save job" }));
+    expect(mockSaveJob).toHaveBeenCalledWith("token", "job-1");
+    expect(
+      await screen.findByRole("button", { name: "Saved · Remove" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows an honest state when no application link exists", async () => {
+    mockGetJob.mockResolvedValue({ ...job, application_url: null });
+    render(<JobDetailPage />);
+    expect(
+      await screen.findByText(/No application link is available/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Apply on company site/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders all four explainable evidence categories", async () => {
@@ -162,11 +192,12 @@ describe("JobDetailPage", () => {
     );
     render(<JobDetailPage />);
     await screen.findByText("Platform Engineer");
-    const resumeSelect = screen.getByLabelText("Resume for this analysis");
+    const resumeSelect = screen.getByLabelText("Resume for analysis");
     await user.selectOptions(resumeSelect, "version-1");
-    await vi.waitFor(() => expect(resumeSelect).toHaveValue("version-1"));
-    await user.click(screen.getByRole("button", { name: "Analyze job" }));
-    expect(screen.getByRole("button")).toHaveTextContent("Analyzing evidence");
+    await user.click(screen.getByRole("button", { name: "Analyze this job" }));
+    expect(
+      screen.getByRole("button", { name: "Analyzing evidence…" }),
+    ).toBeDisabled();
     expect(mockCreateAnalysis).toHaveBeenCalledWith(
       "token",
       "job-1",
@@ -180,8 +211,9 @@ describe("JobDetailPage", () => {
     const user = userEvent.setup();
     mockCreateAnalysis.mockRejectedValue(new Error("provider unavailable"));
     render(<JobDetailPage />);
-    await screen.findByText("Platform Engineer");
-    await user.click(screen.getByRole("button", { name: "Analyze job" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Analyze this job" }),
+    );
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "could not complete",
     );
@@ -195,7 +227,7 @@ describe("JobDetailPage", () => {
     });
     expect(link).toHaveAttribute("href", "/resumes");
     expect(
-      screen.queryByRole("button", { name: "Analyze job" }),
+      screen.queryByRole("button", { name: "Analyze this job" }),
     ).not.toBeInTheDocument();
   });
 

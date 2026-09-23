@@ -12,7 +12,10 @@ import {
   getJob,
   listJobAnalyses,
   listResumes,
+  saveJob,
+  unsaveJob,
 } from "@/lib/api";
+import { safeExternalUrl } from "@/lib/external-url";
 import type {
   Job,
   JobAnalysis,
@@ -120,7 +123,9 @@ export default function JobDetailPage() {
   const [selectedVersion, setSelectedVersion] = useState("");
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   const versions = useMemo(
@@ -184,6 +189,26 @@ export default function JobDetailPage() {
     }
   }
 
+  async function toggleSave() {
+    if (!job) return;
+    setSaving(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Missing authentication token");
+      if (job.is_saved) {
+        await unsaveJob(token, job.id);
+        setJob({ ...job, is_saved: false });
+      } else {
+        setJob(await saveJob(token, job.id));
+      }
+      setActionError(null);
+    } catch {
+      setActionError("We could not update this saved job. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (!isLoaded || (loading && isSignedIn)) return <Spinner />;
   if (!isSignedIn)
     return <p className="text-sm text-slate-600">Sign in to view this job.</p>;
@@ -198,6 +223,9 @@ export default function JobDetailPage() {
     );
   }
 
+  const applicationUrl = safeExternalUrl(job.application_url);
+  const sourceUrl = safeExternalUrl(job.source_url);
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
@@ -207,8 +235,8 @@ export default function JobDetailPage() {
         >
           ← All jobs
         </Link>
-        <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+        <div className="mt-5 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
               {job.company}
             </p>
@@ -218,59 +246,62 @@ export default function JobDetailPage() {
             {job.location && (
               <p className="mt-2 text-sm text-slate-500">{job.location}</p>
             )}
+            <p className="mt-4 text-xs text-slate-400">
+              Added manually · not a live job feed
+            </p>
           </div>
-          <div className="w-full rounded-xl bg-slate-50 p-4 lg:max-w-md">
-            <label
-              className="text-sm font-medium text-slate-800"
-              htmlFor="resume-version"
-            >
-              Resume for this analysis
-            </label>
-            {versions.length === 0 ? (
-              <p className="mt-2 text-sm text-slate-600">
-                <Link
-                  href="/resumes"
-                  className="font-medium text-blue-700 underline"
-                >
-                  Upload and confirm a resume
-                </Link>{" "}
-                before running Job Intelligence.
-              </p>
+          <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:max-w-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              Next step
+            </p>
+            {applicationUrl ? (
+              <a
+                href={applicationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+              >
+                Apply on company site
+                <span className="ml-2" aria-hidden="true">
+                  ↗
+                </span>
+              </a>
             ) : (
-              <>
-                <select
-                  id="resume-version"
-                  value={selectedVersion}
-                  onChange={(event) => setSelectedVersion(event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-                >
-                  {versions.map(({ resume, version }) => (
-                    <option key={version.id} value={version.id}>
-                      {resume.name} · Version {version.version_number}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  className="mt-3 w-full"
-                  onClick={() => void analyze()}
-                  disabled={analyzing}
-                >
-                  {analyzing
-                    ? "Analyzing evidence…"
-                    : analysis
-                      ? "Run new analysis"
-                      : "Analyze job"}
-                </Button>
-              </>
+              <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-600">
+                No application link is available for this job. Use the source
+                link or locate the company&apos;s application page manually.
+              </div>
+            )}
+            <Button
+              variant="secondary"
+              className="mt-3 w-full"
+              onClick={() => void toggleSave()}
+              disabled={saving}
+            >
+              {saving
+                ? "Updating…"
+                : job.is_saved
+                  ? "Saved · Remove"
+                  : "Save job"}
+            </Button>
+            {sourceUrl && (
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 block text-center text-sm font-medium text-slate-600 hover:text-slate-950 hover:underline"
+              >
+                View original source ↗
+              </a>
             )}
           </div>
         </div>
-        {analysisError && (
+        {actionError && (
           <div
             className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
             role="alert"
           >
-            {analysisError}
+            {actionError}
           </div>
         )}
       </section>
@@ -314,14 +345,86 @@ export default function JobDetailPage() {
         </div>
       </section>
 
+      <section className="rounded-2xl border border-blue-100 bg-blue-50/40 p-6 shadow-sm sm:p-8">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">
+              Optional enhancement
+            </p>
+            <h2 className="mt-2 text-xl font-semibold text-slate-950">
+              Job Intelligence
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Compare this role with confirmed Career Brain evidence when you
+              want deeper preparation. You can apply without running an
+              analysis.
+            </p>
+          </div>
+          <div className="w-full rounded-xl bg-white p-4 shadow-sm lg:max-w-md">
+            <label
+              className="text-sm font-medium text-slate-800"
+              htmlFor="resume-version"
+            >
+              Resume for analysis
+            </label>
+            {versions.length === 0 ? (
+              <p className="mt-2 text-sm text-slate-600">
+                <Link
+                  href="/resumes"
+                  className="font-medium text-blue-700 underline"
+                >
+                  Upload and confirm a resume
+                </Link>{" "}
+                before running Job Intelligence.
+              </p>
+            ) : (
+              <>
+                <select
+                  id="resume-version"
+                  value={selectedVersion}
+                  onChange={(event) => setSelectedVersion(event.target.value)}
+                  className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                >
+                  {versions.map(({ resume, version }) => (
+                    <option key={version.id} value={version.id}>
+                      {resume.name} · Version {version.version_number}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  variant="secondary"
+                  className="mt-3 w-full"
+                  onClick={() => void analyze()}
+                  disabled={analyzing}
+                >
+                  {analyzing
+                    ? "Analyzing evidence…"
+                    : analysis
+                      ? "Run new analysis"
+                      : "Analyze this job"}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+        {analysisError && (
+          <div
+            className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+            role="alert"
+          >
+            {analysisError}
+          </div>
+        )}
+      </section>
+
       {!analysis ? (
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
           <h2 className="font-semibold text-slate-950">
             No Job Intelligence analysis yet
           </h2>
           <p className="mt-2 text-sm text-slate-500">
-            Choose a resume to compare these requirements with confirmed Career
-            Brain evidence.
+            Analysis is optional. Choose a resume above if you want to compare
+            these requirements with confirmed Profile evidence.
           </p>
         </section>
       ) : (

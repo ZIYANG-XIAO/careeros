@@ -14,7 +14,7 @@ KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
                        ENHANCE (optional)
 ```
 
-It preserves working M0–M7 behavior while defining minimal extension points for
+It preserves working M0–M8 behavior while defining minimal extension points for
 Jobs discovery, application assistance, Answer Engine, and Application Memory.
 
 The architectural principle is:
@@ -37,9 +37,11 @@ Implemented domains and workflows:
 - Career Brain/Profile and Career Evidence;
 - Resume ingestion and versioning;
 - manual Job capture and Job snapshots/requirements;
-- Job Intelligence analyses and evidence matches.
+- Jobs browse/search/location filtering, per-user saving, and safe direct Apply;
+- the Jobs-first Web shell and honest Applications placeholder; and
+- optional Job Intelligence analyses and evidence matches.
 
-Current Alembic head: `0006_m5_m6_job_intelligence`.
+Current Alembic head: `0007_m8_saved_jobs`.
 
 Not implemented today:
 
@@ -152,10 +154,10 @@ Directories are introduced only when their approved milestone begins.
 
 Stack: Next.js, TypeScript, React, Tailwind CSS.
 
-Current routes cover system status, Career Profile, Resumes, and manually captured
-Jobs/Job Intelligence.
+Current routes cover system status, Career Profile, Resumes, manually captured
+Jobs/Job Intelligence, and the planned-state Applications surface.
 
-Planned primary navigation:
+Implemented primary navigation:
 
 - Jobs
 - Applications

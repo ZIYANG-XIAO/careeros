@@ -293,6 +293,7 @@ export type Job = {
   captured_at: string;
   created_at: string;
   updated_at: string;
+  is_saved: boolean;
   latest_snapshot: JobSnapshot;
 };
 
@@ -302,6 +303,7 @@ export type CreateJobRequest = {
   location?: string | null;
   description: string;
   source_url?: string | null;
+  application_url?: string | null;
 };
 
 export type EvidenceReference = {

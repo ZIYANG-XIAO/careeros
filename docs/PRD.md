@@ -128,7 +128,7 @@ eventually reference the exact version used.
 
 ### 5.1 Jobs as a primary Web surface
 
-The planned V1 Jobs experience should support:
+The implemented M8 Jobs experience supports:
 
 - latest or available jobs overview;
 - search;
@@ -137,8 +137,9 @@ The planned V1 Jobs experience should support:
 - save job; and
 - apply.
 
-Exact search ranking and filter dimensions belong to the implementation plan for
-the Jobs formation milestone.
+Search currently matches title and company, and location is a separate filter.
+The current dataset is user-added manual data and is explicitly not represented
+as a production live feed.
 
 ### 5.2 Job source independence
 

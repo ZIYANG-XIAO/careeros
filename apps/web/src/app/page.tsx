@@ -1,76 +1,37 @@
-import { Show, SignInButton, UserButton } from "@clerk/nextjs";
+import { SignInButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
-
-import { getCareerBrain, getSystemHealth } from "@/lib/api";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  let apiStatus = "Unavailable";
-  let databaseStatus = "Unavailable";
-
-  try {
-    const health = await getSystemHealth();
-    apiStatus = health.status === "ok" ? "Healthy" : "Unavailable";
-    databaseStatus =
-      health.database === "connected" ? "Connected" : "Unavailable";
-  } catch {
-    // The status page remains usable and reports a clear unavailable state.
-  }
-
-  let careerBrainStatus = "Not signed in";
-  const { getToken } = await auth();
-  const token = await getToken();
-
-  if (token) {
-    try {
-      await getCareerBrain(token);
-      careerBrainStatus = "Active";
-    } catch {
-      careerBrainStatus = "Unavailable";
-    }
-  }
+  const { userId } = await auth();
+  if (userId) redirect("/jobs");
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl items-center px-6 py-16">
-      <section className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">
-            CareerOS
+    <main className="min-h-screen bg-slate-950 px-6 py-16 text-white">
+      <div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-6xl items-center">
+        <section className="max-w-3xl">
+          <p className="text-sm font-bold tracking-tight">
+            Career<span className="text-blue-400">OS</span>
           </p>
-          <div>
-            <Show when="signed-in">
-              <UserButton />
-            </Show>
-            <Show when="signed-out">
-              <SignInButton>
-                <button className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800">
-                  Sign in
-                </button>
-              </SignInButton>
-            </Show>
-          </div>
-        </div>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
-          System Status
-        </h1>
-        <dl className="mt-8 divide-y divide-slate-200 rounded-xl border border-slate-200">
-          <div className="flex items-center justify-between p-4">
-            <dt className="font-medium text-slate-700">API</dt>
-            <dd className="font-semibold text-emerald-700">{apiStatus}</dd>
-          </div>
-          <div className="flex items-center justify-between p-4">
-            <dt className="font-medium text-slate-700">Database</dt>
-            <dd className="font-semibold text-emerald-700">{databaseStatus}</dd>
-          </div>
-          <div className="flex items-center justify-between p-4">
-            <dt className="font-medium text-slate-700">Career Brain</dt>
-            <dd className="font-semibold text-emerald-700">
-              {careerBrainStatus}
-            </dd>
-          </div>
-        </dl>
-      </section>
+          <p className="mt-16 text-xs font-semibold uppercase tracking-[0.2em] text-blue-300">
+            Your job-search workspace
+          </p>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
+            Know your story. Find the right work. Move with confidence.
+          </h1>
+          <p className="mt-6 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+            CareerOS brings your professional profile, resumes, opportunities,
+            and future application history into one grounded workspace.
+          </p>
+          <SignInButton>
+            <button className="mt-8 rounded-xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+              Sign in to CareerOS
+            </button>
+          </SignInButton>
+        </section>
+      </div>
     </main>
   );
 }

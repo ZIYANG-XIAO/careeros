@@ -19,25 +19,28 @@ the user through the Career Brain.
 
 ## Current implementation
 
-M0–M7 are implemented at commit history level. Today the repository supports:
+M0–M8 are implemented at commit history level. Today the repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
 - Clerk authentication and server-side user ownership;
 - Career Profile management backed by the Career Brain;
 - stable Career Evidence with immutable revisions;
 - PDF and DOCX resume upload, parsing, review, confirmation, and versioning;
-- manual job capture and structured requirement parsing;
+- a Jobs-first product shell with Jobs, Applications, Resumes, and Profile;
+- manual job capture, server-owned search/location filters, detail, durable
+  per-user saved state, and safe direct-apply links;
 - evidence matching against a selected immutable resume version;
 - Strong Evidence, Hidden Evidence, Weak Evidence, and Genuine Gap results; and
-- explainable Job Intelligence recommendations.
+- explainable optional Job Intelligence recommendations; and
+- an honest Applications placeholder that does not simulate tracking.
 
 The following V1 capabilities are planned, not implemented:
 
-- a fuller Jobs discovery experience and provider-independent job-source
-  boundary;
+- a provider-independent job-source boundary and production job acquisition;
 - browser extension and application-page detection;
 - field normalization, Answer Engine, and autofill;
-- durable Application records and the Applications Web surface; and
+- durable Application records and a functional Applications tracking surface;
+  and
 - end-to-end Web/extension/Application Memory integration.
 
 Application Strategy and resume tailoring are deferred optional enhancements.
@@ -59,11 +62,12 @@ presentation artifact; it is not the complete representation of the user.
 
 ### Discover
 
-The planned Jobs surface will support browsing, search, filters, job detail,
-saving, and applying. Jobs may eventually originate from multiple external
-sources, but production job-data acquisition is not part of the current
-formation phase. The Web product must remain independent of any provider's
-schema.
+The Jobs surface supports browsing user-added opportunities, title/company
+search, location filtering, job detail, saving, and safe direct application.
+Manual data is explicitly labeled and is not presented as a live feed. Jobs may
+eventually originate from multiple external sources, but production job-data
+acquisition is not implemented. The Web product remains independent of any
+provider's schema.
 
 ### Apply Anywhere
 
@@ -161,7 +165,7 @@ docker compose --env-file .env -f infra/compose.yaml up -d postgres
 .venv/bin/alembic -c apps/api/alembic.ini upgrade head
 ```
 
-The current migration head is `0006_m5_m6_job_intelligence`.
+The current migration head is `0007_m8_saved_jobs`.
 
 ### Start the API
 
@@ -177,8 +181,8 @@ Health check: `http://localhost:8000/health`.
 npm run web:dev
 ```
 
-Open `http://localhost:3000`. Implemented routes include `/career`, `/resumes`,
-and `/jobs`.
+Open `http://localhost:3000`. Implemented routes include `/jobs`,
+`/applications`, `/career`, and `/resumes`.
 
 ### Verification
 

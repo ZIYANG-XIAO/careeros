@@ -5,9 +5,10 @@ from hashlib import sha256
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import delete, or_, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -15,7 +16,7 @@ from careeros_api.auth import get_current_user
 from careeros_api.db import get_db_session
 from careeros_api.job_parser import JOB_PARSER_VERSION, JobParser, JobParsingError, get_job_parser
 from careeros_api.job_schemas import ParsedJobDescription, validate_job_grounding
-from careeros_api.models import Job, JobRequirement, JobSnapshot, JobSourceType, User
+from careeros_api.models import Job, JobRequirement, JobSnapshot, JobSourceType, SavedJob, User
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -72,6 +73,7 @@ class JobResponse(BaseModel):
     captured_at: datetime
     created_at: datetime
     updated_at: datetime
+    is_saved: bool
     latest_snapshot: JobSnapshotResponse
 
 
@@ -114,7 +116,7 @@ def _snapshot_response(snapshot: JobSnapshot) -> JobSnapshotResponse:
     )
 
 
-def _job_response(job: Job) -> JobResponse:
+def _job_response(job: Job, *, is_saved: bool = False) -> JobResponse:
     latest = max(job.snapshots, key=lambda snapshot: snapshot.version_number)
     return JobResponse(
         id=job.id,
@@ -127,6 +129,7 @@ def _job_response(job: Job) -> JobResponse:
         captured_at=job.captured_at,
         created_at=job.created_at,
         updated_at=job.updated_at,
+        is_saved=is_saved,
         latest_snapshot=_snapshot_response(latest),
     )
 
@@ -203,14 +206,31 @@ async def create_job(
 async def list_jobs(
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    search: Annotated[str | None, Query(min_length=1, max_length=200)] = None,
+    location: Annotated[str | None, Query(min_length=1, max_length=200)] = None,
+    saved_only: bool = False,
 ) -> list[JobResponse]:
-    result = await session.execute(
+    statement = (
         select(Job)
+        .add_columns(SavedJob.id.is_not(None).label("is_saved"))
+        .outerjoin(
+            SavedJob,
+            (SavedJob.job_id == Job.id) & (SavedJob.user_id == user.id),
+        )
         .options(selectinload(Job.snapshots).selectinload(JobSnapshot.requirements))
         .where(Job.user_id == user.id)
         .order_by(Job.created_at.desc())
     )
-    return [_job_response(job) for job in result.scalars().all()]
+    if search is not None:
+        term = f"%{search.strip()}%"
+        statement = statement.where(or_(Job.title.ilike(term), Job.company.ilike(term)))
+    if location is not None:
+        statement = statement.where(Job.location.ilike(f"%{location.strip()}%"))
+    if saved_only:
+        statement = statement.where(SavedJob.id.is_not(None))
+
+    result = await session.execute(statement)
+    return [_job_response(job, is_saved=is_saved) for job, is_saved in result.all()]
 
 
 @router.get("/{job_id}", response_model=JobResponse)
@@ -219,7 +239,51 @@ async def get_job(
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> JobResponse:
+    result = await session.execute(
+        select(Job)
+        .add_columns(SavedJob.id.is_not(None).label("is_saved"))
+        .outerjoin(
+            SavedJob,
+            (SavedJob.job_id == Job.id) & (SavedJob.user_id == user.id),
+        )
+        .options(selectinload(Job.snapshots).selectinload(JobSnapshot.requirements))
+        .where(Job.id == job_id, Job.user_id == user.id)
+    )
+    row = result.one_or_none()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    job, is_saved = row
+    return _job_response(job, is_saved=is_saved)
+
+
+@router.post("/{job_id}/save", response_model=JobResponse)
+async def save_job(
+    job_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> JobResponse:
     job = await _owned_job(session, job_id, user.id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
-    return _job_response(job)
+    await session.execute(
+        insert(SavedJob)
+        .values(user_id=user.id, job_id=job.id)
+        .on_conflict_do_nothing(index_elements=["user_id", "job_id"])
+    )
+    await session.flush()
+    return _job_response(job, is_saved=True)
+
+
+@router.delete("/{job_id}/save", status_code=status.HTTP_204_NO_CONTENT)
+async def unsave_job(
+    job_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    job = await _owned_job(session, job_id, user.id)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    await session.execute(
+        delete(SavedJob).where(SavedJob.user_id == user.id, SavedJob.job_id == job.id)
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

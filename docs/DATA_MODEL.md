@@ -48,6 +48,7 @@ User
 │   └── Career Evidence → immutable revisions
 ├── Resume → immutable Resume Versions
 ├── Job → snapshots → requirements → analyses/matches
+│   └── Saved Job (per-user interest state)
 └── Application (planned)
     ├── selected Resume Version
     ├── application-specific answers
@@ -85,12 +86,12 @@ The current migrations define:
 - `job_analyses`
 - `evidence_matches`
 - `evidence_match_references`
+- `saved_jobs`
 
-Current Alembic head: `0006_m5_m6_job_intelligence`.
+Current Alembic head: `0007_m8_saved_jobs`.
 
 ### Planned, not implemented
 
-- saved-job state or equivalent Jobs discovery state;
 - generalized external Job source records/adapters;
 - Application;
 - Application Answer;
@@ -238,14 +239,14 @@ not rewrite historical analysis.
 
 Job Intelligence is implemented optional enhancement functionality.
 
-## 13. Saved Job and discovery state — planned
+## 13. Saved Job and discovery state — implemented
 
-The Jobs formation milestone may need a user-specific saved/interest state that
-is distinct from the canonical Job and from Application.
+`SavedJob` is a durable user-owned interest marker with `user_id`, `job_id`, and
+`created_at`. The `(user_id, job_id)` pair is unique, making save retries
+idempotent. Both identifiers are protected by cascading foreign keys.
 
 Saving means “I am interested in this opportunity.” It does not necessarily
-mean the user analyzed or applied. The physical model must be proposed during
-that milestone based on required behavior.
+mean the user analyzed or applied. Save and unsave never create an Application.
 
 ## 14. Application — planned core domain
 

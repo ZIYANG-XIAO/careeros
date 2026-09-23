@@ -278,6 +278,35 @@ async def test_clean_migration_creates_expected_schema() -> None:
                 for tbl in intelligence_tables:
                     assert tbl in table_names, f"Missing Job Intelligence table: {tbl}"
 
+                assert "saved_jobs" in table_names, "Missing M8 saved_jobs table"
+                saved_job_cols = await conn.run_sync(
+                    lambda sync_conn: {
+                        c["name"]: c for c in inspect(sync_conn).get_columns("saved_jobs")
+                    }
+                )
+                for col in ("id", "user_id", "job_id", "created_at"):
+                    assert col in saved_job_cols, f"Missing saved_jobs column: {col}"
+
+                saved_job_uniques = await conn.run_sync(
+                    lambda sync_conn: inspect(sync_conn).get_unique_constraints("saved_jobs")
+                )
+                assert any(
+                    set(constraint["column_names"]) == {"user_id", "job_id"}
+                    for constraint in saved_job_uniques
+                ), "Missing unique constraint on saved job identity"
+
+                saved_job_fks = await conn.run_sync(
+                    lambda sync_conn: inspect(sync_conn).get_foreign_keys("saved_jobs")
+                )
+                assert any(
+                    fk["constrained_columns"] == ["user_id"] and fk["referred_table"] == "users"
+                    for fk in saved_job_fks
+                ), "Missing saved_jobs.user_id ownership FK"
+                assert any(
+                    fk["constrained_columns"] == ["job_id"] and fk["referred_table"] == "jobs"
+                    for fk in saved_job_fks
+                ), "Missing saved_jobs.job_id FK"
+
                 snapshot_cols = await conn.run_sync(
                     lambda sync_conn: {
                         c["name"]: c for c in inspect(sync_conn).get_columns("job_snapshots")

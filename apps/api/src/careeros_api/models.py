@@ -149,6 +149,9 @@ class User(Base):
     career_brain: Mapped["CareerBrain"] = relationship(back_populates="user")
     resumes: Mapped[list["Resume"]] = relationship(back_populates="user")
     jobs: Mapped[list["Job"]] = relationship(back_populates="user")
+    saved_jobs: Mapped[list["SavedJob"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (sa.UniqueConstraint("auth_provider", "auth_subject"),)
 
@@ -555,8 +558,31 @@ class Job(Base):
     snapshots: Mapped[list["JobSnapshot"]] = relationship(
         back_populates="job", cascade="all, delete-orphan"
     )
+    saves: Mapped[list["SavedJob"]] = relationship(
+        back_populates="job", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (sa.Index("ix_jobs_user_id", "user_id"),)
+
+
+class SavedJob(Base):
+    __tablename__ = "saved_jobs"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"))
+    job_id: Mapped[UUID] = mapped_column(sa.ForeignKey("jobs.id", ondelete="CASCADE"))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    user: Mapped["User"] = relationship(back_populates="saved_jobs")
+    job: Mapped["Job"] = relationship(back_populates="saves")
+
+    __table_args__ = (
+        sa.UniqueConstraint("user_id", "job_id"),
+        sa.Index("ix_saved_jobs_user_id", "user_id"),
+        sa.Index("ix_saved_jobs_job_id", "job_id"),
+    )
 
 
 class JobSnapshot(Base):
