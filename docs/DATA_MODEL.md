@@ -7,7 +7,7 @@
 ## 1. Purpose
 
 This document defines CareerOS domain concepts for the re-baselined V1. It
-separates the implemented M0–M7 schema from planned V1 formation concepts.
+separates the implemented M0–M9 schema from planned V1 formation concepts.
 
 The model supports:
 
@@ -88,11 +88,10 @@ The current migrations define:
 - `evidence_match_references`
 - `saved_jobs`
 
-Current Alembic head: `0007_m8_saved_jobs`.
+Current Alembic head: `0008_m9_job_source_boundary`.
 
 ### Planned, not implemented
 
-- generalized external Job source records/adapters;
 - Application;
 - Application Answer;
 - Reusable Answer;

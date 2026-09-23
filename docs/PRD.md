@@ -23,7 +23,7 @@ directly to application assistance.
 
 ## 2. Current and planned scope
 
-### Implemented now — M0–M7
+### Implemented now — M0–M9
 
 - authenticated Web/API/PostgreSQL foundation;
 - Career Brain/Profile management and user ownership;
@@ -32,13 +32,15 @@ directly to application assistance.
   immutable Resume Versions;
 - manual Job capture and structured Job Requirements;
 - evidence retrieval and matching;
-- Strong, Hidden, Weak, and Genuine Gap classifications; and
-- explainable Job Intelligence pages and recommendations.
+- Strong, Hidden, Weak, and Genuine Gap classifications;
+- explainable Job Intelligence pages and recommendations;
+- the Jobs-first shell and browse/search/filter/save/detail/Apply experience;
+  and
+- a provider-neutral Job source boundary with retry-safe ingestion and explicit
+  source, freshness, and availability state.
 
 ### Planned V1 formation
 
-- product shell and primary Jobs experience;
-- provider-independent job-source boundary;
 - browser extension foundation and authentication;
 - application-page and form detection;
 - normalized fields/questions and ATS adapter boundary;

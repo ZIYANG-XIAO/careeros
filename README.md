@@ -167,7 +167,7 @@ docker compose --env-file .env -f infra/compose.yaml up -d postgres
 .venv/bin/alembic -c apps/api/alembic.ini upgrade head
 ```
 
-The current migration head is `0007_m8_saved_jobs`.
+The current migration head is `0008_m9_job_source_boundary`.
 
 ### Start the API
 

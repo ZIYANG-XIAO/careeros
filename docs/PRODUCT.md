@@ -326,20 +326,21 @@ depends on it.
 
 ## 14. Current implementation boundary
 
-Implemented through M7:
+Implemented through M9:
 
 - project foundation;
 - Career Brain/Profile;
 - Career Evidence and immutable revisions;
 - resume ingestion and immutable versions;
 - manual Job capture and parsing;
-- evidence matching and hidden-evidence detection; and
-- Job Intelligence experience.
+- evidence matching and hidden-evidence detection;
+- Job Intelligence experience;
+- the Jobs-first product shell, browse/search/filter/save/detail/Apply flow; and
+- the provider-neutral Job source boundary with retry-safe ingestion and honest
+  freshness/availability state.
 
 Planned during V1 formation:
 
-- Jobs discovery experience;
-- job-source boundary;
 - extension and application-page assistance;
 - normalized form and ATS adapter boundaries;
 - Answer Engine and autofill;
