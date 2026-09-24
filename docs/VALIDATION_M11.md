@@ -1,6 +1,6 @@
 # M11 Form Detection and Normalization Validation
 
-> Status: Automated validation passed; unpacked-extension browser check pending
+> Status: Passed
 > Validated: 2026-09-24
 
 ## Scope
@@ -26,17 +26,18 @@ Answer Engine, autofill, resume upload, Application Memory, or submission.
 - Extension type checking, formatting, build, credential-boundary validation,
   least-privilege permissions, and stable development identity pass.
 
-## Representative browser status
+## Representative browser validation
 
-The local generic application fixture rendered correctly in Chrome. The
-connected Chrome profile did not have the CareerOS unpacked extension installed,
-so the M11 popup integration was not installed or asserted without explicit user
-approval.
+The unpacked `apps/extension/build` extension was loaded and enabled in the
+connected Chrome profile with the expected stable extension ID. On the local
+generic application fixture, the popup reported `Application form inspected`,
+with four recognized fields and one field requiring manual review. It also
+stated that autofill is not enabled and that CareerOS never submits an
+application.
 
-When approved, reload `apps/extension/build` as an unpacked extension, open the
-generic fixture, and verify `Application form inspected`, with four recognized
-fields and one field requiring manual review. The popup must continue to state
-that autofill is not enabled and that CareerOS never submits an application.
+The local CareerOS API was not running during this check, so the independent
+account-status card showed `CareerOS is unavailable.` Page inspection still
+completed successfully; authenticated API access was already validated in M10.
 
 ## Security and privacy observations
 
@@ -55,4 +56,3 @@ that autofill is not enabled and that CareerOS never submits an application.
 - Dynamic controls added after inspection require another popup inspection.
 - Custom questions remain unknown until M12 classification and policy exist.
 - M11 does not fill, upload, save answers, create Applications, or submit.
-- Representative unpacked-extension Chrome validation remains pending.

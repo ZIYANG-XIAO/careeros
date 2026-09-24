@@ -526,9 +526,8 @@ After a milestone:
 
 ## 14. Immediate next step
 
-M11 implementation and automated validation are complete. Representative
-unpacked-extension Chrome validation remains before advancing. After that, the
-next approved implementation milestone is:
+M11 implementation and representative unpacked-extension Chrome validation are
+complete. The next approved implementation milestone is:
 
 > M12 — Answer Engine Foundation
 
