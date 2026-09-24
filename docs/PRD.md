@@ -23,7 +23,7 @@ directly to application assistance.
 
 ## 2. Current and planned scope
 
-### Implemented now — M0–M10
+### Implemented now — M0–M11
 
 - authenticated Web/API/PostgreSQL foundation;
 - Career Brain/Profile management and user ownership;
@@ -36,15 +36,16 @@ directly to application assistance.
 - explainable Job Intelligence pages and recommendations;
 - the Jobs-first shell and browse/search/filter/save/detail/Apply experience;
 - a provider-neutral Job source boundary with retry-safe ingestion and explicit
-  source, freshness, and availability state; and
+  source, freshness, and availability state;
 - a secure Manifest V3 extension foundation with Clerk session sync,
   authenticated API access, active-tab application-page detection, and explicit
-  unsupported behavior.
+  unsupported behavior; and
+- read-only provider-neutral form normalization, deterministic canonical keys,
+  explicit support/confidence states, and isolated generic, Greenhouse, Lever,
+  and Ashby adapter boundaries.
 
 ### Planned V1 formation
 
-- normalized form detection and inspection;
-- normalized fields/questions and ATS adapter boundary;
 - Answer Engine and Career Brain-backed autofill;
 - durable Application domain and Applications surface;
 - Web/extension/Application Memory integration; and

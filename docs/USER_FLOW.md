@@ -34,10 +34,11 @@ browsing, application history, and detailed optional intelligence.
 
 ### Browser extension
 
-The extension foundation is a thin assistant on external application pages. It
-currently authenticates through CareerOS and distinguishes likely application,
-ordinary, and unsupported pages. Normalized form inspection, approved answers,
-autofill, review state, and durable application context remain planned.
+The extension is a thin assistant on external application pages. It authenticates
+through CareerOS, distinguishes likely application, ordinary, and unsupported
+pages, and inspects supported forms into a provider-neutral read-only model.
+Approved answers, autofill, review state, and durable application context remain
+planned.
 
 It is not a second full CareerOS application.
 
@@ -53,11 +54,13 @@ Implemented Web flows today:
   direct Apply;
 - secure extension authentication, protected API access, and active-tab
   application-page detection;
+- read-only generic/Greenhouse/Lever/Ashby form normalization with explicit
+  known, unknown, and unsupported states;
 - an Applications planned-state placeholder; and
 - Job Intelligence creation and review.
 
-Production job-source discovery, normalized form/ATS support, Application
-tracking, Answer Engine, autofill, and external application capture are planned
+Production job-source discovery, Application tracking, Answer Engine, autofill,
+and external application capture are planned
 flows described below, not current behavior.
 
 ## 4. First-time onboarding — Know Me
@@ -187,8 +190,9 @@ context must remain uncertain and reviewable.
 
 ## 8. Extension application flow
 
-M10 implements authentication and the initial page-detection states in this
-flow. Normalization, answer resolution, filling, and review remain planned:
+M10 implements authentication and initial page detection; M11 implements
+read-only form normalization. Answer resolution, filling, and review remain
+planned:
 
 ```text
 Application Page

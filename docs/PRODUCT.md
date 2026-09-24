@@ -326,7 +326,7 @@ depends on it.
 
 ## 14. Current implementation boundary
 
-Implemented through M10:
+Implemented through M11:
 
 - project foundation;
 - Career Brain/Profile;
@@ -337,13 +337,14 @@ Implemented through M10:
 - Job Intelligence experience;
 - the Jobs-first product shell, browse/search/filter/save/detail/Apply flow;
 - the provider-neutral Job source boundary with retry-safe ingestion and honest
-  freshness/availability state; and
+  freshness/availability state;
 - the secure Manifest V3 extension foundation, authenticated API boundary,
-  active-tab application-page detection, and honest unsupported states.
+  active-tab application-page detection, and honest unsupported states; and
+- provider-neutral read-only form normalization with generic and initial ATS
+  adapter boundaries, canonical keys, and explicit support/confidence states.
 
 Planned during V1 formation:
 
-- normalized form and ATS adapter boundaries;
 - Answer Engine and autofill;
 - Application domain and Applications surface; and
 - end-to-end integration and hardening.

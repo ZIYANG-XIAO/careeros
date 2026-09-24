@@ -7,8 +7,8 @@
 ## 1. Purpose
 
 This document defines CareerOS domain concepts for the re-baselined V1. It
-separates the implemented M0–M10 product state from planned V1 formation
-concepts. M10 adds no database migration.
+separates the implemented M0–M11 product state from planned V1 formation
+concepts. M10 and M11 add no database migration.
 
 The model supports:
 
@@ -98,7 +98,7 @@ Current Alembic head: `0008_m9_job_source_boundary`.
 - Reusable Answer;
 - application preferences beyond currently approved fields;
 - status history;
-- extension/form records; and
+- persisted extension/form records; and
 - Application Strategy and Resume Recommendation.
 
 This document proposes those boundaries but does not claim their schema exists.

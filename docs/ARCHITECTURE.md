@@ -14,7 +14,7 @@ KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
                        ENHANCE (optional)
 ```
 
-It preserves working M0–M10 behavior while defining minimal extension points for
+It preserves working M0–M11 behavior while defining minimal extension points for
 Jobs discovery, application assistance, Answer Engine, and Application Memory.
 
 The architectural principle is:
@@ -43,18 +43,20 @@ Implemented domains and workflows:
 - canonical source identity, retry-safe deduplication, observed timestamps, and
   explicit availability/freshness state;
 - the Jobs-first Web shell and honest Applications placeholder;
-- optional Job Intelligence analyses and evidence matches; and
+- optional Job Intelligence analyses and evidence matches;
 - a Manifest V3 extension with stable development identity, Clerk Sync Host,
   a background-only authenticated API client, exact message validation,
   active-tab script injection, application-page heuristics, and compact status
-  UI.
+  UI; and
+- provider-neutral read-only form inspection with generic, Greenhouse, Lever,
+  and Ashby adapter boundaries, deterministic canonical keys, and explicit
+  support/confidence states.
 
 Current Alembic head: `0008_m9_job_source_boundary`.
 
 Not implemented today:
 
 - production job-source ingestion;
-- normalized form/ATS adapters;
 - Answer Engine or autofill;
 - Application domain; or
 - Application Strategy/resume tailoring.
@@ -115,8 +117,9 @@ External Job Sources ─► Job Source Adapters ─► normalized Job boundary �
 External ATS/Forms   ─► ATS/Generic Adapters ─► normalized Form model ───► API
 ```
 
-The extension foundation is implemented. Normalized form, ATS adapter, Answer
-Engine, autofill, and Application Memory boundaries remain planned.
+The extension foundation and normalized form/ATS adapter boundary are
+implemented. Answer Engine, autofill, and Application Memory boundaries remain
+planned.
 
 ## 5. Core domains vs product services
 
@@ -282,21 +285,19 @@ Intelligence is optional and does not gate Apply or extension assistance.
 
 Approved stack direction: React, TypeScript, Chrome Manifest V3.
 
-Implemented M10 components:
+Implemented M10–M11 components:
 
 - background service worker;
 - content scripts;
 - compact popup and/or side panel;
 - authenticated API client;
 - application-page detector; and
-- supported/unsupported popup state.
+- supported/unsupported popup state;
+- generic form inspector and provider-neutral form contracts;
+- isolated Greenhouse, Lever, and Ashby adapter boundaries; and
+- aggregate form-inspection status in the popup.
 
-Planned components:
-
-- generic form adapter;
-- ATS adapter registry;
-- normalized form contracts; and
-- form execution/review state.
+Planned components are the Answer Engine, form execution, and review state.
 
 M10 reads only narrowly scoped active-tab signals needed for page detection.
 Later milestones may request canonical answers and policy decisions from the
@@ -313,7 +314,7 @@ rejected, and host access is granted only to the active tab on user action.
 The extension must support an application page even when no CareerOS Job or Job
 Analysis exists.
 
-## 15. Form and ATS adapter architecture — planned
+## 15. Form and ATS adapter architecture — implemented inspection boundary
 
 ```text
 Application Page
@@ -326,7 +327,8 @@ Application Page
 → user review
 ```
 
-An adapter may conceptually provide:
+The M11 adapters provide detection and normalized inspection. Later milestones
+may add execution methods. The complete conceptual boundary may provide:
 
 - detect application/form;
 - inspect fields/questions;
@@ -341,7 +343,7 @@ initial specific targets. Workday is not an initial V1 exit requirement.
 Adapter-specific DOM knowledge stays isolated and fixture-tested. Do not place
 all ATS behavior in one monolithic conditional block.
 
-## 16. Normalized form model — planned
+## 16. Normalized form model — implemented
 
 The provider-neutral form model should contain only what Answer Engine and form
 execution require, such as:
@@ -354,7 +356,9 @@ execution require, such as:
 - adapter/source identity; and
 - confidence or support metadata.
 
-Raw page content remains untrusted and should not be persisted unnecessarily.
+Raw page content remains untrusted and is not persisted in M11. Current field
+values are never read. The concrete contract and limits are documented in
+`docs/FORM_MODEL.md`.
 
 ## 17. Answer Engine architecture — planned
 

@@ -38,7 +38,7 @@ if (
 }
 if (manifest.content_scripts || manifest.externally_connectable) {
   throw new Error(
-    "M10 must not expose a persistent or externally callable page bridge.",
+    "The extension must not expose a persistent or externally callable page bridge.",
   );
 }
 if (
@@ -54,6 +54,11 @@ if (/Authorization|Bearer|CLERK|session.?token/i.test(contentScript)) {
     "Privileged authentication material leaked into the content script.",
   );
 }
+if (/\.(?:value|checked|files)\b|innerHTML|outerHTML/.test(contentScript)) {
+  throw new Error(
+    "M11 content inspection must not read entered values, selections, files, or raw HTML.",
+  );
+}
 
 for (const file of ["background.js", "content.js", "popup.js"]) {
   const bundle = await readFile(path.join(buildDir, file), "utf8");
@@ -63,5 +68,5 @@ for (const file of ["background.js", "content.js", "popup.js"]) {
 }
 
 console.log(
-  `Validated M10 permissions, credential boundaries, and CRX ID ${extensionId}.`,
+  `Validated M11 permissions, credential boundaries, and CRX ID ${extensionId}.`,
 );

@@ -20,10 +20,16 @@ describe("application page detection", () => {
 
     expect(
       detectApplicationPage(document, "https://jobs.example.com/apply/123"),
-    ).toEqual({
+    ).toMatchObject({
       status: "APPLICATION_PAGE",
       adapter: "generic",
-      reasons: ["A likely application form is present."],
+      reasons: ["An application form was inspected."],
+      forms: [
+        {
+          adapter: "generic",
+          support: "SUPPORTED",
+        },
+      ],
     });
   });
 
@@ -53,6 +59,7 @@ describe("application page detection", () => {
       status: "UNSUPPORTED_PAGE",
       adapter: null,
       reasons: ["CareerOS only inspects normal web pages."],
+      forms: [],
     });
   });
 });

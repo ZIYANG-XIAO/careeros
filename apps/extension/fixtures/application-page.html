@@ -27,12 +27,39 @@
     <p>This local fixture contains no real applicant or employer data.</p>
     <form aria-label="Job application" action="#" method="post">
       <label>
+        First name
+        <input
+          type="text"
+          name="first_name"
+          autocomplete="given-name"
+          required
+        />
+      </label>
+      <label>
+        Last name
+        <input
+          type="text"
+          name="last_name"
+          autocomplete="family-name"
+          required
+        />
+      </label>
+      <label>
         Email
-        <input type="email" name="email" autocomplete="email" />
+        <input
+          type="email"
+          name="email"
+          autocomplete="email"
+          value="not-collected@example.com"
+        />
       </label>
       <label>
         Resume
         <input type="file" name="resume" />
+      </label>
+      <label>
+        Why are you interested in this role?
+        <textarea name="motivation"></textarea>
       </label>
       <button type="submit">Continue application</button>
     </form>

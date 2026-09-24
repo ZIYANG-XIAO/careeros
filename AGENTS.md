@@ -22,7 +22,7 @@ another document is not authorization to implement it.
 
 ## 2. Current baseline
 
-M0–M10 are implemented. The repository currently contains:
+M0–M11 are implemented. The repository currently contains:
 
 - the Web, API, and PostgreSQL foundation;
 - authenticated user ownership and Career Brain/Profile editing;
@@ -31,15 +31,17 @@ M0–M10 are implemented. The repository currently contains:
 - manual job capture, provider-neutral source ingestion, structured parsing,
   retry-safe deduplication, and source/freshness attribution;
 - evidence matching, hidden-evidence detection, genuine-gap preservation;
-- the Jobs-first product shell and optional Job Intelligence experience; and
+- the Jobs-first product shell and optional Job Intelligence experience;
 - a Manifest V3 extension foundation with secure Clerk session sync,
   background-only API credentials, active-tab application-page detection, and
-  explicit supported/unsupported UI.
+  explicit supported/unsupported UI; and
+- read-only provider-neutral form normalization with generic, Greenhouse,
+  Lever, and Ashby adapter boundaries and explicit support/confidence states.
 
 Not currently implemented:
 
 - a production job-discovery feed or real external source adapter;
-- normalized form/ATS detection, the Answer Engine, or autofill;
+- the Answer Engine or autofill;
 - the durable Application domain and Applications UI;
 - Application Strategy or resume tailoring.
 

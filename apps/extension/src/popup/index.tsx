@@ -6,6 +6,7 @@ import type {
   PageDetection,
   PopupRequest,
 } from "../shared/messages";
+import { detectionCopy } from "./detection-copy";
 
 type LoadState<T> =
   | { state: "loading" }
@@ -14,28 +15,6 @@ type LoadState<T> =
 
 async function send<T>(request: PopupRequest): Promise<ExtensionResponse<T>> {
   return chrome.runtime.sendMessage(request) as Promise<ExtensionResponse<T>>;
-}
-
-function detectionCopy(detection: PageDetection): {
-  title: string;
-  body: string;
-} {
-  if (detection.status === "APPLICATION_PAGE") {
-    return {
-      title: "Application page detected",
-      body: "CareerOS found a likely form. Autofill is not enabled yet.",
-    };
-  }
-  if (detection.status === "UNSUPPORTED_PAGE") {
-    return {
-      title: "This page is not supported",
-      body: "Open a normal web application page and try again.",
-    };
-  }
-  return {
-    title: "No application detected",
-    body: "CareerOS did not find a likely application form on this page.",
-  };
 }
 
 function App() {

@@ -251,7 +251,7 @@ ordinary, and unsupported states. Representative signed-in Chrome validation
 confirmed protected `/me` access and detection without a CareerOS Job. See
 `docs/VALIDATION_M10.md` for evidence and limitations.
 
-### M11 — Form Detection and Normalization
+### M11 — Form Detection and Normalization — implementation complete
 
 #### Goal
 
@@ -275,6 +275,16 @@ Convert supported external application forms into a provider-neutral model.
 - form/page instructions cannot override trusted logic;
 - generic support is used where reliable; and
 - ATS-specific DOM behavior remains isolated.
+
+#### Delivered
+
+Implemented bounded read-only form inspection, a provider-neutral form/field
+contract, deterministic canonical keys for initial personal/contact/address/link,
+education/experience, and document fields, explicit support/confidence states,
+and an adapter registry with isolated generic, Greenhouse, Lever, and Ashby
+boundaries. Fixture coverage verifies stable normalization, unknown preservation,
+hostile-text handling, value non-collection, and honest popup summaries. See
+`docs/FORM_MODEL.md` and `docs/VALIDATION_M11.md`.
 
 ### M12 — Answer Engine Foundation
 
@@ -516,10 +526,11 @@ After a milestone:
 
 ## 14. Immediate next step
 
-M10 implementation and representative extension validation are complete. The
+M11 implementation and automated validation are complete. Representative
+unpacked-extension Chrome validation remains before advancing. After that, the
 next approved implementation milestone is:
 
-> M11 — Form Detection and Normalization
+> M12 — Answer Engine Foundation
 
-Do not begin the Answer Engine, autofill, Application Memory, Application
-Strategy, or resume tailoring as part of M11.
+Do not begin autofill, Application Memory, Application Strategy, or resume
+tailoring as part of M12.

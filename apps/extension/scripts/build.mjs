@@ -74,7 +74,7 @@ const manifest = {
   manifest_version: 3,
   name: "CareerOS Application Assistant",
   description:
-    "Detect application pages and connect them securely to CareerOS.",
+    "Detect and normalize application forms and connect them securely to CareerOS.",
   version: "0.1.0",
   permissions: ["activeTab", "cookies", "scripting", "storage"],
   host_permissions: [
