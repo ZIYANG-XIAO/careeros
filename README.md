@@ -19,7 +19,7 @@ the user through the Career Brain.
 
 ## Current implementation
 
-M0–M11 are implemented at repository level. Today the repository supports:
+M0–M12 are implemented at repository level. Today the repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
 - Clerk authentication and server-side user ownership;
@@ -39,13 +39,16 @@ M0–M11 are implemented at repository level. Today the repository supports:
   application-page detection, and honest unsupported states;
 - read-only normalized form inspection with generic, Greenhouse, Lever, and
   Ashby adapter boundaries, deterministic canonical keys, and explicit
-  support/confidence states; and
+  support/confidence states;
+- an authenticated Answer Engine foundation with owned source retrieval,
+  sensitive/consequential guardrails, explicit Fill/Suggest/Ask/Confirm/Unknown
+  decisions, and aggregate extension preview; and
 - an honest Applications placeholder that does not simulate tracking.
 
 The following V1 capabilities are planned, not implemented:
 
 - production job acquisition and real external source adapters;
-- Answer Engine and autofill;
+- autofill and per-field review/execution;
 - durable Application records and a functional Applications tracking surface;
   and
 - end-to-end Web/extension/Application Memory integration.
@@ -80,9 +83,10 @@ provider's schema.
 
 The implemented extension is a first-class application entry point
 whether a job was found inside CareerOS or elsewhere. It securely shares the
-Web session, detects likely application pages, and converts supported forms into
-a provider-neutral read-only model without requiring a CareerOS Job. Answer
-resolution, autofill, and review behavior remain planned; final submission
+Web session, detects likely application pages, converts supported forms into a
+provider-neutral read-only model, and requests policy-controlled answer
+decisions without requiring a CareerOS Job. The popup displays only aggregate
+decision state. Autofill and per-field review remain planned; final submission
 remains the user's action.
 
 ### Remember
@@ -124,6 +128,7 @@ The `docs/` directory is the product and engineering source of truth:
 - `docs/ARCHITECTURE.md` — approved modular architecture
 - `docs/ROADMAP.md` — authoritative milestone sequence
 - `docs/FORM_MODEL.md` — M11 normalized form and adapter contract
+- `docs/ANSWER_ENGINE.md` — M12 answer-source and policy contract
 
 ## Repository structure
 

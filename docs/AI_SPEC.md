@@ -2,13 +2,13 @@
 
 > Version: 0.2
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-23
+> Last Updated: 2026-09-25
 
 ## 1. Purpose
 
 This document defines AI behavior across the re-baselined V1. It preserves the
-implemented evidence-grounding contracts and defines future Answer Engine
-boundaries without claiming those capabilities exist today.
+implemented evidence-grounding contracts, defines the implemented Answer Engine
+foundation, and constrains later answer execution.
 
 AI is a dependency used for specific semantic tasks. It is not the product
 architecture and should not be used for deterministic work.
@@ -23,13 +23,17 @@ architecture and should not be used for deterministic work.
   Version;
 - resume-representation evaluation;
 - Strong/Hidden/Weak/Genuine Gap classification; and
-- explainable Job Intelligence recommendation.
+- explainable Job Intelligence recommendation;
+- deterministic application-field and sensitive-question classification;
+- optional bounded semantic field classification when deterministic mapping is
+  insufficient; and
+- canonical answer-source retrieval with explicit policy decisions and safe
+  fallback to unknown.
 
 ### Planned AI-assisted tasks
 
-- semantic application-field/question classification where deterministic rules
-  are insufficient; and
-- narrowly scoped answer suggestions where policy permits.
+- narrowly scoped answer generation where policy permits and a canonical answer
+  does not exist.
 
 ### Deferred AI tasks
 
@@ -211,10 +215,12 @@ persisted.
 
 AI-supplied identifiers are untrusted until validated.
 
-## 14. Answer Engine — planned service
+## 14. Answer Engine — implemented foundation
 
-The Answer Engine is not implemented. During V1 formation it should become a
-reusable service callable by the extension and, later, other approved surfaces.
+The Answer Engine is an authenticated backend service reusable by the extension
+and other approved surfaces. M12 returns policy decisions only; it does not
+change external forms, persist answers, or create Applications. Form execution
+begins in M13.
 
 Conceptual pipeline:
 
@@ -321,7 +327,7 @@ employment history, or other indirect signals.
 If an approved explicit value is unavailable, the action is ask, require
 confirmation, or leave unanswered—not guess.
 
-## 20. Planned Answer Engine contract
+## 20. Answer Engine decision contract
 
 A decision may conceptually contain:
 
@@ -337,8 +343,8 @@ requires review/confirmation
 action
 ```
 
-The implementation milestone must define concrete schemas and deterministic
-policies before enabling fill actions.
+M12 implements this as a concrete typed contract with deterministic policies.
+Later form execution must consume those decisions without weakening them.
 
 ## 21. External page and form trust
 

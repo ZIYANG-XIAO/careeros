@@ -10,6 +10,8 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from careeros_api.answer_classifier import AnswerFieldClassifier
+from careeros_api.answer_engine import answer_classifier_dependency
 from careeros_api.auth import get_current_user
 from careeros_api.config import Settings, get_settings
 from careeros_api.db import get_db_session
@@ -91,6 +93,7 @@ async def make_integration_client(
     resume_parser: ResumeParser | None = None,
     job_parser: JobParser | None = None,
     job_matcher: JobMatcher | None = None,
+    answer_classifier: AnswerFieldClassifier | None = None,
     resume_storage_dir: str = "/tmp/careeros-test-resume-assets",
 ) -> AsyncGenerator[AsyncClient]:
     """Create an authenticated AsyncClient backed by a real DB user+brain.
@@ -147,6 +150,8 @@ async def make_integration_client(
         app.dependency_overrides[job_parser_dependency] = lambda: job_parser
     if job_matcher is not None:
         app.dependency_overrides[job_matcher_dependency] = lambda: job_matcher
+    if answer_classifier is not None:
+        app.dependency_overrides[answer_classifier_dependency] = lambda: answer_classifier
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

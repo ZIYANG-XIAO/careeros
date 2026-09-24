@@ -1,7 +1,7 @@
 # CareerOS M11 Normalized Form Model
 
 > Status: Implemented for M11 detection and inspection
-> Last Updated: 2026-09-24
+> Last Updated: 2026-09-25
 
 ## 1. Purpose and boundary
 
@@ -17,7 +17,7 @@ Untrusted application page
 → selected generic or ATS adapter
 → bounded field inspection
 → normalized application form
-→ future Answer Engine (M12)
+→ Answer Engine (M12)
 ```
 
 ## 2. Form contract

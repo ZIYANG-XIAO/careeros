@@ -2,7 +2,7 @@
 
 > Version: 0.3
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-24
+> Last Updated: 2026-09-25
 
 ## 1. Product vision
 
@@ -326,7 +326,7 @@ depends on it.
 
 ## 14. Current implementation boundary
 
-Implemented through M11:
+Implemented through M12:
 
 - project foundation;
 - Career Brain/Profile;
@@ -341,11 +341,15 @@ Implemented through M11:
 - the secure Manifest V3 extension foundation, authenticated API boundary,
   active-tab application-page detection, and honest unsupported states; and
 - provider-neutral read-only form normalization with generic and initial ATS
-  adapter boundaries, canonical keys, and explicit support/confidence states.
+  adapter boundaries, canonical keys, and explicit support/confidence states;
+  and
+- the authenticated Answer Engine foundation with owned source retrieval,
+  deterministic sensitive policy, bounded semantic classification, explicit
+  decision/review states, and no form execution.
 
 Planned during V1 formation:
 
-- Answer Engine and autofill;
+- autofill and per-field application review;
 - Application domain and Applications surface; and
 - end-to-end integration and hardening.
 

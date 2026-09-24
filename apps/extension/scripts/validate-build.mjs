@@ -59,6 +59,13 @@ if (/\.(?:value|checked|files)\b|innerHTML|outerHTML/.test(contentScript)) {
     "M11 content inspection must not read entered values, selections, files, or raw HTML.",
   );
 }
+if (
+  /proposedAnswer|proposed_answer|CAREEROS_RESOLVE_ANSWERS/.test(contentScript)
+) {
+  throw new Error(
+    "M12 answer decisions must remain in the privileged background/popup boundary.",
+  );
+}
 
 for (const file of ["background.js", "content.js", "popup.js"]) {
   const bundle = await readFile(path.join(buildDir, file), "utf8");
@@ -68,5 +75,5 @@ for (const file of ["background.js", "content.js", "popup.js"]) {
 }
 
 console.log(
-  `Validated M11 permissions, credential boundaries, and CRX ID ${extensionId}.`,
+  `Validated M12 permissions, answer boundaries, and CRX ID ${extensionId}.`,
 );

@@ -22,7 +22,7 @@ another document is not authorization to implement it.
 
 ## 2. Current baseline
 
-M0–M11 are implemented. The repository currently contains:
+M0–M12 are implemented. The repository currently contains:
 
 - the Web, API, and PostgreSQL foundation;
 - authenticated user ownership and Career Brain/Profile editing;
@@ -36,12 +36,16 @@ M0–M11 are implemented. The repository currently contains:
   background-only API credentials, active-tab application-page detection, and
   explicit supported/unsupported UI; and
 - read-only provider-neutral form normalization with generic, Greenhouse,
-  Lever, and Ashby adapter boundaries and explicit support/confidence states.
+  Lever, and Ashby adapter boundaries and explicit support/confidence states;
+  and
+- a reusable backend Answer Engine foundation with deterministic safety policy,
+  owned canonical-source retrieval, optional bounded semantic classification,
+  explicit decision/review states, and aggregate extension preview.
 
 Not currently implemented:
 
 - a production job-discovery feed or real external source adapter;
-- the Answer Engine or autofill;
+- autofill and form execution;
 - the durable Application domain and Applications UI;
 - Application Strategy or resume tailoring.
 
@@ -90,7 +94,7 @@ Product services and workflows consume those domains:
 
 - Job Discovery (planned)
 - Autofill (planned)
-- Answer Engine (planned)
+- Answer Engine (implemented foundation)
 - Job Intelligence (implemented foundation)
 - Resume Tailoring (deferred)
 - Application Q&A, Interview Preparation, Recommendation, Analytics, Career

@@ -2,7 +2,7 @@
 
 > Version: 0.2
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-24
+> Last Updated: 2026-09-25
 
 ## 1. Purpose
 
@@ -23,7 +23,7 @@ directly to application assistance.
 
 ## 2. Current and planned scope
 
-### Implemented now — M0–M11
+### Implemented now — M0–M12
 
 - authenticated Web/API/PostgreSQL foundation;
 - Career Brain/Profile management and user ownership;
@@ -42,11 +42,14 @@ directly to application assistance.
   unsupported behavior; and
 - read-only provider-neutral form normalization, deterministic canonical keys,
   explicit support/confidence states, and isolated generic, Greenhouse, Lever,
-  and Ashby adapter boundaries.
+  and Ashby adapter boundaries; and
+- a reusable authenticated Answer Engine foundation with deterministic safety
+  classification, owned source retrieval, optional bounded semantic
+  classification, and explicit answer/review/reuse decisions.
 
 ### Planned V1 formation
 
-- Answer Engine and Career Brain-backed autofill;
+- Career Brain-backed autofill and per-field review;
 - durable Application domain and Applications surface;
 - Web/extension/Application Memory integration; and
 - V1 hardening across both required scenarios.

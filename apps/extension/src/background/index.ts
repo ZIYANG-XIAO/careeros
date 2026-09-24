@@ -2,6 +2,7 @@ import { CareerOsApiClient } from "./api-client";
 import { tokenProvider } from "./auth";
 import {
   parsePopupRequest,
+  type AnswerResolution,
   type ExtensionResponse,
   type PageDetection,
 } from "../shared/messages";
@@ -52,6 +53,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     api
       .getAuthStatus()
       .then((data) => sendResponse({ ok: true, data }))
+      .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
+    return true;
+  }
+
+  if (request.type === "CAREEROS_RESOLVE_ANSWERS") {
+    api
+      .resolveAnswers(request)
+      .then((data) =>
+        sendResponse(
+          data
+            ? ({ ok: true, data } satisfies ExtensionResponse<AnswerResolution>)
+            : ({
+                ok: false,
+                error: "UNAUTHENTICATED",
+              } satisfies ExtensionResponse<AnswerResolution>),
+        ),
+      )
       .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
     return true;
   }

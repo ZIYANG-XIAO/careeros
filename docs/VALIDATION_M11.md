@@ -1,7 +1,7 @@
 # M11 Form Detection and Normalization Validation
 
 > Status: Passed
-> Validated: 2026-09-24
+> Validated: 2026-09-25
 
 ## Scope
 
@@ -54,5 +54,6 @@ completed successfully; authenticated API access was already validated in M10.
 
 - ATS coverage is fixture-based and provider DOM can change.
 - Dynamic controls added after inspection require another popup inspection.
-- Custom questions remain unknown until M12 classification and policy exist.
+- Custom questions remain unknown unless M12 classification and policy can
+  resolve them safely.
 - M11 does not fill, upload, save answers, create Applications, or submit.

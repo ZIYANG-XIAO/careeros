@@ -2,13 +2,13 @@
 
 > Version: 0.2
 > Status: Approved logical model; implementation status called out explicitly
-> Last Updated: 2026-09-24
+> Last Updated: 2026-09-25
 
 ## 1. Purpose
 
 This document defines CareerOS domain concepts for the re-baselined V1. It
-separates the implemented M0–M11 product state from planned V1 formation
-concepts. M10 and M11 add no database migration.
+separates the implemented M0–M12 product state from planned V1 formation
+concepts. M10–M12 add no database migration.
 
 The model supports:
 
@@ -90,6 +90,10 @@ The current migrations define:
 - `saved_jobs`
 
 Current Alembic head: `0008_m9_job_source_boundary`.
+
+M12 adds a transient Answer Engine decision contract and no tables. Decisions
+reference owned canonical sources but are not persisted as Application or
+Reusable Answer history.
 
 ### Planned, not implemented
 

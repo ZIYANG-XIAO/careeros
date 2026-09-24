@@ -2,7 +2,7 @@
 
 > Version: 0.2
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-24
+> Last Updated: 2026-09-25
 
 ## 1. Purpose and authority
 
@@ -286,7 +286,7 @@ boundaries. Fixture coverage verifies stable normalization, unknown preservation
 hostile-text handling, value non-collection, and honest popup summaries. See
 `docs/FORM_MODEL.md` and `docs/VALIDATION_M11.md`.
 
-### M12 — Answer Engine Foundation
+### M12 — Answer Engine Foundation — implementation complete
 
 #### Goal
 
@@ -313,6 +313,15 @@ Resolve safe answers from canonical CareerOS data with explicit policy.
 - protected traits and consequential answers are never inferred;
 - every decision has a review/policy state; and
 - the service is reusable outside extension UI.
+
+#### Delivered
+
+Implemented an authenticated reusable Answer Engine endpoint, deterministic
+sensitive and consequential guardrails, optional bounded semantic
+classification, owned canonical-source retrieval, explicit answer/review/reuse
+policy, safe unknown behavior, and a background-only extension request with an
+aggregate no-fill popup summary. No answers or decisions are persisted. See
+`docs/ANSWER_ENGINE.md` and `docs/VALIDATION_M12.md`.
 
 ### M13 — Autofill and Initial ATS Support
 
@@ -526,10 +535,11 @@ After a milestone:
 
 ## 14. Immediate next step
 
-M11 implementation and representative unpacked-extension Chrome validation are
-complete. The next approved implementation milestone is:
+M12 implementation and automated validation are complete. Representative
+unpacked-extension Chrome validation is the remaining milestone gate. After
+that gate, the next approved implementation milestone is:
 
-> M12 — Answer Engine Foundation
+> M13 — Autofill and Initial ATS Support
 
-Do not begin autofill, Application Memory, Application Strategy, or resume
-tailoring as part of M12.
+Do not begin Application Memory, Application Strategy, resume tailoring, or
+automatic final submission as part of M13.

@@ -2,7 +2,7 @@
 
 > Version: 0.3
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-24
+> Last Updated: 2026-09-25
 
 ## 1. Purpose
 
@@ -14,8 +14,8 @@ KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
                        ENHANCE (optional)
 ```
 
-It preserves working M0–M11 behavior while defining minimal extension points for
-Jobs discovery, application assistance, Answer Engine, and Application Memory.
+It preserves working M0–M12 behavior while defining minimal extension points for
+Jobs discovery, application execution, and Application Memory.
 
 The architectural principle is:
 
@@ -50,14 +50,17 @@ Implemented domains and workflows:
   UI; and
 - provider-neutral read-only form inspection with generic, Greenhouse, Lever,
   and Ashby adapter boundaries, deterministic canonical keys, and explicit
-  support/confidence states.
+  support/confidence states; and
+- an authenticated policy-first Answer Engine with deterministic sensitive
+  guardrails, optional bounded semantic classification, canonical source
+  retrieval, and explicit Fill/Suggest/Ask/Confirm/Unknown decisions.
 
 Current Alembic head: `0008_m9_job_source_boundary`.
 
 Not implemented today:
 
 - production job-source ingestion;
-- Answer Engine or autofill;
+- autofill or form execution;
 - Application domain; or
 - Application Strategy/resume tailoring.
 
@@ -117,9 +120,9 @@ External Job Sources ─► Job Source Adapters ─► normalized Job boundary �
 External ATS/Forms   ─► ATS/Generic Adapters ─► normalized Form model ───► API
 ```
 
-The extension foundation and normalized form/ATS adapter boundary are
-implemented. Answer Engine, autofill, and Application Memory boundaries remain
-planned.
+The extension foundation, normalized form/ATS adapter boundary, and Answer
+Engine foundation are implemented. Autofill and Application Memory boundaries
+remain planned.
 
 ## 5. Core domains vs product services
 
@@ -136,7 +139,7 @@ planned.
 
 - Job Discovery (planned)
 - Autofill (planned)
-- Answer Engine (planned)
+- Answer Engine (implemented foundation)
 - Job Intelligence (implemented)
 - Resume Tailoring (deferred)
 - Application Q&A, Interview Preparation, Recommendation, Analytics, Career
@@ -285,7 +288,7 @@ Intelligence is optional and does not gate Apply or extension assistance.
 
 Approved stack direction: React, TypeScript, Chrome Manifest V3.
 
-Implemented M10–M11 components:
+Implemented M10–M12 components:
 
 - background service worker;
 - content scripts;
@@ -295,9 +298,11 @@ Implemented M10–M11 components:
 - supported/unsupported popup state;
 - generic form inspector and provider-neutral form contracts;
 - isolated Greenhouse, Lever, and Ashby adapter boundaries; and
-- aggregate form-inspection status in the popup.
+- aggregate form-inspection status in the popup;
+- a background-only authenticated Answer Engine request; and
+- aggregate answer-decision status without exposing answer values to the page.
 
-Planned components are the Answer Engine, form execution, and review state.
+Planned components are form execution and per-field review state.
 
 M10 reads only narrowly scoped active-tab signals needed for page detection.
 Later milestones may request canonical answers and policy decisions from the
@@ -360,7 +365,7 @@ Raw page content remains untrusted and is not persisted in M11. Current field
 values are never read. The concrete contract and limits are documented in
 `docs/FORM_MODEL.md`.
 
-## 17. Answer Engine architecture — planned
+## 17. Answer Engine architecture — implemented foundation
 
 The Answer Engine is a backend product service reusable outside the extension.
 
@@ -374,9 +379,10 @@ Normalized field/question
 → Fill / Suggest / Ask / Confirm / Unknown
 ```
 
-Sources may include confirmed Career Brain/profile data, application preferences,
-reusable confirmed answers, selected Resume Version, and current Application
-context.
+Current sources are authenticated identity email, one unambiguous Education, one
+explicit current Experience, and an explicitly selected owned Resume Version.
+Missing profile fields, preferences, reusable answers, and Application context
+remain unknown until their approved domains exist.
 
 Policy must distinguish professional truth, preferences, reusable answers,
 application-specific answers, and sensitive answers.
@@ -384,6 +390,10 @@ application-specific answers, and sensitive answers.
 AI does not own authorization or policy. Sensitive and consequential categories
 require deterministic guardrails and explicit user origin. Unknown remains
 unknown.
+
+M12 decisions are transient: no answer or decision is persisted, and content
+scripts receive neither CareerOS credentials nor proposed answer values. See
+`docs/ANSWER_ENGINE.md` for the concrete contract and policy.
 
 ## 18. Application architecture — planned
 

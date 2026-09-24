@@ -2,7 +2,7 @@
 
 > Version: 0.2
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-24
+> Last Updated: 2026-09-25
 
 ## 1. Experience model
 
@@ -37,8 +37,9 @@ browsing, application history, and detailed optional intelligence.
 The extension is a thin assistant on external application pages. It authenticates
 through CareerOS, distinguishes likely application, ordinary, and unsupported
 pages, and inspects supported forms into a provider-neutral read-only model.
-Approved answers, autofill, review state, and durable application context remain
-planned.
+It requests policy-controlled answer decisions and displays aggregate readiness
+without exposing answers to the page. Autofill, per-field review state, and
+durable application context remain planned.
 
 It is not a second full CareerOS application.
 
@@ -56,12 +57,13 @@ Implemented Web flows today:
   application-page detection;
 - read-only generic/Greenhouse/Lever/Ashby form normalization with explicit
   known, unknown, and unsupported states;
+- authenticated Answer Engine decisions with safe unknown/sensitive behavior and
+  aggregate extension preview;
 - an Applications planned-state placeholder; and
 - Job Intelligence creation and review.
 
-Production job-source discovery, Application tracking, Answer Engine, autofill,
-and external application capture are planned
-flows described below, not current behavior.
+Production job-source discovery, Application tracking, autofill, and external
+application capture are planned flows described below, not current behavior.
 
 ## 4. First-time onboarding — Know Me
 
@@ -191,8 +193,8 @@ context must remain uncertain and reviewable.
 ## 8. Extension application flow
 
 M10 implements authentication and initial page detection; M11 implements
-read-only form normalization. Answer resolution, filling, and review remain
-planned:
+read-only form normalization; M12 implements answer decisions and aggregate
+preview. Filling and per-field review remain planned:
 
 ```text
 Application Page
