@@ -148,12 +148,40 @@ export interface AnswerResolution {
   semanticClassifierUsed: boolean;
 }
 
+export type FillPlanField = {
+  fieldId: string;
+  canonicalKey: CanonicalFieldKey | null;
+  controlType: NormalizedControlType;
+  action: AnswerAction;
+  proposedAnswer: string | null;
+};
+
+export type FillFieldState =
+  | "FILLED"
+  | "REVIEW_REQUIRED"
+  | "INPUT_REQUIRED"
+  | "UNRESOLVED"
+  | "SKIPPED_EXISTING"
+  | "FAILED";
+
+export interface FillFieldResult {
+  fieldId: string;
+  state: FillFieldState;
+}
+
+export interface FillExecutionResult {
+  fields: FillFieldResult[];
+}
+
 export type PopupRequest =
   | { type: "CAREEROS_GET_AUTH_STATUS" }
   | { type: "CAREEROS_DETECT_ACTIVE_PAGE" }
-  | ({ type: "CAREEROS_RESOLVE_ANSWERS" } & AnswerResolutionRequestData);
+  | ({ type: "CAREEROS_RESOLVE_ANSWERS" } & AnswerResolutionRequestData)
+  | { type: "CAREEROS_APPLY_FILL_PLAN"; fields: FillPlanField[] };
 
-export type ContentRequest = { type: "CAREEROS_INSPECT_PAGE" };
+export type ContentRequest =
+  | { type: "CAREEROS_INSPECT_PAGE" }
+  | { type: "CAREEROS_APPLY_FILL_PLAN"; fields: FillPlanField[] };
 
 export type ExtensionResponse<T> =
   | { ok: true; data: T }
@@ -181,13 +209,16 @@ export function parsePopupRequest(value: unknown): PopupRequest | null {
     return { type: "CAREEROS_DETECT_ACTIVE_PAGE" };
   }
   if (isAnswerResolutionRequest(value)) return value;
+  if (isFillPlanRequest(value)) return value;
   return null;
 }
 
 export function parseContentRequest(value: unknown): ContentRequest | null {
-  return isExactMessage(value, "CAREEROS_INSPECT_PAGE")
-    ? { type: "CAREEROS_INSPECT_PAGE" }
-    : null;
+  if (isExactMessage(value, "CAREEROS_INSPECT_PAGE")) {
+    return { type: "CAREEROS_INSPECT_PAGE" };
+  }
+  if (isFillPlanRequest(value)) return value;
+  return null;
 }
 
 const canonicalKeys = new Set<string>([
@@ -303,6 +334,73 @@ function isAnswerResolutionRequest(
       (typeof value.selectedResumeVersionId === "string" &&
         uuidPattern.test(value.selectedResumeVersionId))
     )
+  ) {
+    return false;
+  }
+  const ids = value.fields.map((field) => field.fieldId);
+  return ids.length === new Set(ids).size;
+}
+
+function isFillPlanField(value: unknown): value is FillPlanField {
+  if (!isRecord(value)) return false;
+  if (
+    !hasExactKeys(value, [
+      "fieldId",
+      "canonicalKey",
+      "controlType",
+      "action",
+      "proposedAnswer",
+    ])
+  ) {
+    return false;
+  }
+  if (
+    typeof value.fieldId !== "string" ||
+    value.fieldId.length === 0 ||
+    value.fieldId.length > 200 ||
+    !(
+      value.canonicalKey === null ||
+      (typeof value.canonicalKey === "string" &&
+        canonicalKeys.has(value.canonicalKey))
+    ) ||
+    typeof value.controlType !== "string" ||
+    !controlTypes.has(value.controlType) ||
+    typeof value.action !== "string" ||
+    !new Set<AnswerAction>([
+      "FILL",
+      "SUGGEST",
+      "ASK",
+      "CONFIRM",
+      "UNKNOWN",
+    ]).has(value.action as AnswerAction)
+  ) {
+    return false;
+  }
+  if (value.action === "FILL") {
+    return (
+      value.canonicalKey !== null &&
+      !["CHECKBOX", "RADIO_GROUP", "FILE", "UNSUPPORTED"].includes(
+        value.controlType as string,
+      ) &&
+      typeof value.proposedAnswer === "string" &&
+      value.proposedAnswer.length > 0 &&
+      value.proposedAnswer.length <= 2_000
+    );
+  }
+  return value.proposedAnswer === null;
+}
+
+function isFillPlanRequest(
+  value: unknown,
+): value is { type: "CAREEROS_APPLY_FILL_PLAN"; fields: FillPlanField[] } {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, ["type", "fields"]) ||
+    value.type !== "CAREEROS_APPLY_FILL_PLAN" ||
+    !Array.isArray(value.fields) ||
+    value.fields.length === 0 ||
+    value.fields.length > 200 ||
+    !value.fields.every(isFillPlanField)
   ) {
     return false;
   }

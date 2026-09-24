@@ -323,7 +323,7 @@ policy, safe unknown behavior, and a background-only extension request with an
 aggregate no-fill popup summary. No answers or decisions are persisted. See
 `docs/ANSWER_ENGINE.md` and `docs/VALIDATION_M12.md`.
 
-### M13 — Autofill and Initial ATS Support
+### M13 — Autofill and Initial ATS Support — implementation complete
 
 #### Goal
 
@@ -353,6 +353,15 @@ Apply Answer Engine decisions safely to supported external forms.
 - Workday as an exit requirement;
 - universal ATS support;
 - auto-submit or mass apply.
+
+#### Delivered
+
+Implemented explicit user-triggered execution for approved blank native
+controls, exact field-signature revalidation, non-overwrite behavior, visible
+filled/review/input/unresolved states, generic and initial ATS fixture coverage,
+and build enforcement of the no-submit boundary. Resume/file upload remains
+manual where the browser cannot safely assign a file. See
+`docs/FORM_EXECUTION.md` and `docs/VALIDATION_M13.md`.
 
 ### Wave B validation gate — Apply Anywhere
 
@@ -535,11 +544,12 @@ After a milestone:
 
 ## 14. Immediate next step
 
-M12 implementation and automated validation are complete. Representative
-unpacked-extension Chrome validation is the remaining milestone gate. After
-that gate, the next approved implementation milestone is:
+M12 and M13 implementation and automated validation are complete. At the user's
+direction, unpacked-extension Chrome setup was skipped; representative M12/M13
+browser validation and the Wave B validation gate therefore remain open. Do not
+begin M14 until that gate is resumed and completed.
 
-> M13 — Autofill and Initial ATS Support
+> Remaining gate — representative Apply Anywhere browser validation
 
 Do not begin Application Memory, Application Strategy, resume tailoring, or
-automatic final submission as part of M13.
+automatic final submission while this gate remains open.

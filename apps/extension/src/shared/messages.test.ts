@@ -62,4 +62,61 @@ describe("extension message validation", () => {
       parseContentRequest({ type: "CAREEROS_INSPECT_PAGE", html: "<body />" }),
     ).toBeNull();
   });
+
+  it("accepts only exact bounded fill plans", () => {
+    const request = {
+      type: "CAREEROS_APPLY_FILL_PLAN",
+      fields: [
+        {
+          fieldId: "field-1",
+          canonicalKey: "CONTACT_EMAIL",
+          controlType: "EMAIL",
+          action: "FILL",
+          proposedAnswer: "candidate@example.com",
+        },
+        {
+          fieldId: "field-2",
+          canonicalKey: null,
+          controlType: "TEXT",
+          action: "ASK",
+          proposedAnswer: null,
+        },
+      ],
+    };
+    expect(parsePopupRequest(request)).toEqual(request);
+    expect(parseContentRequest(request)).toEqual(request);
+    expect(
+      parsePopupRequest({
+        ...request,
+        fields: [{ ...request.fields[0], token: "steal-me" }],
+      }),
+    ).toBeNull();
+    expect(
+      parsePopupRequest({
+        ...request,
+        fields: [{ ...request.fields[0], proposedAnswer: null }],
+      }),
+    ).toBeNull();
+    expect(
+      parsePopupRequest({
+        ...request,
+        fields: [
+          { ...request.fields[0], action: "ASK", proposedAnswer: "guess" },
+        ],
+      }),
+    ).toBeNull();
+    expect(
+      parsePopupRequest({
+        ...request,
+        fields: [
+          {
+            ...request.fields[0],
+            canonicalKey: "RESUME_FILE",
+            controlType: "FILE",
+            proposedAnswer: "resume.pdf",
+          },
+        ],
+      }),
+    ).toBeNull();
+  });
 });

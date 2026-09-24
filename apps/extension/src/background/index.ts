@@ -4,6 +4,7 @@ import {
   parsePopupRequest,
   type AnswerResolution,
   type ExtensionResponse,
+  type FillExecutionResult,
   type PageDetection,
 } from "../shared/messages";
 
@@ -42,6 +43,28 @@ async function inspectActivePage(): Promise<ExtensionResponse<PageDetection>> {
   }
 }
 
+async function applyActivePageFillPlan(
+  fields: Extract<
+    ReturnType<typeof parsePopupRequest>,
+    { type: "CAREEROS_APPLY_FILL_PLAN" }
+  >["fields"],
+): Promise<ExtensionResponse<FillExecutionResult>> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id || !tab.url) return { ok: false, error: "UNSUPPORTED_PAGE" };
+  const url = new URL(tab.url);
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return { ok: false, error: "UNSUPPORTED_PAGE" };
+  }
+  try {
+    return (await chrome.tabs.sendMessage(tab.id, {
+      type: "CAREEROS_APPLY_FILL_PLAN",
+      fields,
+    })) as ExtensionResponse<FillExecutionResult>;
+  } catch {
+    return { ok: false, error: "UNAVAILABLE" };
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Only extension-owned pages such as the popup may request privileged work.
   // Messages from content scripts carry sender.tab and are intentionally denied.
@@ -70,6 +93,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               } satisfies ExtensionResponse<AnswerResolution>),
         ),
       )
+      .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
+    return true;
+  }
+
+  if (request.type === "CAREEROS_APPLY_FILL_PLAN") {
+    applyActivePageFillPlan(request.fields)
+      .then(sendResponse)
       .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
     return true;
   }

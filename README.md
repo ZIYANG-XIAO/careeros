@@ -19,7 +19,7 @@ the user through the Career Brain.
 
 ## Current implementation
 
-M0–M12 are implemented at repository level. Today the repository supports:
+M0–M13 are implemented at repository level. Today the repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
 - Clerk authentication and server-side user ownership;
@@ -42,13 +42,16 @@ M0–M12 are implemented at repository level. Today the repository supports:
   support/confidence states;
 - an authenticated Answer Engine foundation with owned source retrieval,
   sensitive/consequential guardrails, explicit Fill/Suggest/Ask/Confirm/Unknown
-  decisions, and aggregate extension preview; and
+  decisions, and aggregate extension preview;
+- explicit user-triggered filling for approved blank native controls, exact
+  field revalidation, non-overwrite behavior, visible per-field review states,
+  and a hard no-submit boundary; and
 - an honest Applications placeholder that does not simulate tracking.
 
 The following V1 capabilities are planned, not implemented:
 
 - production job acquisition and real external source adapters;
-- autofill and per-field review/execution;
+- automatic resume/file upload and broader custom-widget execution;
 - durable Application records and a functional Applications tracking surface;
   and
 - end-to-end Web/extension/Application Memory integration.
@@ -84,10 +87,10 @@ provider's schema.
 The implemented extension is a first-class application entry point
 whether a job was found inside CareerOS or elsewhere. It securely shares the
 Web session, detects likely application pages, converts supported forms into a
-provider-neutral read-only model, and requests policy-controlled answer
-decisions without requiring a CareerOS Job. The popup displays only aggregate
-decision state. Autofill and per-field review remain planned; final submission
-remains the user's action.
+provider-neutral model, and requests policy-controlled answer decisions without
+requiring a CareerOS Job. After explicit user action it fills only approved blank
+native controls and marks review/input/unresolved states on the page. Existing
+answers remain untouched and final submission remains the user's action.
 
 ### Remember
 
@@ -129,6 +132,7 @@ The `docs/` directory is the product and engineering source of truth:
 - `docs/ROADMAP.md` — authoritative milestone sequence
 - `docs/FORM_MODEL.md` — M11 normalized form and adapter contract
 - `docs/ANSWER_ENGINE.md` — M12 answer-source and policy contract
+- `docs/FORM_EXECUTION.md` — M13 safe execution and review-state contract
 
 ## Repository structure
 
@@ -237,8 +241,8 @@ npm --workspace @careeros/extension run fixture
 ```
 
 Then open `http://localhost:4173/application-page.html` and open the extension.
-The fixture contains no real applicant data, and M10 does not autofill or submit
-the form.
+The fixture contains no real applicant data. M13 can fill approved blank fields
+only after explicit user action and never submits the form.
 
 ### Verification
 

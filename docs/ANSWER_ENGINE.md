@@ -112,5 +112,6 @@ aggregate ready/input/unresolved counts without displaying answer values. The
 content script and external page receive no token, Career Brain data, or answer
 decision in M12.
 
-M13 owns page execution, visible per-field review state, resume upload behavior,
-and the invariant that final Submit remains a user action.
+M13 implements user-triggered page execution and visible per-field review state
+without weakening these decisions. Resume/file upload remains manual, and final
+Submit remains a user action. See `docs/FORM_EXECUTION.md`.

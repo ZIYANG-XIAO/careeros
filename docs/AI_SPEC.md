@@ -219,8 +219,9 @@ AI-supplied identifiers are untrusted until validated.
 
 The Answer Engine is an authenticated backend service reusable by the extension
 and other approved surfaces. M12 returns policy decisions only; it does not
-change external forms, persist answers, or create Applications. Form execution
-begins in M13.
+change external forms, persist answers, or create Applications. M13 extension
+execution consumes those decisions after explicit user action without moving
+authorization or answer policy into the page.
 
 Conceptual pipeline:
 

@@ -326,7 +326,7 @@ depends on it.
 
 ## 14. Current implementation boundary
 
-Implemented through M12:
+Implemented through M13:
 
 - project foundation;
 - Career Brain/Profile;
@@ -345,11 +345,14 @@ Implemented through M12:
   and
 - the authenticated Answer Engine foundation with owned source retrieval,
   deterministic sensitive policy, bounded semantic classification, explicit
-  decision/review states, and no form execution.
+  decision/review states; and
+- user-triggered execution for approved blank native controls with exact target
+  revalidation, non-overwrite behavior, visible field states, initial ATS
+  fixture coverage, and no final submission.
 
 Planned during V1 formation:
 
-- autofill and per-field application review;
+- automatic resume/file upload and broader custom-widget execution;
 - Application domain and Applications surface; and
 - end-to-end integration and hardening.
 

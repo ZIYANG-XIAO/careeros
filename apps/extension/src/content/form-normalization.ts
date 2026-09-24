@@ -28,8 +28,13 @@ const AUTOCOMPLETE_KEYS: Readonly<Record<string, CanonicalFieldKey>> = {
   "country-name": "ADDRESS_COUNTRY",
 };
 
-type SupportedControl =
+export type SupportedControl =
   HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+
+export interface NormalizedFieldTarget {
+  field: NormalizedFormField;
+  controls: SupportedControl[];
+}
 
 type CanonicalMatch = {
   key: CanonicalFieldKey;
@@ -154,6 +159,47 @@ const TEXT_MATCHERS: ReadonlyArray<[RegExp, CanonicalFieldKey]> = [
   [/\b(current|most recent|latest)\s+(job )?title\b/, "EXPERIENCE_TITLE"],
 ];
 
+const EXACT_TEXT_MATCHERS: ReadonlyArray<[RegExp, CanonicalFieldKey]> = [
+  [/^(first|given) name$/, "PERSON_FIRST_NAME"],
+  [/^(last|family|surname)$/, "PERSON_LAST_NAME"],
+  [/^(full|legal|candidate) name$|^name$/, "PERSON_FULL_NAME"],
+  [/^e[- ]?mail( address)?$/, "CONTACT_EMAIL"],
+  [/^(phone|telephone|mobile)( number)?$/, "CONTACT_PHONE"],
+  [/^(street )?address( line 1)?$/, "ADDRESS_LINE_1"],
+  [/^address line 2$|^(apartment|suite|unit)$/, "ADDRESS_LINE_2"],
+  [/^city$/, "ADDRESS_CITY"],
+  [/^(state|province|region)$/, "ADDRESS_REGION"],
+  [/^(zip|postal)( code)?$/, "ADDRESS_POSTAL_CODE"],
+  [/^country$/, "ADDRESS_COUNTRY"],
+  [/^linked ?in( profile| url)?$/, "PROFESSIONAL_LINKEDIN_URL"],
+  [/^github( profile| url)?$/, "PROFESSIONAL_GITHUB_URL"],
+  [/^(portfolio|personal website|website url)$/, "PROFESSIONAL_PORTFOLIO_URL"],
+  [/^(school|university|college|institution)$/, "EDUCATION_SCHOOL"],
+  [/^degree$/, "EDUCATION_DEGREE"],
+  [/^(field of study|major)$/, "EDUCATION_FIELD_OF_STUDY"],
+  [/^(current|most recent|latest) (company|employer)$/, "EXPERIENCE_COMPANY"],
+  [/^(current|most recent|latest) (job )?title$/, "EXPERIENCE_TITLE"],
+];
+
+function exactTextMatch(
+  control: SupportedControl,
+  question: string | null,
+): CanonicalMatch | null {
+  const candidates = [
+    question,
+    humanizeIdentifier(control.getAttribute("name")),
+    humanizeIdentifier(control.id),
+  ]
+    .filter((candidate): candidate is string => Boolean(candidate))
+    .map((candidate) => candidate.toLowerCase());
+  for (const candidate of candidates) {
+    for (const [pattern, key] of EXACT_TEXT_MATCHERS) {
+      if (pattern.test(candidate)) return { key, confidence: "HIGH" };
+    }
+  }
+  return null;
+}
+
 function canonicalMatch(
   control: SupportedControl,
   question: string | null,
@@ -169,6 +215,9 @@ function canonicalMatch(
   if (inputType === "tel") {
     return { key: "CONTACT_PHONE", confidence: "HIGH" };
   }
+
+  const exact = exactTextMatch(control, question);
+  if (exact) return exact;
 
   const hints = hintText(control, question);
   if (inputType === "file") {
@@ -254,18 +303,17 @@ function normalizedField(
   };
 }
 
-function inspectForm(
+export function inspectFormTargets(
   form: HTMLFormElement,
   formIndex: number,
-  adapter: FormAdapterId,
-): NormalizedApplicationForm {
+): NormalizedFieldTarget[] {
   const controls = Array.from(
     form.querySelectorAll<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >("input, select, textarea"),
   ).slice(0, MAX_FIELDS_PER_FORM);
   const visitedRadioNames = new Set<string>();
-  const fields: NormalizedFormField[] = [];
+  const targets: NormalizedFieldTarget[] = [];
 
   controls.forEach((control, controlIndex) => {
     if (control instanceof HTMLInputElement && control.type === "radio") {
@@ -285,7 +333,7 @@ function inspectForm(
         `field-${formIndex}-${controlIndex}`,
         group,
       );
-      if (field) fields.push(field);
+      if (field) targets.push({ field, controls: group });
       return;
     }
 
@@ -293,8 +341,20 @@ function inspectForm(
       control,
       `field-${formIndex}-${controlIndex}`,
     );
-    if (field) fields.push(field);
+    if (field) targets.push({ field, controls: [control] });
   });
+
+  return targets;
+}
+
+function inspectForm(
+  form: HTMLFormElement,
+  formIndex: number,
+  adapter: FormAdapterId,
+): NormalizedApplicationForm {
+  const fields = inspectFormTargets(form, formIndex).map(
+    (target) => target.field,
+  );
 
   const supported = fields.filter(
     (field) => field.support === "SUPPORTED",

@@ -9,8 +9,10 @@ The normalized form model converts a supported external application form into a
 small provider-neutral structure. It is transient extension workflow data, not
 Career Brain truth, an Answer Engine decision, or an Application record.
 
-M11 is read-only. It does not retrieve answers, read entered field values,
-change controls, upload files, persist page content, or submit a form.
+M11 inspection is read-only. M13 execution reuses this model, reads current
+control values only locally to prevent overwrites, and may change approved blank
+controls after explicit user action. It does not read selected files, persist
+page content, or submit a form.
 
 ```text
 Untrusted application page
@@ -82,8 +84,8 @@ until M12 defines deterministic Answer Engine policy.
 - `UNSUPPORTED`: the control shape is outside the current normalized set.
 
 Confidence is `HIGH`, `MEDIUM`, or `LOW`. Confidence describes mapping quality;
-it is not an authorization to answer or fill. M12 policy remains authoritative
-for future answer actions.
+it is not an authorization to answer or fill. M12 policy remains authoritative,
+and M13 executes only approved `FILL` decisions after user action.
 
 ## 6. Adapter boundary
 

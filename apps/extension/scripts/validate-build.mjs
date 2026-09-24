@@ -54,17 +54,26 @@ if (/Authorization|Bearer|CLERK|session.?token/i.test(contentScript)) {
     "Privileged authentication material leaked into the content script.",
   );
 }
-if (/\.(?:value|checked|files)\b|innerHTML|outerHTML/.test(contentScript)) {
+if (/\.files\b|innerHTML|outerHTML/.test(contentScript)) {
   throw new Error(
-    "M11 content inspection must not read entered values, selections, files, or raw HTML.",
+    "M13 content execution must not read selected files or raw page HTML.",
+  );
+}
+if (/Authorization|Bearer|CAREEROS_RESOLVE_ANSWERS/.test(contentScript)) {
+  throw new Error(
+    "M13 content execution must not resolve answers or receive API credentials.",
   );
 }
 if (
-  /proposedAnswer|proposed_answer|CAREEROS_RESOLVE_ANSWERS/.test(contentScript)
+  !/CAREEROS_APPLY_FILL_PLAN/.test(contentScript) ||
+  !/data-careeros-field-state/.test(contentScript)
 ) {
   throw new Error(
-    "M12 answer decisions must remain in the privileged background/popup boundary.",
+    "M13 content execution and visible review state are missing.",
   );
+}
+if (/requestSubmit|\.submit\s*\(/.test(contentScript)) {
+  throw new Error("M13 content execution must never submit an application.");
 }
 
 for (const file of ["background.js", "content.js", "popup.js"]) {
@@ -75,5 +84,5 @@ for (const file of ["background.js", "content.js", "popup.js"]) {
 }
 
 console.log(
-  `Validated M12 permissions, answer boundaries, and CRX ID ${extensionId}.`,
+  `Validated M13 permissions, execution boundaries, and CRX ID ${extensionId}.`,
 );

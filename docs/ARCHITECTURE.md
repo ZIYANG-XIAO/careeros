@@ -14,8 +14,8 @@ KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
                        ENHANCE (optional)
 ```
 
-It preserves working M0–M12 behavior while defining minimal extension points for
-Jobs discovery, application execution, and Application Memory.
+It preserves working M0–M13 behavior while defining minimal extension points for
+Jobs discovery and Application Memory.
 
 The architectural principle is:
 
@@ -47,20 +47,22 @@ Implemented domains and workflows:
 - a Manifest V3 extension with stable development identity, Clerk Sync Host,
   a background-only authenticated API client, exact message validation,
   active-tab script injection, application-page heuristics, and compact status
-  UI; and
+  UI;
 - provider-neutral read-only form inspection with generic, Greenhouse, Lever,
   and Ashby adapter boundaries, deterministic canonical keys, and explicit
-  support/confidence states; and
+  support/confidence states;
 - an authenticated policy-first Answer Engine with deterministic sensitive
   guardrails, optional bounded semantic classification, canonical source
-  retrieval, and explicit Fill/Suggest/Ask/Confirm/Unknown decisions.
+  retrieval, and explicit Fill/Suggest/Ask/Confirm/Unknown decisions; and
+- user-triggered provider-neutral form execution with exact target
+  revalidation, non-overwrite behavior, visible field states, and no submit.
 
 Current Alembic head: `0008_m9_job_source_boundary`.
 
 Not implemented today:
 
 - production job-source ingestion;
-- autofill or form execution;
+- automatic resume/file upload and broader custom-widget execution;
 - Application domain; or
 - Application Strategy/resume tailoring.
 
@@ -120,9 +122,9 @@ External Job Sources ─► Job Source Adapters ─► normalized Job boundary �
 External ATS/Forms   ─► ATS/Generic Adapters ─► normalized Form model ───► API
 ```
 
-The extension foundation, normalized form/ATS adapter boundary, and Answer
-Engine foundation are implemented. Autofill and Application Memory boundaries
-remain planned.
+The extension foundation, normalized form/ATS adapter boundary, Answer Engine,
+and safe form-execution foundations are implemented. Application Memory remains
+planned.
 
 ## 5. Core domains vs product services
 
@@ -138,7 +140,7 @@ remain planned.
 ### Product services/workflows
 
 - Job Discovery (planned)
-- Autofill (planned)
+- Autofill (implemented foundation)
 - Answer Engine (implemented foundation)
 - Job Intelligence (implemented)
 - Resume Tailoring (deferred)
@@ -288,25 +290,29 @@ Intelligence is optional and does not gate Apply or extension assistance.
 
 Approved stack direction: React, TypeScript, Chrome Manifest V3.
 
-Implemented M10–M12 components:
+Implemented M10–M13 components:
 
 - background service worker;
 - content scripts;
 - compact popup and/or side panel;
 - authenticated API client;
-- application-page detector; and
+- application-page detector;
 - supported/unsupported popup state;
 - generic form inspector and provider-neutral form contracts;
-- isolated Greenhouse, Lever, and Ashby adapter boundaries; and
+- isolated Greenhouse, Lever, and Ashby adapter boundaries;
 - aggregate form-inspection status in the popup;
-- a background-only authenticated Answer Engine request; and
-- aggregate answer-decision status without exposing answer values to the page.
+- a background-only authenticated Answer Engine request;
+- aggregate answer-decision status without exposing answer values before user
+  execution;
+- an exact bounded fill plan and provider-neutral executor; and
+- visible per-field review state with non-overwrite and no-submit safeguards.
 
-Planned components are form execution and per-field review state.
+Planned extension work includes user-controlled file upload and broader dynamic
+custom-widget support when validated.
 
-M10 reads only narrowly scoped active-tab signals needed for page detection.
-Later milestones may request canonical answers and policy decisions from the
-backend and execute supported page changes. The extension does not store a
+M10/M11 inspection reads only narrowly scoped active-tab structure. M12 requests
+canonical answers and policy decisions from the backend. M13 changes supported
+blank controls only after explicit user action. The extension does not store a
 duplicate Career Brain or become an independent backend.
 
 ### Trust boundary
@@ -319,7 +325,7 @@ rejected, and host access is granted only to the active tab on user action.
 The extension must support an application page even when no CareerOS Job or Job
 Analysis exists.
 
-## 15. Form and ATS adapter architecture — implemented inspection boundary
+## 15. Form and ATS adapter architecture — implemented inspection/execution boundary
 
 ```text
 Application Page
@@ -361,9 +367,11 @@ execution require, such as:
 - adapter/source identity; and
 - confidence or support metadata.
 
-Raw page content remains untrusted and is not persisted in M11. Current field
-values are never read. The concrete contract and limits are documented in
-`docs/FORM_MODEL.md`.
+Raw page content remains untrusted and is not persisted. M11 inspection does not
+read current values; M13 execution reads them only inside the active page to
+avoid overwriting user input. Values are not returned to CareerOS. The concrete
+contracts are documented in `docs/FORM_MODEL.md` and
+`docs/FORM_EXECUTION.md`.
 
 ## 17. Answer Engine architecture — implemented foundation
 
@@ -391,9 +399,10 @@ AI does not own authorization or policy. Sensitive and consequential categories
 require deterministic guardrails and explicit user origin. Unknown remains
 unknown.
 
-M12 decisions are transient: no answer or decision is persisted, and content
-scripts receive neither CareerOS credentials nor proposed answer values. See
-`docs/ANSWER_ENGINE.md` for the concrete contract and policy.
+M12 decisions are transient and no answer or decision is persisted. In M13,
+content scripts receive a proposed value only for an approved `FILL` after the
+user requests execution; they never receive CareerOS credentials. See
+`docs/ANSWER_ENGINE.md` and `docs/FORM_EXECUTION.md`.
 
 ## 18. Application architecture — planned
 

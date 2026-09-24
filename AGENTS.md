@@ -22,7 +22,7 @@ another document is not authorization to implement it.
 
 ## 2. Current baseline
 
-M0–M12 are implemented. The repository currently contains:
+M0–M13 are implemented. The repository currently contains:
 
 - the Web, API, and PostgreSQL foundation;
 - authenticated user ownership and Career Brain/Profile editing;
@@ -34,18 +34,20 @@ M0–M12 are implemented. The repository currently contains:
 - the Jobs-first product shell and optional Job Intelligence experience;
 - a Manifest V3 extension foundation with secure Clerk session sync,
   background-only API credentials, active-tab application-page detection, and
-  explicit supported/unsupported UI; and
+  explicit supported/unsupported UI;
 - read-only provider-neutral form normalization with generic, Greenhouse,
   Lever, and Ashby adapter boundaries and explicit support/confidence states;
-  and
 - a reusable backend Answer Engine foundation with deterministic safety policy,
   owned canonical-source retrieval, optional bounded semantic classification,
-  explicit decision/review states, and aggregate extension preview.
+  explicit decision/review states, and aggregate extension preview; and
+- user-triggered safe form execution with exact field revalidation,
+  non-overwrite behavior, visible review states, generic/initial ATS fixture
+  coverage, and a hard no-submit boundary.
 
 Not currently implemented:
 
 - a production job-discovery feed or real external source adapter;
-- autofill and form execution;
+- automatic resume/file upload and broader custom-widget execution;
 - the durable Application domain and Applications UI;
 - Application Strategy or resume tailoring.
 
@@ -93,7 +95,7 @@ Relatively stable core domains are:
 Product services and workflows consume those domains:
 
 - Job Discovery (planned)
-- Autofill (planned)
+- Autofill (implemented foundation)
 - Answer Engine (implemented foundation)
 - Job Intelligence (implemented foundation)
 - Resume Tailoring (deferred)

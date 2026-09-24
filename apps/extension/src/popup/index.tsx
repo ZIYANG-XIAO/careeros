@@ -4,11 +4,14 @@ import type {
   AnswerResolution,
   AuthStatus,
   ExtensionResponse,
+  FillExecutionResult,
   PageDetection,
   PopupRequest,
 } from "../shared/messages";
 import { answerCopy } from "./answer-copy";
 import { detectionCopy } from "./detection-copy";
+import { fillCopy } from "./fill-copy";
+import { approvedFillCount, buildFillPlan } from "./fill-plan";
 
 type LoadState<T> =
   | { state: "loading" }
@@ -27,6 +30,8 @@ function App() {
   const [answers, setAnswers] = useState<LoadState<AnswerResolution> | null>(
     null,
   );
+  const [fillResult, setFillResult] =
+    useState<LoadState<FillExecutionResult> | null>(null);
 
   useEffect(() => {
     void send<AuthStatus>({ type: "CAREEROS_GET_AUTH_STATUS" })
@@ -117,6 +122,35 @@ function App() {
       : "CareerOS only inspects the active tab when you open it.";
   const resolvedAnswerCopy =
     answers?.state === "ready" ? answerCopy(answers.value) : null;
+  const fillPlan =
+    answers?.state === "ready" && detection.state === "ready"
+      ? buildFillPlan(answers.value, detection.value)
+      : null;
+  const approvedFields = approvedFillCount(fillPlan);
+  const hasReviewPlan = Boolean(fillPlan?.length);
+  const resolvedFillCopy =
+    fillResult?.state === "ready" ? fillCopy(fillResult.value) : null;
+
+  async function applyApprovedAnswers(): Promise<void> {
+    if (!fillPlan || fillPlan.length === 0) return;
+    setFillResult({ state: "loading" });
+    try {
+      const response = await send<FillExecutionResult>({
+        type: "CAREEROS_APPLY_FILL_PLAN",
+        fields: fillPlan,
+      });
+      setFillResult(
+        response.ok
+          ? { state: "ready", value: response.data }
+          : { state: "error", message: "The page could not be updated." },
+      );
+    } catch {
+      setFillResult({
+        state: "error",
+        message: "The page could not be updated.",
+      });
+    }
+  }
 
   return (
     <main>
@@ -161,6 +195,38 @@ function App() {
             {answers.state === "ready"
               ? resolvedAnswerCopy!.body
               : "CareerOS keeps unknown and sensitive answers under your control."}
+          </p>
+        </section>
+      ) : null}
+
+      {hasReviewPlan ? (
+        <button
+          type="button"
+          disabled={fillResult?.state === "loading"}
+          onClick={() => void applyApprovedAnswers()}
+        >
+          {fillResult?.state === "loading"
+            ? "Applying approved answers…"
+            : approvedFields > 0
+              ? `Fill ${approvedFields} approved ${approvedFields === 1 ? "field" : "fields"}`
+              : "Show review states on page"}
+        </button>
+      ) : null}
+
+      {fillResult ? (
+        <section className="page-card" aria-live="polite">
+          <span className="eyebrow">REVIEW</span>
+          <h2>
+            {fillResult.state === "loading"
+              ? "Updating supported fields…"
+              : fillResult.state === "ready"
+                ? resolvedFillCopy!.title
+                : fillResult.message}
+          </h2>
+          <p>
+            {fillResult.state === "ready"
+              ? resolvedFillCopy!.body
+              : "Existing answers stay untouched, and CareerOS never submits the form."}
           </p>
         </section>
       ) : null}

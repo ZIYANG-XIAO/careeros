@@ -1,6 +1,6 @@
 # M12 Answer Engine Foundation Validation
 
-> Status: Automated validation passed; representative Chrome check pending
+> Status: Automated validation passed; representative Chrome check deferred
 > Validated: 2026-09-25
 
 ## Scope
@@ -32,10 +32,12 @@ not validate autofill, file upload execution, Application Memory, or submission.
 
 ## Representative browser status
 
-Reload the unpacked extension after the M12 build, run the authenticated API,
-and open the generic fixture. Verify the existing form-inspection result plus an
-`Answer decisions ready` summary. The page must remain unchanged and the popup
-must continue to state that CareerOS never submits an application.
+The user chose to skip unpacked-extension setup and continue development, so
+this check was not executed and is not reported as passed. When resumed, reload
+the unpacked extension after the M12 build, run the authenticated API, and open
+the generic fixture. Verify the existing form-inspection result plus an `Answer
+decisions ready` summary. The page must remain unchanged and the popup must
+continue to state that CareerOS never submits an application.
 
 ## Known limitations
 

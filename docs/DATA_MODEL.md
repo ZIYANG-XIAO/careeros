@@ -7,8 +7,8 @@
 ## 1. Purpose
 
 This document defines CareerOS domain concepts for the re-baselined V1. It
-separates the implemented M0–M12 product state from planned V1 formation
-concepts. M10–M12 add no database migration.
+separates the implemented M0–M13 product state from planned V1 formation
+concepts. M10–M13 add no database migration.
 
 The model supports:
 
@@ -94,6 +94,9 @@ Current Alembic head: `0008_m9_job_source_boundary`.
 M12 adds a transient Answer Engine decision contract and no tables. Decisions
 reference owned canonical sources but are not persisted as Application or
 Reusable Answer history.
+
+M13 adds a transient fill plan and execution result in the extension and no
+tables. Neither page markers nor fill results become Application history.
 
 ### Planned, not implemented
 

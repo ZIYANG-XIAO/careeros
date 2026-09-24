@@ -154,6 +154,32 @@ describe("provider-neutral form normalization", () => {
     });
   });
 
+  it("uses high confidence only for exact deterministic field labels", () => {
+    document.body.innerHTML = `
+      <form aria-label="Job application">
+        <label>Current company <input name="current_company" /></label>
+        <label>Tell us about your current company culture
+          <textarea name="company_context"></textarea>
+        </label>
+        <button type="submit">Apply</button>
+      </form>
+    `;
+
+    const result = detectApplicationPage(
+      document,
+      "https://jobs.example.com/apply/exact-labels",
+    );
+
+    expect(result.forms[0].fields[0]).toMatchObject({
+      canonicalKey: "EXPERIENCE_COMPANY",
+      confidence: "HIGH",
+    });
+    expect(result.forms[0].fields[1]).toMatchObject({
+      canonicalKey: "EXPERIENCE_COMPANY",
+      confidence: "MEDIUM",
+    });
+  });
+
   it("does not collect a prefilled answer while reading a wrapping label", () => {
     document.body.innerHTML = `
       <form aria-label="Job application">

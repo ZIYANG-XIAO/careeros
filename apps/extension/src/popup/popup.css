@@ -109,6 +109,11 @@ button:hover {
   background: #1e40af;
 }
 
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 footer {
   margin-top: 18px;
   color: #64748b;

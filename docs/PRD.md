@@ -23,7 +23,7 @@ directly to application assistance.
 
 ## 2. Current and planned scope
 
-### Implemented now — M0–M12
+### Implemented now — M0–M13
 
 - authenticated Web/API/PostgreSQL foundation;
 - Career Brain/Profile management and user ownership;
@@ -45,11 +45,14 @@ directly to application assistance.
   and Ashby adapter boundaries; and
 - a reusable authenticated Answer Engine foundation with deterministic safety
   classification, owned source retrieval, optional bounded semantic
-  classification, and explicit answer/review/reuse decisions.
+  classification, and explicit answer/review/reuse decisions; and
+- explicit user-triggered form execution for approved blank native controls,
+  exact field revalidation, non-overwrite behavior, visible review states, and
+  generic/Greenhouse/Lever/Ashby fixture coverage.
 
 ### Planned V1 formation
 
-- Career Brain-backed autofill and per-field review;
+- automatic resume/file upload and broader custom-widget execution;
 - durable Application domain and Applications surface;
 - Web/extension/Application Memory integration; and
 - V1 hardening across both required scenarios.
