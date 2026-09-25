@@ -7,8 +7,9 @@
 ## 1. Purpose
 
 This document defines CareerOS domain concepts for the re-baselined V1. It
-separates the implemented M0–M14 product state from planned V1 formation
-concepts. M14 adds the durable Application Memory migration.
+separates the implemented M0–M15 product state from planned V1 formation
+concepts. M14 adds durable Application Memory and M15 adds retry-safe submission
+recording.
 
 The model supports:
 
@@ -92,7 +93,7 @@ The current migrations define:
 - `application_answers`
 - `application_operations`
 
-Current Alembic head: `0009_m14_application_memory`.
+Current Alembic head: `0010_m15_application_submission`.
 
 M12 adds a transient Answer Engine decision contract and no tables. Decisions
 reference owned canonical sources but are not persisted as Application or
@@ -104,12 +105,16 @@ tables. Neither page markers nor fill results become Application history.
 M14 adds user-owned Applications, immutable ordered Application Answers, and a
 durable idempotency ledger for status updates.
 
+M15 extends the operation ledger with `RECORD_SUBMISSION`, allowing an owned
+Preparing Application to atomically preserve a previously unset Resume Version,
+append approved immutable answers, and record Applied without duplicate retries.
+
 ### Planned, not implemented
 
 - Reusable Answer;
 - application preferences beyond currently approved fields;
 - status history;
-- persisted extension/form records; and
+- raw persisted extension/form inspection records; and
 - Application Strategy and Resume Recommendation.
 
 This document proposes those boundaries but does not claim their schema exists.

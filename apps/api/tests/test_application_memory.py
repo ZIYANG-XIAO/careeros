@@ -301,6 +301,107 @@ async def test_all_v1_application_statuses_are_supported() -> None:
 
 
 @pytest.mark.asyncio
+async def test_submission_completes_preparing_application_idempotently(tmp_path: Path) -> None:
+    async with make_integration_client(
+        resume_parser=EmptyResumeParser(),
+        resume_storage_dir=str(tmp_path),
+    ) as client:
+        upload = await client.post(
+            "/resume-imports",
+            files={"file": ("submitted.docx", resume_docx(), "application/octet-stream")},
+        )
+        assert upload.status_code == 201
+        resume_version_id = upload.json()["resume_version_id"]
+        created = await client.post("/applications", json=external_payload())
+        application_id = created.json()["id"]
+        key = uuid4()
+        submission = {
+            "idempotency_key": str(key),
+            "resume_version_id": resume_version_id,
+            "answers": [
+                {
+                    "canonical_key": "CONTACT_EMAIL",
+                    "question_text": "Email",
+                    "answer_text": "submitted@example.com",
+                    "source_category": "IDENTITY",
+                    "policy_category": "STANDARD",
+                    "sensitivity": "NONE",
+                    "user_confirmed": True,
+                }
+            ],
+        }
+
+        first = await client.post(
+            f"/applications/{application_id}/submission",
+            json=submission,
+        )
+        retry = await client.post(
+            f"/applications/{application_id}/submission",
+            json=submission,
+        )
+        conflict = await client.post(
+            f"/applications/{application_id}/submission",
+            json={**submission, "resume_version_id": None},
+        )
+
+        assert first.status_code == 200, first.text
+        assert first.json()["status"] == "APPLIED"
+        assert first.json()["applied_at"] is not None
+        assert first.json()["resume_version_id"] == resume_version_id
+        assert [answer["answer_text"] for answer in first.json()["answers"]] == [
+            "candidate@example.com",
+            "submitted@example.com",
+        ]
+        assert retry.status_code == 200
+        assert retry.json() == first.json()
+        assert conflict.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_submission_preserves_later_status_and_rejects_resume_replacement(
+    tmp_path: Path,
+) -> None:
+    async with make_integration_client(
+        resume_parser=EmptyResumeParser(),
+        resume_storage_dir=str(tmp_path),
+    ) as client:
+        first_upload = await client.post(
+            "/resume-imports",
+            files={"file": ("first.docx", resume_docx(), "application/octet-stream")},
+        )
+        second_upload = await client.post(
+            "/resume-imports",
+            files={"file": ("second.docx", resume_docx(), "application/octet-stream")},
+        )
+        created = await client.post(
+            "/applications",
+            json={
+                **external_payload(status="INTERVIEW"),
+                "resume_version_id": first_upload.json()["resume_version_id"],
+            },
+        )
+        application_id = created.json()["id"]
+
+        submitted = await client.post(
+            f"/applications/{application_id}/submission",
+            json={"idempotency_key": str(uuid4()), "answers": []},
+        )
+        replacement = await client.post(
+            f"/applications/{application_id}/submission",
+            json={
+                "idempotency_key": str(uuid4()),
+                "resume_version_id": second_upload.json()["resume_version_id"],
+                "answers": [],
+            },
+        )
+
+        assert submitted.status_code == 200
+        assert submitted.json()["status"] == "INTERVIEW"
+        assert submitted.json()["applied_at"] == created.json()["applied_at"]
+        assert replacement.status_code == 409
+
+
+@pytest.mark.asyncio
 async def test_sensitive_or_unconfirmed_answer_history_is_rejected() -> None:
     async with make_integration_client() as client:
         payload = external_payload()
@@ -346,6 +447,12 @@ async def test_application_ownership_and_nested_reference_isolation(tmp_path: Pa
                 await other.patch(
                     f"/applications/{application_id}/status",
                     json={"idempotency_key": str(uuid4()), "status": "APPLIED"},
+                )
+            ).status_code == 404
+            assert (
+                await other.post(
+                    f"/applications/{application_id}/submission",
+                    json={"idempotency_key": str(uuid4()), "answers": []},
                 )
             ).status_code == 404
             payload = external_payload()

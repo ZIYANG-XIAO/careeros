@@ -405,7 +405,7 @@ URL/source snapshots, all V1 statuses, applied/status lifecycle timestamps,
 owner-only list/detail/update operations, and confirmed standard answer history.
 See `docs/APPLICATION_MEMORY.md` and `docs/VALIDATION_M14.md`.
 
-### M15 — Applications Web Surface and Cross-Surface Integration
+### M15 — Applications Web Surface and Cross-Surface Integration — implementation complete
 
 #### Goal
 
@@ -427,6 +427,15 @@ Connect Web, Jobs, extension, and Application Memory into coherent workflows.
 - users can identify source, role, status, applied date, and exact resume;
 - failed automatic detection has a manual recovery path; and
 - Job Intelligence remains optional.
+
+#### Delivered
+
+Implemented the Applications Web list/detail/status experience, exact Resume
+Version and source display, manual Mark as applied recovery, CareerOS Job
+Preparing handoff, URL/recent-context extension matching, explicit post-submit
+recording, and retry-safe submission completion with approved answer history.
+Final submission remains entirely user-controlled. See
+`docs/APPLICATION_INTEGRATION.md` and `docs/VALIDATION_M15.md`.
 
 ## 8. M16 — V1 Hardening and End-to-End Validation
 
@@ -553,12 +562,12 @@ After a milestone:
 
 ## 14. Immediate next step
 
-M14 implementation and automated domain/API validation are complete. At the
-user's direction, unpacked-extension Chrome setup and the representative M12/M13
-browser gate remain deferred. The next implementation milestone is:
+M15 implementation and automated cross-surface validation are complete. At the
+user's direction, unpacked-extension Chrome setup and representative browser
+validation remain deferred. The next implementation milestone is:
 
-> M15 — Applications Web Surface and Cross-Surface Integration
+> M16 — V1 Hardening and End-to-End Validation
 
 Do not begin Application Strategy, resume tailoring, or automatic final
-submission as part of M15. The deferred browser gate remains required before V1
-hardening can be considered complete.
+submission as part of M16. The deferred browser gate and both representative
+end-to-end scenarios remain required before V1 can be considered complete.

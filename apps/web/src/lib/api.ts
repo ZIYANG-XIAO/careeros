@@ -1,5 +1,9 @@
 import type {
+  Application,
+  ApplicationStatus,
+  ApplicationSummary,
   CareerBrain,
+  CreateApplicationRequest,
   CreateEducationRequest,
   CreateExperienceRequest,
   CreateJobRequest,
@@ -350,6 +354,68 @@ export async function listJobAnalyses(
     cache: "no-store",
   });
   return handleResponse<JobAnalysis[]>(response);
+}
+
+// ---------------------------------------------------------------------------
+// Application Memory
+// ---------------------------------------------------------------------------
+
+export async function createApplication(
+  token: string,
+  data: CreateApplicationRequest,
+): Promise<Application> {
+  const response = await fetch(`${apiBaseUrl()}/applications`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<Application>(response);
+}
+
+export async function listApplications(
+  token: string,
+  status?: ApplicationStatus,
+): Promise<ApplicationSummary[]> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  const response = await fetch(`${apiBaseUrl()}/applications${query}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  return handleResponse<ApplicationSummary[]>(response);
+}
+
+export async function getApplication(
+  token: string,
+  applicationId: string,
+): Promise<Application> {
+  const response = await fetch(
+    `${apiBaseUrl()}/applications/${applicationId}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    },
+  );
+  return handleResponse<Application>(response);
+}
+
+export async function updateApplicationStatus(
+  token: string,
+  applicationId: string,
+  status: ApplicationStatus,
+  idempotencyKey: string,
+): Promise<Application> {
+  const response = await fetch(
+    `${apiBaseUrl()}/applications/${applicationId}/status`,
+    {
+      method: "PATCH",
+      headers: authHeaders(token),
+      body: JSON.stringify({
+        idempotency_key: idempotencyKey,
+        status,
+      }),
+    },
+  );
+  return handleResponse<Application>(response);
 }
 
 // ---------------------------------------------------------------------------

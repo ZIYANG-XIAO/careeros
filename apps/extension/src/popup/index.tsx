@@ -1,13 +1,20 @@
-import { StrictMode, useEffect, useState } from "react";
+import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type {
   AnswerResolution,
+  ApplicationPageContext,
   AuthStatus,
   ExtensionResponse,
   FillExecutionResult,
   PageDetection,
   PopupRequest,
+  TrackedApplication,
 } from "../shared/messages";
+import {
+  confirmedApplicationAnswers,
+  initialApplicationFields,
+  selectedApplicationFields,
+} from "./application-memory";
 import { answerCopy } from "./answer-copy";
 import { detectionCopy } from "./detection-copy";
 import { fillCopy } from "./fill-copy";
@@ -32,6 +39,17 @@ function App() {
   );
   const [fillResult, setFillResult] =
     useState<LoadState<FillExecutionResult> | null>(null);
+  const [applicationContext, setApplicationContext] =
+    useState<LoadState<ApplicationPageContext> | null>(null);
+  const [company, setCompany] = useState("");
+  const [role, setRole] = useState("");
+  const [resumeVersionId, setResumeVersionId] = useState("");
+  const [useTrackedApplication, setUseTrackedApplication] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [recordError, setRecordError] = useState<string | null>(null);
+  const [recordedApplication, setRecordedApplication] =
+    useState<TrackedApplication | null>(null);
+  const recordKey = useRef(crypto.randomUUID());
 
   useEffect(() => {
     void send<AuthStatus>({ type: "CAREEROS_GET_AUTH_STATUS" })
@@ -60,6 +78,46 @@ function App() {
               },
         );
         if (response.ok && response.data.status === "APPLICATION_PAGE") {
+          setApplicationContext({ state: "loading" });
+          let selectedResumeVersionId: string | null = null;
+          try {
+            const contextResponse = await send<ApplicationPageContext>({
+              type: "CAREEROS_GET_APPLICATION_CONTEXT",
+            });
+            if (contextResponse.ok) {
+              const initial = initialApplicationFields(contextResponse.data);
+              selectedResumeVersionId = initial.resumeVersionId || null;
+              setCompany(initial.company);
+              setRole(initial.role);
+              setResumeVersionId(initial.resumeVersionId);
+              setUseTrackedApplication(
+                contextResponse.data.matchKind === "EXACT_URL",
+              );
+              setApplicationContext({
+                state: "ready",
+                value: contextResponse.data,
+              });
+              if (
+                contextResponse.data.application &&
+                contextResponse.data.application.status !== "PREPARING"
+              ) {
+                setRecordedApplication(contextResponse.data.application);
+              }
+            } else {
+              setApplicationContext({
+                state: "error",
+                message:
+                  contextResponse.error === "UNAUTHENTICATED"
+                    ? "Sign in to record this application."
+                    : "Application context is unavailable.",
+              });
+            }
+          } catch {
+            setApplicationContext({
+              state: "error",
+              message: "Application context is unavailable.",
+            });
+          }
           const fields = response.data.forms
             .flatMap((form) => form.fields)
             .slice(0, 200)
@@ -78,7 +136,7 @@ function App() {
             const answerResponse = await send<AnswerResolution>({
               type: "CAREEROS_RESOLVE_ANSWERS",
               fields,
-              selectedResumeVersionId: null,
+              selectedResumeVersionId,
             });
             setAnswers(
               answerResponse.ok
@@ -149,6 +207,84 @@ function App() {
         state: "error",
         message: "The page could not be updated.",
       });
+    }
+  }
+
+  async function resolveForResume(nextResumeVersionId: string): Promise<void> {
+    if (
+      detection.state !== "ready" ||
+      detection.value.status !== "APPLICATION_PAGE"
+    ) {
+      return;
+    }
+    const fields = detection.value.forms
+      .flatMap((form) => form.fields)
+      .slice(0, 200)
+      .map((field) => ({
+        fieldId: field.id,
+        canonicalKey: field.canonicalKey,
+        question: field.question,
+        controlType: field.controlType,
+        required: field.required,
+        mappingConfidence: field.confidence,
+        options: field.options.map((option) => option.label),
+      }));
+    if (fields.length === 0) return;
+    setAnswers({ state: "loading" });
+    setFillResult(null);
+    try {
+      const response = await send<AnswerResolution>({
+        type: "CAREEROS_RESOLVE_ANSWERS",
+        fields,
+        selectedResumeVersionId: nextResumeVersionId || null,
+      });
+      setAnswers(
+        response.ok
+          ? { state: "ready", value: response.data }
+          : { state: "error", message: "Answer decisions are unavailable." },
+      );
+    } catch {
+      setAnswers({
+        state: "error",
+        message: "Answer decisions are unavailable.",
+      });
+    }
+  }
+
+  async function recordSubmittedApplication(): Promise<void> {
+    if (
+      applicationContext?.state !== "ready" ||
+      !company.trim() ||
+      !role.trim()
+    ) {
+      return;
+    }
+    setRecording(true);
+    setRecordError(null);
+    const retainedAnswers = confirmedApplicationAnswers(
+      answers?.state === "ready" ? answers.value : null,
+      fillResult?.state === "ready" ? fillResult.value : null,
+    );
+    try {
+      const response = await send<TrackedApplication>({
+        type: "CAREEROS_RECORD_APPLICATION",
+        applicationId: useTrackedApplication
+          ? (applicationContext.value.application?.id ?? null)
+          : null,
+        company: company.trim(),
+        role: role.trim(),
+        resumeVersionId: resumeVersionId || null,
+        idempotencyKey: recordKey.current,
+        answers: retainedAnswers,
+      });
+      if (!response.ok) throw new Error(response.error);
+      setRecordedApplication(response.data);
+    } catch {
+      setRecordError(
+        "CareerOS could not record this application. Your details remain here so you can retry.",
+      );
+    } finally {
+      setRecording(false);
     }
   }
 
@@ -228,6 +364,148 @@ function App() {
               ? resolvedFillCopy!.body
               : "Existing answers stay untouched, and CareerOS never submits the form."}
           </p>
+        </section>
+      ) : null}
+
+      {applicationContext ? (
+        <section className="page-card application-memory" aria-live="polite">
+          <span className="eyebrow">APPLICATION MEMORY</span>
+          <h2>
+            {applicationContext.state === "loading"
+              ? "Looking for tracked context…"
+              : applicationContext.state === "error"
+                ? applicationContext.message
+                : recordedApplication
+                  ? "Application recorded"
+                  : "Record after you submit"}
+          </h2>
+          {applicationContext.state === "ready" ? (
+            <>
+              <p>
+                {recordedApplication
+                  ? `${recordedApplication.company} · ${recordedApplication.role}`
+                  : applicationContext.value.matchKind === "EXACT_URL"
+                    ? "CareerOS matched the application you started. Confirm after you submit the form."
+                    : applicationContext.value.matchKind === "RECENT_PREPARING"
+                      ? "CareerOS found one recent application. Review the company and role before confirming."
+                      : "No tracked job matched this page. Review the suggested context before confirming."}
+              </p>
+
+              {!recordedApplication ? (
+                <div className="memory-form">
+                  {applicationContext.value.matchKind === "RECENT_PREPARING" &&
+                  applicationContext.value.application ? (
+                    <label className="memory-choice">
+                      <input
+                        type="checkbox"
+                        checked={useTrackedApplication}
+                        onChange={(event) => {
+                          const useTracked = event.target.checked;
+                          const selected = selectedApplicationFields(
+                            applicationContext.value,
+                            useTracked,
+                          );
+                          setUseTrackedApplication(useTracked);
+                          setCompany(selected.company);
+                          setRole(selected.role);
+                          setResumeVersionId(selected.resumeVersionId);
+                          recordKey.current = crypto.randomUUID();
+                          void resolveForResume(selected.resumeVersionId);
+                        }}
+                      />
+                      Use the recent{" "}
+                      {applicationContext.value.application.company} ·{" "}
+                      {applicationContext.value.application.role} record
+                    </label>
+                  ) : null}
+                  <label>
+                    Company
+                    <input
+                      value={company}
+                      maxLength={500}
+                      disabled={Boolean(
+                        applicationContext.value.application &&
+                        useTrackedApplication,
+                      )}
+                      onChange={(event) => {
+                        setCompany(event.target.value);
+                        recordKey.current = crypto.randomUUID();
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Role
+                    <input
+                      value={role}
+                      maxLength={500}
+                      disabled={Boolean(
+                        applicationContext.value.application &&
+                        useTrackedApplication,
+                      )}
+                      onChange={(event) => {
+                        setRole(event.target.value);
+                        recordKey.current = crypto.randomUUID();
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Resume used
+                    <select
+                      value={resumeVersionId}
+                      disabled={Boolean(
+                        useTrackedApplication &&
+                        applicationContext.value.application?.resumeVersionId,
+                      )}
+                      onChange={(event) => {
+                        setResumeVersionId(event.target.value);
+                        recordKey.current = crypto.randomUUID();
+                        void resolveForResume(event.target.value);
+                      }}
+                    >
+                      <option value="">No resume recorded</option>
+                      {applicationContext.value.resumeVersions.map((resume) => (
+                        <option key={resume.id} value={resume.id}>
+                          {resume.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    disabled={recording || !company.trim() || !role.trim()}
+                    onClick={() => void recordSubmittedApplication()}
+                  >
+                    {recording
+                      ? "Recording application…"
+                      : "I submitted · Record application"}
+                  </button>
+                  <p className="memory-note">
+                    Click only after you submit the form yourself. CareerOS
+                    never clicks Submit.
+                  </p>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() =>
+                    chrome.tabs.create({
+                      url: `${__CAREEROS_WEB_URL__}/applications/${recordedApplication.id}`,
+                    })
+                  }
+                >
+                  View in CareerOS
+                </button>
+              )}
+              {recordError ? (
+                <p className="memory-error">{recordError}</p>
+              ) : null}
+            </>
+          ) : (
+            <p>
+              Sign in and keep this application page open to save durable
+              context.
+            </p>
+          )}
         </section>
       ) : null}
 

@@ -64,6 +64,11 @@ if (/Authorization|Bearer|CAREEROS_RESOLVE_ANSWERS/.test(contentScript)) {
     "M13 content execution must not resolve answers or receive API credentials.",
   );
 }
+if (/CAREEROS_RECORD_APPLICATION/.test(contentScript)) {
+  throw new Error(
+    "M15 Application Memory operations must remain in the privileged background.",
+  );
+}
 if (
   !/CAREEROS_APPLY_FILL_PLAN/.test(contentScript) ||
   !/data-careeros-field-state/.test(contentScript)
@@ -84,5 +89,5 @@ for (const file of ["background.js", "content.js", "popup.js"]) {
 }
 
 console.log(
-  `Validated M13 permissions, execution boundaries, and CRX ID ${extensionId}.`,
+  `Validated M15 permissions, execution/Application Memory boundaries, and CRX ID ${extensionId}.`,
 );

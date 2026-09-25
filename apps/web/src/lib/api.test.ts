@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  createApplication,
   createEducation,
   createExperience,
   createExperienceDetail,
@@ -14,15 +15,18 @@ import {
   deleteProjectDetail,
   deleteSkill,
   getCareerBrain,
+  getApplication,
   getCurrentUser,
   getResumeImport,
   getSystemHealth,
   listJobs,
+  listApplications,
   listResumes,
   removeResumeDraftItem,
   saveJob,
   unsaveJob,
   updateEducation,
+  updateApplicationStatus,
   updateExperience,
   updateExperienceDetail,
   updateProject,
@@ -98,6 +102,71 @@ describe("API client", () => {
         headers: { Authorization: `Bearer ${TOKEN}` },
         cache: "no-store",
       });
+    });
+  });
+
+  describe("Application Memory", () => {
+    it("creates, lists, and loads applications", async () => {
+      const application = { id: "application-1", status: "APPLIED" };
+      const f = setup(application);
+      const createPayload = {
+        idempotency_key: "00000000-0000-4000-8000-000000000001",
+        origin: "MANUAL" as const,
+        company: "Acme",
+        role: "Engineer",
+        status: "APPLIED" as const,
+      };
+
+      await expect(createApplication(TOKEN, createPayload)).resolves.toEqual(
+        application,
+      );
+      expect(f).toHaveBeenLastCalledWith(`${BASE}/applications`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(createPayload),
+      });
+
+      await listApplications(TOKEN, "INTERVIEW");
+      expect(f).toHaveBeenLastCalledWith(
+        `${BASE}/applications?status=INTERVIEW`,
+        {
+          headers: { Authorization: `Bearer ${TOKEN}` },
+          cache: "no-store",
+        },
+      );
+
+      await getApplication(TOKEN, "application-1");
+      expect(f).toHaveBeenLastCalledWith(`${BASE}/applications/application-1`, {
+        headers: { Authorization: `Bearer ${TOKEN}` },
+        cache: "no-store",
+      });
+    });
+
+    it("updates application status with an idempotency key", async () => {
+      const f = setup({ id: "application-1", status: "INTERVIEW" });
+      await updateApplicationStatus(
+        TOKEN,
+        "application-1",
+        "INTERVIEW",
+        "00000000-0000-4000-8000-000000000002",
+      );
+      expect(f).toHaveBeenCalledWith(
+        `${BASE}/applications/application-1/status`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            idempotency_key: "00000000-0000-4000-8000-000000000002",
+            status: "INTERVIEW",
+          }),
+        },
+      );
     });
   });
 

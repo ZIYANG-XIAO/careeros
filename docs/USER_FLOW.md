@@ -63,12 +63,13 @@ Implemented Web flows today:
   review states, and no final submission;
 - authenticated durable Application Memory APIs for CareerOS and externally
   found jobs;
-- an Applications planned-state placeholder; and
+- Applications list/detail/status/manual recovery;
+- CareerOS Job handoff into Application Memory and explicit extension recording
+  after user submission; and
 - Job Intelligence creation and review.
 
-Production job-source discovery, the Applications UI, automatic file upload, and
-extension-driven application capture are planned flows described below, not
-current behavior.
+Production job-source discovery, automatic file upload, and representative
+end-to-end hardening remain planned. Final submission remains user-controlled.
 
 ## 4. First-time onboarding — Know Me
 
@@ -305,8 +306,9 @@ compensation, legal, signature, or similar fields:
 
 ## 10. Application Memory flow — Remember
 
-The durable domain and API are implemented in M14. The Web surface and automatic
-cross-surface capture remain planned for M15.
+The durable domain/API and cross-surface experience are implemented through
+M15. The extension records only after explicit user confirmation; it does not
+automatically submit or silently infer that submission succeeded.
 
 ### 10.1 Before submission
 

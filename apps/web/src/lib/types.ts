@@ -356,3 +356,75 @@ export type JobAnalysis = {
   created_at: string;
   matches: RequirementAnalysis[];
 };
+
+// ---------------------------------------------------------------------------
+// Durable Application Memory.
+// ---------------------------------------------------------------------------
+
+export type ApplicationStatus =
+  | "PREPARING"
+  | "APPLIED"
+  | "ASSESSMENT"
+  | "INTERVIEW"
+  | "FINAL"
+  | "REJECTED"
+  | "OFFER"
+  | "WITHDRAWN";
+
+export type ApplicationOrigin = "CAREEROS_JOB" | "EXTERNAL_PAGE" | "MANUAL";
+
+export type ApplicationAnswer = {
+  id: string;
+  canonical_key: string | null;
+  question_text: string;
+  answer_text: string;
+  source_category: string;
+  policy_category: "STANDARD";
+  sensitivity: "NONE";
+  position: number;
+  confirmed_at: string;
+  created_at: string;
+};
+
+export type ApplicationSummary = {
+  id: string;
+  job_id: string | null;
+  resume_version_id: string | null;
+  origin: ApplicationOrigin;
+  company: string;
+  role: string;
+  application_url: string | null;
+  source: string;
+  status: ApplicationStatus;
+  applied_at: string | null;
+  status_updated_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Application = ApplicationSummary & {
+  answers: ApplicationAnswer[];
+};
+
+export type CreateApplicationRequest = {
+  idempotency_key: string;
+  origin: ApplicationOrigin;
+  job_id?: string | null;
+  company?: string | null;
+  role?: string | null;
+  application_url?: string | null;
+  source?: string | null;
+  resume_version_id?: string | null;
+  status?: ApplicationStatus;
+  applied_at?: string | null;
+  answers?: Array<{
+    canonical_key?: string | null;
+    question_text: string;
+    answer_text: string;
+    source_category:
+      "IDENTITY" | "CAREER_BRAIN" | "RESUME_VERSION" | "USER_PROVIDED";
+    policy_category: "STANDARD";
+    sensitivity: "NONE";
+    user_confirmed: true;
+  }>;
+};

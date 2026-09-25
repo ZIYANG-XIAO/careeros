@@ -17,6 +17,7 @@ from careeros_api.application_schemas import (
     ApplicationResponse,
     ApplicationSummaryResponse,
     CreateApplicationRequest,
+    RecordApplicationSubmissionRequest,
     UpdateApplicationStatusRequest,
 )
 from careeros_api.auth import get_current_user
@@ -353,5 +354,140 @@ async def update_application_status(
     application.status = body.status.value
     application.status_updated_at = now
     application.updated_at = now
+    await session.flush()
+    return _response(application)
+
+
+@router.post("/{application_id}/submission", response_model=ApplicationResponse)
+async def record_application_submission(
+    application_id: UUID,
+    body: RecordApplicationSubmissionRequest,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApplicationResponse:
+    application = await _owned_application(session, user.id, application_id)
+    if application is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+    request_fingerprint = _fingerprint(
+        {"application_id": str(application_id), **body.model_dump(mode="json")}
+    )
+    existing_operation = await session.scalar(
+        select(ApplicationOperation).where(
+            ApplicationOperation.user_id == user.id,
+            ApplicationOperation.idempotency_key == body.idempotency_key,
+        )
+    )
+    if existing_operation is not None:
+        if (
+            existing_operation.application_id != application.id
+            or existing_operation.request_fingerprint != request_fingerprint
+            or existing_operation.operation_type != "RECORD_SUBMISSION"
+        ):
+            raise _conflict("The submission idempotency key was already used differently")
+        return _response(application)
+
+    resume_version = await _owned_resume_version(session, user.id, body.resume_version_id)
+    if (
+        application.resume_version_id is not None
+        and resume_version is not None
+        and application.resume_version_id != resume_version.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The exact resume version is already preserved for this application",
+        )
+    effective_resume_version_id = application.resume_version_id or (
+        resume_version.id if resume_version is not None else None
+    )
+    if (
+        any(
+            answer.source_category == ApplicationAnswerSource.RESUME_VERSION
+            for answer in body.answers
+        )
+        and effective_resume_version_id is None
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="RESUME_VERSION answers require a selected resume version",
+        )
+    if (
+        body.applied_at is not None
+        and application.applied_at is not None
+        and body.applied_at != application.applied_at
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="applied_at is already preserved for this application",
+        )
+
+    operation_id = (
+        await session.execute(
+            insert(ApplicationOperation)
+            .values(
+                id=uuid4(),
+                user_id=user.id,
+                application_id=application.id,
+                idempotency_key=body.idempotency_key,
+                request_fingerprint=request_fingerprint,
+                operation_type="RECORD_SUBMISSION",
+            )
+            .on_conflict_do_nothing(
+                index_elements=[
+                    ApplicationOperation.user_id,
+                    ApplicationOperation.idempotency_key,
+                ]
+            )
+            .returning(ApplicationOperation.id)
+        )
+    ).scalar_one_or_none()
+    if operation_id is None:
+        raced_operation = await session.scalar(
+            select(ApplicationOperation).where(
+                ApplicationOperation.user_id == user.id,
+                ApplicationOperation.idempotency_key == body.idempotency_key,
+            )
+        )
+        if (
+            raced_operation is None
+            or raced_operation.application_id != application.id
+            or raced_operation.request_fingerprint != request_fingerprint
+            or raced_operation.operation_type != "RECORD_SUBMISSION"
+        ):
+            raise _conflict("The submission idempotency key was already used differently")
+        refreshed = await session.scalar(
+            select(Application)
+            .options(selectinload(Application.answers))
+            .execution_options(populate_existing=True)
+            .where(Application.id == application.id, Application.user_id == user.id)
+        )
+        if refreshed is None:  # pragma: no cover - defensive invariant
+            raise RuntimeError("Submitted application could not be reloaded")
+        return _response(refreshed)
+
+    now = datetime.now(UTC)
+    if application.resume_version_id is None and resume_version is not None:
+        application.resume_version_id = resume_version.id
+    if application.applied_at is None:
+        application.applied_at = body.applied_at or now
+    if application.status == ApplicationStatus.PREPARING:
+        application.status = ApplicationStatus.APPLIED.value
+    application.status_updated_at = now
+    application.updated_at = now
+
+    next_position = len(application.answers)
+    for offset, answer in enumerate(body.answers):
+        application.answers.append(
+            ApplicationAnswer(
+                canonical_key=answer.canonical_key.value if answer.canonical_key else None,
+                question_text=answer.question_text,
+                answer_text=answer.answer_text,
+                source_category=answer.source_category.value,
+                policy_category=answer.policy_category,
+                sensitivity=answer.sensitivity,
+                position=next_position + offset,
+                confirmed_at=now,
+            )
+        )
     await session.flush()
     return _response(application)

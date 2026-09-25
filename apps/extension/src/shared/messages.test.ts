@@ -11,6 +11,9 @@ describe("extension message validation", () => {
       type: "CAREEROS_DETECT_ACTIVE_PAGE",
     });
     expect(
+      parsePopupRequest({ type: "CAREEROS_GET_APPLICATION_CONTEXT" }),
+    ).toEqual({ type: "CAREEROS_GET_APPLICATION_CONTEXT" });
+    expect(
       parsePopupRequest({
         type: "CAREEROS_GET_AUTH_STATUS",
         token: "steal-me",
@@ -116,6 +119,36 @@ describe("extension message validation", () => {
             proposedAnswer: "resume.pdf",
           },
         ],
+      }),
+    ).toBeNull();
+  });
+
+  it("validates reviewed application recording without exposing it to content scripts", () => {
+    const request = {
+      type: "CAREEROS_RECORD_APPLICATION",
+      applicationId: null,
+      company: "Acme",
+      role: "Engineer",
+      resumeVersionId: "00000000-0000-4000-8000-000000000001",
+      idempotencyKey: "00000000-0000-4000-8000-000000000002",
+      answers: [
+        {
+          canonicalKey: "CONTACT_EMAIL",
+          questionText: "Email",
+          answerText: "candidate@example.com",
+          sourceCategory: "IDENTITY",
+        },
+      ],
+    };
+    expect(parsePopupRequest(request)).toEqual(request);
+    expect(parseContentRequest(request)).toBeNull();
+    expect(
+      parsePopupRequest({ ...request, company: "", token: "steal-me" }),
+    ).toBeNull();
+    expect(
+      parsePopupRequest({
+        ...request,
+        answers: [{ ...request.answers[0], sourceCategory: "UNKNOWN" }],
       }),
     ).toBeNull();
   });

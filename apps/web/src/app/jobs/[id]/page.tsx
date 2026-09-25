@@ -3,11 +3,12 @@
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
+  createApplication,
   createJobAnalysis,
   getJob,
   listJobAnalyses,
@@ -18,6 +19,7 @@ import {
 import { safeExternalUrl } from "@/lib/external-url";
 import { jobSourceSummary } from "@/lib/job-source";
 import type {
+  Application,
   Job,
   JobAnalysis,
   RequirementAnalysis,
@@ -125,9 +127,13 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [startingApplication, setStartingApplication] = useState(false);
+  const [trackedApplication, setTrackedApplication] =
+    useState<Application | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const applicationKey = useRef<string | null>(null);
 
   const versions = useMemo(
     () =>
@@ -210,6 +216,32 @@ export default function JobDetailPage() {
     }
   }
 
+  async function startApplication() {
+    if (!job || !safeExternalUrl(job.application_url)) return;
+    setStartingApplication(true);
+    setActionError(null);
+    applicationKey.current ??= crypto.randomUUID();
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Missing authentication token");
+      const created = await createApplication(token, {
+        idempotency_key: applicationKey.current,
+        origin: "CAREEROS_JOB",
+        job_id: job.id,
+        resume_version_id: selectedVersion || null,
+        status: "PREPARING",
+        answers: [],
+      });
+      setTrackedApplication(created);
+    } catch {
+      setActionError(
+        "The application page is still available, but CareerOS could not start tracking it. Open the page directly and use Mark as applied afterward.",
+      );
+    } finally {
+      setStartingApplication(false);
+    }
+  }
+
   if (!isLoaded || (loading && isSignedIn)) return <Spinner />;
   if (!isSignedIn)
     return <p className="text-sm text-slate-600">Sign in to view this job.</p>;
@@ -256,17 +288,62 @@ export default function JobDetailPage() {
               Next step
             </p>
             {applicationUrl ? (
-              <a
-                href={applicationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-              >
-                Apply on company site
-                <span className="ml-2" aria-hidden="true">
-                  ↗
-                </span>
-              </a>
+              <>
+                {versions.length > 0 && !trackedApplication ? (
+                  <div className="mt-3">
+                    <label
+                      htmlFor="application-resume-version"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Resume for this application
+                    </label>
+                    <select
+                      id="application-resume-version"
+                      value={selectedVersion}
+                      onChange={(event) => {
+                        setSelectedVersion(event.target.value);
+                        applicationKey.current = null;
+                      }}
+                      className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                    >
+                      {versions.map(({ resume, version }) => (
+                        <option key={version.id} value={version.id}>
+                          {resume.name} · Version {version.version_number}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+                {!trackedApplication ? (
+                  <Button
+                    className="mt-3 w-full"
+                    onClick={() => void startApplication()}
+                    loading={startingApplication}
+                  >
+                    Start and track application
+                  </Button>
+                ) : (
+                  <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                    <p className="text-sm font-medium text-emerald-900">
+                      Application preparation is saved.
+                    </p>
+                    <a
+                      href={applicationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800"
+                    >
+                      Continue on company site ↗
+                    </a>
+                    <Link
+                      href={`/applications/${trackedApplication.id}`}
+                      className="mt-3 block text-center text-sm font-medium text-emerald-900 underline"
+                    >
+                      View tracked application
+                    </Link>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-600">
                 No application link is available for this job. Use the source
@@ -303,6 +380,16 @@ export default function JobDetailPage() {
             role="alert"
           >
             {actionError}
+            {applicationUrl && (
+              <a
+                href={applicationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 block font-semibold underline"
+              >
+                Open application without tracking ↗
+              </a>
+            )}
           </div>
         )}
       </section>

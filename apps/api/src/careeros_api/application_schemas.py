@@ -93,6 +93,20 @@ class UpdateApplicationStatusRequest(StrictModel):
         return self
 
 
+class RecordApplicationSubmissionRequest(StrictModel):
+    idempotency_key: UUID
+    resume_version_id: UUID | None = None
+    applied_at: datetime | None = None
+    answers: list[CreateApplicationAnswer] = Field(default_factory=list, max_length=200)
+
+    @field_validator("applied_at")
+    @classmethod
+    def require_timezone(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("applied_at must include a timezone")
+        return value
+
+
 class ApplicationAnswerResponse(StrictModel):
     id: UUID
     canonical_key: str | None

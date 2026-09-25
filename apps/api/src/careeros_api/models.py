@@ -919,7 +919,7 @@ class ApplicationOperation(Base):
     __table_args__ = (
         sa.UniqueConstraint("user_id", "idempotency_key"),
         sa.CheckConstraint(
-            "operation_type = 'STATUS_UPDATE'",
+            "operation_type IN ('STATUS_UPDATE', 'RECORD_SUBMISSION')",
             name="ck_application_operations_type",
         ),
         sa.Index("ix_application_operations_application_id", "application_id"),

@@ -23,7 +23,7 @@ directly to application assistance.
 
 ## 2. Current and planned scope
 
-### Implemented now — M0–M14
+### Implemented now — M0–M15
 
 - authenticated Web/API/PostgreSQL foundation;
 - Career Brain/Profile management and user ownership;
@@ -51,13 +51,13 @@ directly to application assistance.
   generic/Greenhouse/Lever/Ashby fixture coverage; and
 - durable user-owned Application Memory with external or canonical Job context,
   exact Resume Version association, immutable approved standard answers,
-  lifecycle status/timestamps, and retry-safe create/update operations.
+  lifecycle status/timestamps, and retry-safe create/update operations; and
+- Applications Web list/detail/status/manual recovery plus CareerOS Job handoff
+  and user-confirmed extension recording after submission.
 
 ### Planned V1 formation
 
 - automatic resume/file upload and broader custom-widget execution;
-- Applications Web surface;
-- Web/extension/Application Memory integration; and
 - V1 hardening across both required scenarios.
 
 ### Deferred enhancements

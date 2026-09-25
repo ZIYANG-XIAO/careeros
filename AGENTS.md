@@ -22,7 +22,7 @@ another document is not authorization to implement it.
 
 ## 2. Current baseline
 
-M0–M14 are implemented. The repository currently contains:
+M0–M15 are implemented. The repository currently contains:
 
 - the Web, API, and PostgreSQL foundation;
 - authenticated user ownership and Career Brain/Profile editing;
@@ -45,13 +45,14 @@ M0–M14 are implemented. The repository currently contains:
   coverage, and a hard no-submit boundary; and
 - durable user-owned Application Memory with external/canonical Job context,
   exact Resume Version association, immutable approved answer history,
-  lifecycle status, and retry-safe create/update operations.
+  lifecycle status, and retry-safe create/update operations; and
+- the Applications Web list/detail/status/manual-recovery experience plus
+  CareerOS Job handoff and explicit extension-side submission recording.
 
 Not currently implemented:
 
 - a production job-discovery feed or real external source adapter;
 - automatic resume/file upload and broader custom-widget execution;
-- the Applications Web UI and extension/Application integration;
 - Application Strategy or resume tailoring.
 
 Do not describe planned behavior as if it exists. Do not blindly continue the

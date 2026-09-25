@@ -19,7 +19,7 @@ the user through the Career Brain.
 
 ## Current implementation
 
-M0–M14 are implemented at repository level. Today the repository supports:
+M0–M15 are implemented at repository level. Today the repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
 - Clerk authentication and server-side user ownership;
@@ -48,15 +48,17 @@ M0–M14 are implemented at repository level. Today the repository supports:
   and a hard no-submit boundary;
 - durable Application Memory for CareerOS and externally found jobs, including
   exact Resume Version association, immutable approved answer history, lifecycle
-  status, ownership, and retry idempotency; and
-- an honest Applications placeholder that does not simulate tracking.
+  status, ownership, and retry idempotency;
+- an Applications list/detail/status experience with exact resume and source
+  context plus a manual Mark as applied fallback; and
+- CareerOS Job → external page context handoff and explicit extension-side
+  recording after the user submits, without automatic final submission.
 
 The following V1 capabilities are planned, not implemented:
 
 - production job acquisition and real external source adapters;
 - automatic resume/file upload and broader custom-widget execution;
-- the functional Applications tracking surface and extension integration; and
-- end-to-end Web/extension/Application Memory integration.
+- representative end-to-end hardening across both required application paths.
 
 Application Strategy and resume tailoring are deferred optional enhancements.
 Existing Job Intelligence remains available and must not become a mandatory
@@ -96,9 +98,10 @@ answers remain untouched and final submission remains the user's action.
 
 ### Remember
 
-The planned Application domain will preserve the company, role, source or URL,
-selected Resume Version, relevant answers, status, and timestamps. Future
-features can attach to the Application without redefining its historical truth.
+The implemented Application domain preserves the company, role, source or URL,
+selected Resume Version, approved answer history, status, and timestamps across
+Web and extension entry points. Future features can attach to the Application
+without redefining its historical truth.
 
 ### Enhance
 
@@ -136,6 +139,8 @@ The `docs/` directory is the product and engineering source of truth:
 - `docs/ANSWER_ENGINE.md` — M12 answer-source and policy contract
 - `docs/FORM_EXECUTION.md` — M13 safe execution and review-state contract
 - `docs/APPLICATION_MEMORY.md` — M14 durable Application domain/API contract
+- `docs/APPLICATION_INTEGRATION.md` — M15 Web/extension integration contract
+- `docs/VALIDATION_M15.md` — M15 automated results and deferred browser gate
 
 ## Repository structure
 
@@ -185,7 +190,7 @@ docker compose --env-file .env -f infra/compose.yaml up -d postgres
 .venv/bin/alembic -c apps/api/alembic.ini upgrade head
 ```
 
-The current migration head is `0008_m9_job_source_boundary`.
+The current migration head is `0010_m15_application_submission`.
 
 ### Start the API
 

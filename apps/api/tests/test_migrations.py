@@ -430,6 +430,16 @@ async def test_clean_migration_creates_expected_schema() -> None:
                     set(constraint["column_names"]) == {"user_id", "idempotency_key"}
                     for constraint in operation_uniques
                 ), "Missing Application update idempotency constraint"
+                operation_checks = await conn.run_sync(
+                    lambda sync_conn: inspect(sync_conn).get_check_constraints(
+                        "application_operations"
+                    )
+                )
+                assert any(
+                    constraint["name"] == "ck_application_operations_type"
+                    and "RECORD_SUBMISSION" in constraint["sqltext"]
+                    for constraint in operation_checks
+                ), "Missing M15 submission operation constraint"
 
                 # --- FK educations.career_brain_id → career_brains.id ---
                 edu_fks = await conn.run_sync(

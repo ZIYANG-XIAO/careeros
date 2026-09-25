@@ -8,6 +8,7 @@ const mockGetJob = vi.fn();
 const mockListResumes = vi.fn();
 const mockListAnalyses = vi.fn();
 const mockCreateAnalysis = vi.fn();
+const mockCreateApplication = vi.fn();
 const mockSaveJob = vi.fn();
 const mockUnsaveJob = vi.fn();
 const mockGetToken = vi.fn().mockResolvedValue("token");
@@ -19,6 +20,7 @@ vi.mock("@clerk/nextjs", () => ({
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "job-1" }) }));
 
 vi.mock("@/lib/api", () => ({
+  createApplication: (...args: unknown[]) => mockCreateApplication(...args),
   getJob: (...args: unknown[]) => mockGetJob(...args),
   listResumes: (...args: unknown[]) => mockListResumes(...args),
   listJobAnalyses: (...args: unknown[]) => mockListAnalyses(...args),
@@ -139,16 +141,39 @@ describe("JobDetailPage", () => {
     mockListResumes.mockReset().mockResolvedValue(resumes);
     mockListAnalyses.mockReset().mockResolvedValue([]);
     mockCreateAnalysis.mockReset();
+    mockCreateApplication.mockReset().mockResolvedValue({
+      id: "application-1",
+      status: "PREPARING",
+    });
     mockSaveJob.mockReset().mockResolvedValue({ ...job, is_saved: true });
     mockUnsaveJob.mockReset().mockResolvedValue(undefined);
   });
 
   it("prioritizes direct application and makes intelligence optional", async () => {
+    const user = userEvent.setup();
     render(<JobDetailPage />);
     expect(await screen.findByText("Platform Engineer")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Apply on company site/i }),
+      screen.getByRole("button", { name: "Start and track application" }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Start and track application" }),
+    );
+    expect(mockCreateApplication).toHaveBeenCalledWith(
+      "token",
+      expect.objectContaining({
+        origin: "CAREEROS_JOB",
+        job_id: "job-1",
+        resume_version_id: "version-2",
+        status: "PREPARING",
+      }),
+    );
+    expect(
+      await screen.findByRole("link", { name: /Continue on company site/i }),
     ).toHaveAttribute("href", "https://example.com/apply");
+    expect(
+      screen.getByRole("link", { name: "View tracked application" }),
+    ).toHaveAttribute("href", "/applications/application-1");
     expect(screen.getByText("Grounded requirements")).toBeInTheDocument();
     expect(
       screen.getByText(/You can apply without running an analysis/i),
@@ -186,6 +211,7 @@ describe("JobDetailPage", () => {
     expect(
       await screen.findByRole("button", { name: "Saved · Remove" }),
     ).toBeInTheDocument();
+    expect(mockCreateApplication).not.toHaveBeenCalled();
   });
 
   it("shows an honest state when no application link exists", async () => {
@@ -195,8 +221,25 @@ describe("JobDetailPage", () => {
       await screen.findByText(/No application link is available/i),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("link", { name: /Apply on company site/i }),
+      screen.queryByRole("button", { name: /Start and track application/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("keeps a direct manual recovery path when tracking fails", async () => {
+    const user = userEvent.setup();
+    mockCreateApplication.mockRejectedValue(new Error("offline"));
+    render(<JobDetailPage />);
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Start and track application",
+      }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "could not start tracking",
+    );
+    expect(
+      screen.getByRole("link", { name: /Open application without tracking/i }),
+    ).toHaveAttribute("href", "https://example.com/apply");
   });
 
   it("renders all four explainable evidence categories", async () => {

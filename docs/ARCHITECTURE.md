@@ -14,8 +14,8 @@ KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
                        ENHANCE (optional)
 ```
 
-It preserves working M0–M14 behavior while defining minimal extension points for
-Jobs discovery and cross-surface Application integration.
+It preserves working M0–M15 behavior while defining minimal extension points for
+Jobs discovery and V1 hardening.
 
 The architectural principle is:
 
@@ -59,15 +59,16 @@ Implemented domains and workflows:
   and
 - durable Application Memory with external/canonical context snapshots, exact
   Resume Version association, immutable approved answers, ownership, and retry
-  idempotency.
+  idempotency; and
+- Applications Web workflows plus background-only extension matching and
+  explicit submission recording.
 
-Current Alembic head: `0009_m14_application_memory`.
+Current Alembic head: `0010_m15_application_submission`.
 
 Not implemented today:
 
 - production job-source ingestion;
 - automatic resume/file upload and broader custom-widget execution;
-- Applications Web/extension integration; or
 - Application Strategy/resume tailoring.
 
 ## 3. Architecture principles
@@ -127,8 +128,8 @@ External ATS/Forms   ─► ATS/Generic Adapters ─► normalized Form model �
 ```
 
 The extension foundation, normalized form/ATS adapter boundary, Answer Engine,
-safe form execution, and Application Memory domain are implemented. Cross-surface
-Application integration remains planned.
+safe form execution, Application Memory, and cross-surface Application
+integration are implemented.
 
 ## 5. Core domains vs product services
 
@@ -175,7 +176,7 @@ Directories are introduced only when their approved milestone begins.
 Stack: Next.js, TypeScript, React, Tailwind CSS.
 
 Current routes cover system status, Career Profile, Resumes, manually captured
-Jobs/Job Intelligence, and the planned-state Applications surface.
+Jobs/Job Intelligence, and Applications list/detail/status/manual recovery.
 
 Implemented primary navigation:
 

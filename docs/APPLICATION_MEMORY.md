@@ -9,8 +9,9 @@ Application Memory is the durable record of work toward or completion of one
 job application. It supports both CareerOS Jobs and jobs found elsewhere without
 requiring prior discovery, saving, or Job Intelligence.
 
-M14 implements the canonical domain and authenticated API. It does not implement
-the Applications Web UI or automatic extension capture; those belong to M15.
+M14 implements the canonical domain and authenticated API. M15 connects that
+domain to the Applications Web UI and explicit extension-side recording; the
+domain invariants in this document remain authoritative.
 
 ## 2. Application identity and context
 
@@ -94,6 +95,9 @@ Version. There are no M14 endpoints that edit or delete historical answers.
   optionally filtered by status.
 - `GET /applications/{id}` — get one owned Application and answer history.
 - `PATCH /applications/{id}/status` — idempotently update lifecycle status.
+- `POST /applications/{id}/submission` — idempotently record explicit user
+  submission, preserve a previously unset exact Resume Version, and append
+  approved answer history without regressing later status.
 
-M15 may consume these APIs from Web and extension surfaces without duplicating
-Application truth.
+M15 consumes these APIs from Web and extension surfaces without duplicating
+Application truth. See `docs/APPLICATION_INTEGRATION.md`.

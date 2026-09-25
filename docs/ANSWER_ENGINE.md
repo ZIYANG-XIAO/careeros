@@ -120,3 +120,8 @@ M14 may separately store ordered application-specific answer history only when
 the client explicitly submits user-confirmed `STANDARD` / non-sensitive answers
 while creating an Application. It does not automatically persist transient M12
 decisions or turn those answers into reusable records.
+
+M15 extension recording retains only standard/non-sensitive values that
+CareerOS actually filled, and only after the user explicitly confirms that they
+submitted the application. Suggested, unknown, sensitive, or merely inspected
+fields are not retained.

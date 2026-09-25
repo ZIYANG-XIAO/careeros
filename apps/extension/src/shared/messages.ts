@@ -173,11 +173,65 @@ export interface FillExecutionResult {
   fields: FillFieldResult[];
 }
 
+export type ApplicationStatus =
+  | "PREPARING"
+  | "APPLIED"
+  | "ASSESSMENT"
+  | "INTERVIEW"
+  | "FINAL"
+  | "REJECTED"
+  | "OFFER"
+  | "WITHDRAWN";
+
+export interface TrackedApplication {
+  id: string;
+  company: string;
+  role: string;
+  applicationUrl: string | null;
+  resumeVersionId: string | null;
+  status: ApplicationStatus;
+  origin: "CAREEROS_JOB" | "EXTERNAL_PAGE" | "MANUAL";
+  createdAt: string;
+}
+
+export interface ResumeVersionOption {
+  id: string;
+  label: string;
+}
+
+export interface ApplicationPageContext {
+  pageUrl: string;
+  pageTitle: string;
+  siteHost: string;
+  matchKind: "EXACT_URL" | "RECENT_PREPARING" | "NONE";
+  application: TrackedApplication | null;
+  resumeVersions: ResumeVersionOption[];
+}
+
+export interface ConfirmedApplicationAnswer {
+  canonicalKey: CanonicalFieldKey | null;
+  questionText: string;
+  answerText: string;
+  sourceCategory:
+    "IDENTITY" | "CAREER_BRAIN" | "RESUME_VERSION" | "USER_PROVIDED";
+}
+
+export interface RecordApplicationRequestData {
+  applicationId: string | null;
+  company: string;
+  role: string;
+  resumeVersionId: string | null;
+  idempotencyKey: string;
+  answers: ConfirmedApplicationAnswer[];
+}
+
 export type PopupRequest =
   | { type: "CAREEROS_GET_AUTH_STATUS" }
   | { type: "CAREEROS_DETECT_ACTIVE_PAGE" }
+  | { type: "CAREEROS_GET_APPLICATION_CONTEXT" }
   | ({ type: "CAREEROS_RESOLVE_ANSWERS" } & AnswerResolutionRequestData)
-  | { type: "CAREEROS_APPLY_FILL_PLAN"; fields: FillPlanField[] };
+  | { type: "CAREEROS_APPLY_FILL_PLAN"; fields: FillPlanField[] }
+  | ({ type: "CAREEROS_RECORD_APPLICATION" } & RecordApplicationRequestData);
 
 export type ContentRequest =
   | { type: "CAREEROS_INSPECT_PAGE" }
@@ -208,8 +262,12 @@ export function parsePopupRequest(value: unknown): PopupRequest | null {
   if (isExactMessage(value, "CAREEROS_DETECT_ACTIVE_PAGE")) {
     return { type: "CAREEROS_DETECT_ACTIVE_PAGE" };
   }
+  if (isExactMessage(value, "CAREEROS_GET_APPLICATION_CONTEXT")) {
+    return { type: "CAREEROS_GET_APPLICATION_CONTEXT" };
+  }
   if (isAnswerResolutionRequest(value)) return value;
   if (isFillPlanRequest(value)) return value;
+  if (isRecordApplicationRequest(value)) return value;
   return null;
 }
 
@@ -406,4 +464,82 @@ function isFillPlanRequest(
   }
   const ids = value.fields.map((field) => field.fieldId);
   return ids.length === new Set(ids).size;
+}
+
+const applicationAnswerSources = new Set([
+  "IDENTITY",
+  "CAREER_BRAIN",
+  "RESUME_VERSION",
+  "USER_PROVIDED",
+]);
+
+function isConfirmedApplicationAnswer(
+  value: unknown,
+): value is ConfirmedApplicationAnswer {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      "canonicalKey",
+      "questionText",
+      "answerText",
+      "sourceCategory",
+    ])
+  ) {
+    return false;
+  }
+  return (
+    (value.canonicalKey === null ||
+      (typeof value.canonicalKey === "string" &&
+        canonicalKeys.has(value.canonicalKey))) &&
+    typeof value.questionText === "string" &&
+    value.questionText.trim().length > 0 &&
+    value.questionText.length <= 500 &&
+    typeof value.answerText === "string" &&
+    value.answerText.trim().length > 0 &&
+    value.answerText.length <= 4_000 &&
+    typeof value.sourceCategory === "string" &&
+    applicationAnswerSources.has(value.sourceCategory)
+  );
+}
+
+function isRecordApplicationRequest(value: unknown): value is {
+  type: "CAREEROS_RECORD_APPLICATION";
+} & RecordApplicationRequestData {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      "type",
+      "applicationId",
+      "company",
+      "role",
+      "resumeVersionId",
+      "idempotencyKey",
+      "answers",
+    ]) ||
+    value.type !== "CAREEROS_RECORD_APPLICATION" ||
+    !(
+      value.applicationId === null ||
+      (typeof value.applicationId === "string" &&
+        uuidPattern.test(value.applicationId))
+    ) ||
+    typeof value.company !== "string" ||
+    value.company.trim().length === 0 ||
+    value.company.length > 500 ||
+    typeof value.role !== "string" ||
+    value.role.trim().length === 0 ||
+    value.role.length > 500 ||
+    !(
+      value.resumeVersionId === null ||
+      (typeof value.resumeVersionId === "string" &&
+        uuidPattern.test(value.resumeVersionId))
+    ) ||
+    typeof value.idempotencyKey !== "string" ||
+    !uuidPattern.test(value.idempotencyKey) ||
+    !Array.isArray(value.answers) ||
+    value.answers.length > 200 ||
+    !value.answers.every(isConfirmedApplicationAnswer)
+  ) {
+    return false;
+  }
+  return true;
 }

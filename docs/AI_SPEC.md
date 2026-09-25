@@ -228,6 +228,12 @@ user-confirmed standard, non-sensitive application-specific answer history; it
 does not automatically persist transient Answer Engine decisions or make those
 answers reusable.
 
+M15 may use untrusted active-tab title and host only as editable context
+suggestions. It does not treat them as canonical facts. An unmatched external
+page never receives a guessed Resume Version, and retained answer history is
+limited to standard/non-sensitive values actually filled before the user's
+explicit post-submit recording action.
+
 Conceptual pipeline:
 
 ```text

@@ -326,7 +326,7 @@ depends on it.
 
 ## 14. Current implementation boundary
 
-Implemented through M14:
+Implemented through M15:
 
 - project foundation;
 - Career Brain/Profile;
@@ -351,12 +351,13 @@ Implemented through M14:
   fixture coverage, and no final submission; and
 - durable Application Memory for CareerOS and externally found jobs with stable
   context snapshots, exact Resume Version association, immutable approved
-  answers, lifecycle status, ownership, and idempotency.
+  answers, lifecycle status, ownership, and idempotency; and
+- Applications list/detail/status/manual recovery plus CareerOS Job handoff and
+  explicit extension recording after user submission.
 
 Planned during V1 formation:
 
 - automatic resume/file upload and broader custom-widget execution;
-- Applications Web surface and cross-surface integration; and
 - end-to-end integration and hardening.
 
 Deferred until after formation unless explicitly reprioritized:
