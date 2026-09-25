@@ -506,7 +506,33 @@ must be approved separately.
 Do not introduce mass scraping or provider-specific coupling merely to populate
 the formation UI.
 
-## 10. Optional intelligence expansion after formation
+## 10. M17 — Localization and Market-Aware Jobs Foundation — implementation complete
+
+### Goal
+
+Prepare the product and canonical Job boundary for both North American and
+Chinese opportunities without coupling interface language to recruiting market.
+
+### Delivered
+
+- independent `English / 简体中文` Web locale state, persisted on the current
+  browser, with localized product shell and Jobs experience;
+- independent `All / North America / China` market selection;
+- canonical market, country, workplace, and employment-type Job metadata;
+- validated North America (`US`, `CA`) and China (`CN`) market/country rules;
+- server-owned filtering and recent/title sorting for those canonical fields;
+- the same metadata contract for manual capture and normalized source adapters;
+  and
+- explicit unknown values so missing source data is not inferred.
+
+Production acquisition remains a separate track. Salary, sponsorship, education,
+experience-level, company-type, and funding filters remain deferred until real
+source requirements and trustworthy normalized fields exist. Application,
+Resume, Profile, Job detail, and extension page-specific copy is not yet
+localized; the shared shell and Jobs surface establish the first localization
+slice.
+
+## 11. Optional intelligence expansion after formation
 
 After V1 formation and validation, CareerOS may resume deeper optional Enhance
 work in separately approved milestones:
@@ -521,7 +547,7 @@ work in separately approved milestones:
 These features attach to existing Job, Resume, Career Evidence, and Application
 domains. They must not become mandatory for every application.
 
-## 11. Deferred/non-goal list
+## 12. Deferred/non-goal list
 
 Do not make these blockers for V1 formation:
 
@@ -532,12 +558,12 @@ Do not make these blockers for V1 formation:
 - cover letters and interview preparation;
 - sophisticated recommendations or outcome learning;
 - advanced analytics;
-- localization/personalization;
+- complete page-by-page localization beyond the shell and Jobs foundation;
 - career planning or autonomous agents; and
 - microservices, Kafka, Kubernetes, Neo4j, standalone vector database, or generic
   plugin/event infrastructure.
 
-## 12. Prioritization rules
+## 13. Prioritization rules
 
 When choosing between feature breadth and Golden Path reliability, choose
 reliability.
@@ -552,7 +578,7 @@ When choosing between new intelligence and evidence/answer safety, choose safety
 When choosing between sophisticated infrastructure and a clear modular boundary,
 choose the clear boundary.
 
-## 13. Commit and milestone review
+## 14. Commit and milestone review
 
 Before a milestone:
 
@@ -572,11 +598,12 @@ After a milestone:
 5. create a focused commit; and
 6. stop before expanding scope.
 
-## 14. Immediate next step
+## 15. Immediate next step
 
-M16 automated hardening is complete. At the user's direction, unpacked-extension
+M17 implementation and automated validation are complete. M16 automated
+hardening is also complete, but at the user's direction its unpacked-extension
 Chrome setup and representative browser validation remain deferred. The next
-required gate is:
+required V1 gate is still:
 
 > Run both M16 representative scenarios in unpacked Chrome
 

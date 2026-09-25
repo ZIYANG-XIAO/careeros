@@ -6,7 +6,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import delete, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,10 +19,14 @@ from careeros_api.job_schemas import ParsedJobDescription, validate_job_groundin
 from careeros_api.models import (
     Job,
     JobAvailabilityStatus,
+    JobCountry,
+    JobEmploymentType,
     JobFreshnessStatus,
+    JobMarket,
     JobRequirement,
     JobSnapshot,
     JobSourceType,
+    JobWorkplaceType,
     SavedJob,
     User,
 )
@@ -39,6 +43,10 @@ class CreateJobRequest(BaseModel):
     description: str = Field(min_length=20, max_length=100_000)
     source_url: AnyHttpUrl | None = None
     application_url: AnyHttpUrl | None = None
+    market: JobMarket = JobMarket.UNKNOWN
+    country_code: JobCountry = JobCountry.UNKNOWN
+    workplace_type: JobWorkplaceType = JobWorkplaceType.UNKNOWN
+    employment_type: JobEmploymentType = JobEmploymentType.UNKNOWN
 
     @field_validator("company", "title", "description")
     @classmethod
@@ -46,6 +54,16 @@ class CreateJobRequest(BaseModel):
         if not value.strip():
             raise ValueError("Value must not be blank")
         return value.strip()
+
+    @model_validator(mode="after")
+    def validate_market_country(self) -> "CreateJobRequest":
+        if self.market == JobMarket.UNKNOWN and self.country_code != JobCountry.UNKNOWN:
+            raise ValueError("A known country requires a market")
+        if self.market == JobMarket.NORTH_AMERICA and self.country_code == JobCountry.CN:
+            raise ValueError("China is not part of the North America market")
+        if self.market == JobMarket.CHINA and self.country_code in {JobCountry.US, JobCountry.CA}:
+            raise ValueError("US and Canada are not part of the China market")
+        return self
 
 
 class JobRequirementResponse(BaseModel):
@@ -86,6 +104,10 @@ class JobResponse(BaseModel):
     last_observed_at: datetime | None
     availability_status: str
     freshness_status: str
+    market: str
+    country_code: str
+    workplace_type: str
+    employment_type: str
     captured_at: datetime
     created_at: datetime
     updated_at: datetime
@@ -149,6 +171,10 @@ def _job_response(job: Job, *, is_saved: bool = False) -> JobResponse:
         last_observed_at=job.last_observed_at,
         availability_status=job.availability_status,
         freshness_status=job.freshness_status,
+        market=job.market,
+        country_code=job.country_code,
+        workplace_type=job.workplace_type,
+        employment_type=job.employment_type,
         captured_at=job.captured_at,
         created_at=job.created_at,
         updated_at=job.updated_at,
@@ -197,6 +223,10 @@ async def create_job(
         last_observed_at=observed_at,
         availability_status=JobAvailabilityStatus.UNKNOWN.value,
         freshness_status=JobFreshnessStatus.UNKNOWN.value,
+        market=body.market.value,
+        country_code=body.country_code.value,
+        workplace_type=body.workplace_type.value,
+        employment_type=body.employment_type.value,
     )
     session.add(job)
     await session.flush()
@@ -238,6 +268,11 @@ async def list_jobs(
     search: Annotated[str | None, Query(min_length=1, max_length=200)] = None,
     location: Annotated[str | None, Query(min_length=1, max_length=200)] = None,
     saved_only: bool = False,
+    market: JobMarket | None = None,
+    country_code: JobCountry | None = None,
+    workplace_type: JobWorkplaceType | None = None,
+    employment_type: JobEmploymentType | None = None,
+    sort: str = Query(default="recent", pattern="^(recent|title)$"),
 ) -> list[JobResponse]:
     statement = (
         select(Job)
@@ -248,7 +283,6 @@ async def list_jobs(
         )
         .options(selectinload(Job.snapshots).selectinload(JobSnapshot.requirements))
         .where(Job.user_id == user.id)
-        .order_by(Job.created_at.desc())
     )
     if search is not None:
         term = f"%{search.strip()}%"
@@ -257,6 +291,18 @@ async def list_jobs(
         statement = statement.where(Job.location.ilike(f"%{location.strip()}%"))
     if saved_only:
         statement = statement.where(SavedJob.id.is_not(None))
+    if market is not None:
+        statement = statement.where(Job.market == market.value)
+    if country_code is not None:
+        statement = statement.where(Job.country_code == country_code.value)
+    if workplace_type is not None:
+        statement = statement.where(Job.workplace_type == workplace_type.value)
+    if employment_type is not None:
+        statement = statement.where(Job.employment_type == employment_type.value)
+    if sort == "title":
+        statement = statement.order_by(Job.title.asc(), Job.company.asc())
+    else:
+        statement = statement.order_by(Job.created_at.desc())
 
     result = await session.execute(statement)
     return [_job_response(job, is_saved=is_saved) for job, is_saved in result.all()]

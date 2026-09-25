@@ -18,10 +18,14 @@ from careeros_api.job_schemas import ParsedJobDescription, validate_job_groundin
 from careeros_api.models import (
     Job,
     JobAvailabilityStatus,
+    JobCountry,
+    JobEmploymentType,
     JobFreshnessStatus,
+    JobMarket,
     JobRequirement,
     JobSnapshot,
     JobSourceType,
+    JobWorkplaceType,
 )
 
 
@@ -45,6 +49,10 @@ class NormalizedJobCandidate(BaseModel):
     observed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     availability_status: JobAvailabilityStatus = JobAvailabilityStatus.UNKNOWN
     freshness_status: JobFreshnessStatus = JobFreshnessStatus.UNKNOWN
+    market: JobMarket = JobMarket.UNKNOWN
+    country_code: JobCountry = JobCountry.UNKNOWN
+    workplace_type: JobWorkplaceType = JobWorkplaceType.UNKNOWN
+    employment_type: JobEmploymentType = JobEmploymentType.UNKNOWN
 
     @field_validator("observed_at")
     @classmethod
@@ -57,6 +65,15 @@ class NormalizedJobCandidate(BaseModel):
     def require_stable_identity(self) -> "NormalizedJobCandidate":
         if self.external_job_id is None and self.canonical_url is None:
             raise ValueError("A normalized job requires an external ID or canonical URL")
+        if self.market == JobMarket.UNKNOWN and self.country_code != JobCountry.UNKNOWN:
+            raise ValueError("A known country requires a market")
+        if self.market == JobMarket.NORTH_AMERICA and self.country_code == JobCountry.CN:
+            raise ValueError("China is not part of the North America market")
+        if self.market == JobMarket.CHINA and self.country_code in {
+            JobCountry.US,
+            JobCountry.CA,
+        }:
+            raise ValueError("US and Canada are not part of the China market")
         return self
 
 
@@ -205,6 +222,10 @@ async def ingest_job_source(
         job.canonical_url = str(candidate.canonical_url) if candidate.canonical_url else None
         job.availability_status = candidate.availability_status.value
         job.freshness_status = candidate.freshness_status.value
+        job.market = candidate.market.value
+        job.country_code = candidate.country_code.value
+        job.workplace_type = candidate.workplace_type.value
+        job.employment_type = candidate.employment_type.value
         if job.first_observed_at is None or candidate.observed_at < job.first_observed_at:
             job.first_observed_at = candidate.observed_at
         if job.last_observed_at is None or candidate.observed_at > job.last_observed_at:

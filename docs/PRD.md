@@ -23,7 +23,7 @@ directly to application assistance.
 
 ## 2. Current and planned scope
 
-### Implemented now — M0–M15 plus M16 automated hardening
+### Implemented now — M0–M15, M16 automated hardening, and M17 foundation
 
 - authenticated Web/API/PostgreSQL foundation;
 - Career Brain/Profile management and user ownership;
@@ -56,6 +56,9 @@ directly to application assistance.
   and user-confirmed extension recording after submission.
 - data-minimized Application Assistant context lookup, concurrent idempotency
   hardening, post-redirect Preparing recovery, and automated two-path contracts.
+- browser-persisted English/Simplified Chinese product-shell and Jobs language,
+  independent North America/China market selection, canonical market/country/
+  workplace/employment metadata, and server-owned filtering/sorting.
 
 ### Planned V1 formation
 
@@ -70,7 +73,8 @@ directly to application assistance.
 - application Q&A generation beyond approved Answer Engine behavior;
 - interview preparation;
 - sophisticated recommendations and outcome learning; and
-- career planning, localization, personalization, and autonomous agents.
+- complete page-by-page localization, personalization, career planning, and
+  autonomous agents.
 
 Existing Job Intelligence remains implemented optional functionality.
 
@@ -152,9 +156,10 @@ The implemented M8 Jobs experience supports:
 - save job; and
 - apply.
 
-Search currently matches title and company, and location is a separate filter.
-The current dataset is user-added manual data and is explicitly not represented
-as a production live feed.
+Search matches title and company. Location, market, country, workplace,
+employment type, saved state, and recent/title ordering are server-owned filters.
+Market and UI language are independent. The current dataset remains user-added,
+seed, or demo data and is explicitly not represented as a production live feed.
 
 ### 5.2 Job source independence
 

@@ -46,6 +46,10 @@ def payload(description: str | None = None) -> dict[str, object]:
         or "Join our platform team. 5+ years of Python experience required for this role.",
         "source_url": "https://example.com/jobs/123",
         "application_url": "https://example.com/jobs/123/apply",
+        "market": "NORTH_AMERICA",
+        "country_code": "CA",
+        "workplace_type": "REMOTE",
+        "employment_type": "FULL_TIME",
     }
 
 
@@ -61,6 +65,10 @@ async def test_capture_job_preserves_raw_snapshot_and_grounded_requirements() ->
         assert body["canonical_url"] is None
         assert body["availability_status"] == "UNKNOWN"
         assert body["freshness_status"] == "UNKNOWN"
+        assert body["market"] == "NORTH_AMERICA"
+        assert body["country_code"] == "CA"
+        assert body["workplace_type"] == "REMOTE"
+        assert body["employment_type"] == "FULL_TIME"
         assert body["application_url"] == "https://example.com/jobs/123/apply"
         assert body["is_saved"] is False
         assert body["latest_snapshot"]["raw_description"] == payload()["description"]
@@ -150,6 +158,10 @@ async def test_job_search_and_location_filters_are_server_owned() -> None:
             company="Contoso",
             title="Data Engineer",
             location="London",
+            market="CHINA",
+            country_code="CN",
+            workplace_type="ONSITE",
+            employment_type="CONTRACT",
         )
         first = await client.post("/jobs", json=first_payload)
         second = await client.post("/jobs", json=second_payload)
@@ -164,6 +176,28 @@ async def test_job_search_and_location_filters_are_server_owned() -> None:
 
         by_location = await client.get("/jobs", params={"location": "canada"})
         assert [item["id"] for item in by_location.json()] == [first.json()["id"]]
+
+        by_market = await client.get(
+            "/jobs",
+            params={
+                "market": "NORTH_AMERICA",
+                "country_code": "CA",
+                "workplace_type": "REMOTE",
+                "employment_type": "FULL_TIME",
+            },
+        )
+        assert [item["id"] for item in by_market.json()] == [first.json()["id"]]
+
+        by_title = await client.get("/jobs", params={"sort": "title"})
+        assert [item["id"] for item in by_title.json()] == [second.json()["id"], first.json()["id"]]
+
+
+@pytest.mark.asyncio
+async def test_job_market_and_country_must_be_consistent() -> None:
+    async with make_integration_client(job_parser=FakeJobParser()) as client:
+        inconsistent = payload()
+        inconsistent.update(market="CHINA", country_code="US")
+        assert (await client.post("/jobs", json=inconsistent)).status_code == 422
 
 
 @pytest.mark.asyncio

@@ -297,12 +297,22 @@ export type Job = {
   last_observed_at: string | null;
   availability_status: "UNKNOWN" | "AVAILABLE" | "UNAVAILABLE";
   freshness_status: "UNKNOWN" | "CURRENT" | "STALE";
+  market: JobMarket;
+  country_code: JobCountry;
+  workplace_type: JobWorkplaceType;
+  employment_type: JobEmploymentType;
   captured_at: string;
   created_at: string;
   updated_at: string;
   is_saved: boolean;
   latest_snapshot: JobSnapshot;
 };
+
+export type JobMarket = "UNKNOWN" | "NORTH_AMERICA" | "CHINA";
+export type JobCountry = "UNKNOWN" | "US" | "CA" | "CN";
+export type JobWorkplaceType = "UNKNOWN" | "REMOTE" | "HYBRID" | "ONSITE";
+export type JobEmploymentType =
+  "UNKNOWN" | "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERNSHIP";
 
 export type CreateJobRequest = {
   company: string;
@@ -311,6 +321,10 @@ export type CreateJobRequest = {
   description: string;
   source_url?: string | null;
   application_url?: string | null;
+  market?: JobMarket;
+  country_code?: JobCountry;
+  workplace_type?: JobWorkplaceType;
+  employment_type?: JobEmploymentType;
 };
 
 export type EvidenceReference = {

@@ -90,6 +90,34 @@ class JobFreshnessStatus(enum.StrEnum):
     STALE = "STALE"
 
 
+class JobMarket(enum.StrEnum):
+    UNKNOWN = "UNKNOWN"
+    NORTH_AMERICA = "NORTH_AMERICA"
+    CHINA = "CHINA"
+
+
+class JobCountry(enum.StrEnum):
+    UNKNOWN = "UNKNOWN"
+    US = "US"
+    CA = "CA"
+    CN = "CN"
+
+
+class JobWorkplaceType(enum.StrEnum):
+    UNKNOWN = "UNKNOWN"
+    REMOTE = "REMOTE"
+    HYBRID = "HYBRID"
+    ONSITE = "ONSITE"
+
+
+class JobEmploymentType(enum.StrEnum):
+    UNKNOWN = "UNKNOWN"
+    FULL_TIME = "FULL_TIME"
+    PART_TIME = "PART_TIME"
+    CONTRACT = "CONTRACT"
+    INTERNSHIP = "INTERNSHIP"
+
+
 class JobRequirementCategory(enum.StrEnum):
     SKILL = "SKILL"
     EXPERIENCE = "EXPERIENCE"
@@ -592,6 +620,10 @@ class Job(Base):
     last_observed_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
     availability_status: Mapped[str] = mapped_column(sa.String(50), default="UNKNOWN")
     freshness_status: Mapped[str] = mapped_column(sa.String(50), default="UNKNOWN")
+    market: Mapped[str] = mapped_column(sa.String(50), default="UNKNOWN")
+    country_code: Mapped[str] = mapped_column(sa.String(20), default="UNKNOWN")
+    workplace_type: Mapped[str] = mapped_column(sa.String(50), default="UNKNOWN")
+    employment_type: Mapped[str] = mapped_column(sa.String(50), default="UNKNOWN")
     captured_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=sa.func.now()
     )
@@ -612,7 +644,30 @@ class Job(Base):
     applications: Mapped[list["Application"]] = relationship(back_populates="job")
 
     __table_args__ = (
+        sa.CheckConstraint(
+            "market IN ('UNKNOWN', 'NORTH_AMERICA', 'CHINA')",
+            name="ck_jobs_market",
+        ),
+        sa.CheckConstraint(
+            "country_code IN ('UNKNOWN', 'US', 'CA', 'CN')",
+            name="ck_jobs_country_code",
+        ),
+        sa.CheckConstraint(
+            "(market = 'UNKNOWN' AND country_code = 'UNKNOWN') OR "
+            "(market = 'NORTH_AMERICA' AND country_code IN ('UNKNOWN', 'US', 'CA')) OR "
+            "(market = 'CHINA' AND country_code IN ('UNKNOWN', 'CN'))",
+            name="ck_jobs_market_country",
+        ),
+        sa.CheckConstraint(
+            "workplace_type IN ('UNKNOWN', 'REMOTE', 'HYBRID', 'ONSITE')",
+            name="ck_jobs_workplace_type",
+        ),
+        sa.CheckConstraint(
+            "employment_type IN ('UNKNOWN', 'FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP')",
+            name="ck_jobs_employment_type",
+        ),
         sa.Index("ix_jobs_user_id", "user_id"),
+        sa.Index("ix_jobs_user_market", "user_id", "market"),
         sa.Index(
             "uq_jobs_user_source_external_id",
             "user_id",

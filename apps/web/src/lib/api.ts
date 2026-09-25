@@ -288,6 +288,11 @@ export type JobListFilters = {
   search?: string;
   location?: string;
   savedOnly?: boolean;
+  market?: string;
+  countryCode?: string;
+  workplaceType?: string;
+  employmentType?: string;
+  sort?: "recent" | "title";
 };
 
 export async function listJobs(
@@ -298,6 +303,13 @@ export async function listJobs(
   if (filters.search?.trim()) query.set("search", filters.search.trim());
   if (filters.location?.trim()) query.set("location", filters.location.trim());
   if (filters.savedOnly) query.set("saved_only", "true");
+  if (filters.market) query.set("market", filters.market);
+  if (filters.countryCode) query.set("country_code", filters.countryCode);
+  if (filters.workplaceType) query.set("workplace_type", filters.workplaceType);
+  if (filters.employmentType)
+    query.set("employment_type", filters.employmentType);
+  if (filters.sort && filters.sort !== "recent")
+    query.set("sort", filters.sort);
   const suffix = query.size ? `?${query.toString()}` : "";
   const response = await fetch(`${apiBaseUrl()}/jobs${suffix}`, {
     headers: { Authorization: `Bearer ${token}` },

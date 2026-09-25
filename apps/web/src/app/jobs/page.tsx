@@ -12,12 +12,40 @@ import { Textarea } from "@/components/ui/textarea";
 import { createJob, listJobs, saveJob, unsaveJob } from "@/lib/api";
 import { safeExternalUrl } from "@/lib/external-url";
 import { jobSourceSummary } from "@/lib/job-source";
-import type { Job } from "@/lib/types";
+import { useI18n } from "@/lib/i18n";
+import type {
+  Job,
+  JobCountry,
+  JobEmploymentType,
+  JobMarket,
+  JobWorkplaceType,
+} from "@/lib/types";
 
 type View = "all" | "saved";
-type Filters = { search: string; location: string; view: View };
+type Filters = {
+  search: string;
+  location: string;
+  view: View;
+  market: "" | Exclude<JobMarket, "UNKNOWN">;
+  countryCode: "" | Exclude<JobCountry, "UNKNOWN">;
+  workplaceType: "" | Exclude<JobWorkplaceType, "UNKNOWN">;
+  employmentType: "" | Exclude<JobEmploymentType, "UNKNOWN">;
+  sort: "recent" | "title";
+};
 
-const initialFilters: Filters = { search: "", location: "", view: "all" };
+const initialFilters: Filters = {
+  search: "",
+  location: "",
+  view: "all",
+  market: "",
+  countryCode: "",
+  workplaceType: "",
+  employmentType: "",
+  sort: "recent",
+};
+
+const selectClass =
+  "block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20";
 
 function JobCard({
   job,
@@ -28,6 +56,7 @@ function JobCard({
   onToggleSave: (job: Job) => void;
   saving: boolean;
 }) {
+  const { locale, t } = useI18n();
   const applicationUrl = safeExternalUrl(job.application_url);
   const excerpt = job.latest_snapshot.raw_description
     .replaceAll(/\s+/g, " ")
@@ -52,9 +81,7 @@ function JobCard({
           onClick={() => onToggleSave(job)}
           disabled={saving}
           aria-pressed={job.is_saved}
-          aria-label={
-            job.is_saved ? `Unsave ${job.title}` : `Save ${job.title}`
-          }
+          aria-label={`${job.is_saved ? t("jobs.unsave") : t("jobs.save")} ${job.title}`}
           className={`shrink-0 rounded-full p-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:opacity-50 ${
             job.is_saved
               ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
@@ -82,8 +109,41 @@ function JobCard({
         {job.location && <span>{job.location}</span>}
         {job.location && <span aria-hidden="true">·</span>}
         <span>
-          {job.latest_snapshot.requirements.length} structured requirements
+          {job.latest_snapshot.requirements.length} {t("jobs.requirements")}
         </span>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {job.market !== "UNKNOWN" && (
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-800">
+            {job.market === "NORTH_AMERICA"
+              ? t("jobs.northAmerica")
+              : t("jobs.china")}
+          </span>
+        )}
+        {job.workplace_type !== "UNKNOWN" && (
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+            {t(
+              job.workplace_type === "REMOTE"
+                ? "jobs.remote"
+                : job.workplace_type === "HYBRID"
+                  ? "jobs.hybrid"
+                  : "jobs.onsite",
+            )}
+          </span>
+        )}
+        {job.employment_type !== "UNKNOWN" && (
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+            {t(
+              job.employment_type === "FULL_TIME"
+                ? "jobs.fullTime"
+                : job.employment_type === "PART_TIME"
+                  ? "jobs.partTime"
+                  : job.employment_type === "CONTRACT"
+                    ? "jobs.contract"
+                    : "jobs.internship",
+            )}
+          </span>
+        )}
       </div>
       <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600">
         {excerpt}
@@ -97,7 +157,7 @@ function JobCard({
             rel="noopener noreferrer"
             className="inline-flex items-center rounded-lg bg-blue-700 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
           >
-            Apply
+            {t("jobs.apply")}
             <svg
               className="ml-1.5 h-4 w-4"
               fill="none"
@@ -115,18 +175,18 @@ function JobCard({
           </a>
         ) : (
           <span className="rounded-lg bg-slate-100 px-3.5 py-2 text-sm font-medium text-slate-500">
-            Application link unavailable
+            {t("jobs.noApply")}
           </span>
         )}
         <Link
           href={`/jobs/${job.id}`}
           className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
         >
-          View details
+          {t("jobs.viewDetails")}
         </Link>
       </div>
       <p className="mt-4 border-t border-slate-100 pt-3 text-[11px] text-slate-400">
-        {jobSourceSummary(job)}
+        {jobSourceSummary(job, locale)}
       </p>
     </article>
   );
@@ -135,6 +195,7 @@ function JobCard({
 export default function JobsPage() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const router = useRouter();
+  const { locale, t } = useI18n();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [search, setSearch] = useState("");
@@ -156,14 +217,18 @@ export default function JobsPage() {
           search: filters.search,
           location: filters.location,
           savedOnly: filters.view === "saved",
+          market: filters.market || undefined,
+          countryCode: filters.countryCode || undefined,
+          workplaceType: filters.workplaceType || undefined,
+          employmentType: filters.employmentType || undefined,
+          sort: filters.sort,
         });
         if (!cancelled) {
           setJobs(result);
           setError(null);
         }
       } catch {
-        if (!cancelled)
-          setError("We could not load your jobs. Please try again.");
+        if (!cancelled) setError(t("jobs.loadError"));
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -174,7 +239,7 @@ export default function JobsPage() {
     return () => {
       cancelled = true;
     };
-  }, [filters, getToken, isLoaded, isSignedIn]);
+  }, [filters, getToken, isLoaded, isSignedIn, t]);
 
   function handleFilter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -186,7 +251,7 @@ export default function JobsPage() {
     setSearch("");
     setLocation("");
     setRefreshing(true);
-    setFilters((current) => ({ ...current, search: "", location: "" }));
+    setFilters({ ...initialFilters, view: filters.view });
   }
 
   async function toggleSave(job: Job) {
@@ -213,7 +278,7 @@ export default function JobsPage() {
       }
       setError(null);
     } catch {
-      setError("We could not update this saved job. Please try again.");
+      setError(t("jobs.saveError"));
     } finally {
       setSavingIds((current) => {
         const next = new Set(current);
@@ -228,6 +293,16 @@ export default function JobsPage() {
     setCreating(true);
     setError(null);
     const form = new FormData(event.currentTarget);
+    const countryCode = String(
+      form.get("country_code") ?? "UNKNOWN",
+    ) as JobCountry;
+    const selectedMarket = String(form.get("market") ?? "UNKNOWN") as JobMarket;
+    const market =
+      countryCode === "CN"
+        ? "CHINA"
+        : countryCode === "US" || countryCode === "CA"
+          ? "NORTH_AMERICA"
+          : selectedMarket;
     try {
       const token = await getToken();
       if (!token) throw new Error("Missing authentication token");
@@ -238,71 +313,216 @@ export default function JobsPage() {
         source_url: String(form.get("source_url") ?? "") || null,
         application_url: String(form.get("application_url") ?? "") || null,
         description: String(form.get("description") ?? ""),
+        market,
+        country_code: countryCode,
+        workplace_type: String(
+          form.get("workplace_type") ?? "UNKNOWN",
+        ) as JobWorkplaceType,
+        employment_type: String(
+          form.get("employment_type") ?? "UNKNOWN",
+        ) as JobEmploymentType,
       });
       router.push(`/jobs/${job.id}`);
     } catch {
-      setError(
-        "We could not parse this job description. Check the details and try again.",
-      );
+      setError(t("jobs.createError"));
       setCreating(false);
     }
   }
 
   if (!isLoaded || (loading && isSignedIn)) return <Spinner />;
   if (!isSignedIn)
-    return <p className="text-sm text-slate-600">Sign in to explore jobs.</p>;
+    return <p className="text-sm text-slate-600">{t("jobs.signIn")}</p>;
 
-  const hasFilters = Boolean(filters.search || filters.location);
+  const hasFilters = Boolean(
+    filters.search ||
+    filters.location ||
+    filters.market ||
+    filters.countryCode ||
+    filters.workplaceType ||
+    filters.employmentType ||
+    filters.sort !== "recent",
+  );
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
-            Discover
+            {t("jobs.discover")}
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-            Jobs
+            {t("jobs.title")}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Browse opportunities you have brought into CareerOS. Apply directly,
-            save what matters, or choose deeper analysis when you want it.
+            {t("jobs.intro")}
           </p>
         </div>
         <a
           href="#add-job"
           className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
         >
-          Add a job manually
+          {t("jobs.addManual")}
         </a>
       </header>
 
       <section
         className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
-        aria-label="Search jobs"
+        aria-label={t("jobs.searchArea")}
       >
+        <div
+          className="mb-4 flex flex-wrap gap-2"
+          aria-label={t("jobs.market")}
+        >
+          {(
+            [
+              ["", "jobs.allMarkets"],
+              ["NORTH_AMERICA", "jobs.northAmerica"],
+              ["CHINA", "jobs.china"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value || "all"}
+              type="button"
+              onClick={() => {
+                setRefreshing(true);
+                setFilters((current) => ({
+                  ...current,
+                  market: value,
+                  countryCode:
+                    value === "NORTH_AMERICA" && current.countryCode === "CN"
+                      ? ""
+                      : value === "CHINA" &&
+                          (current.countryCode === "US" ||
+                            current.countryCode === "CA")
+                        ? ""
+                        : current.countryCode,
+                }));
+              }}
+              aria-pressed={filters.market === value}
+              className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                filters.market === value
+                  ? "border-blue-700 bg-blue-700 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+              }`}
+            >
+              {t(label)}
+            </button>
+          ))}
+        </div>
         <form
-          className="grid gap-3 lg:grid-cols-[1fr_0.55fr_auto] lg:items-end"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.2fr_0.8fr_auto] xl:items-end"
           onSubmit={handleFilter}
         >
           <Input
-            label="Search"
+            label={t("jobs.search")}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Job title or company"
+            placeholder={t("jobs.searchPlaceholder")}
             maxLength={200}
           />
           <Input
-            label="Location"
+            label={t("jobs.location")}
             value={location}
             onChange={(event) => setLocation(event.target.value)}
-            placeholder="Remote, city, or region"
+            placeholder={t("jobs.locationPlaceholder")}
             maxLength={200}
           />
           <Button type="submit" className="h-10" disabled={refreshing}>
-            {refreshing ? "Searching…" : "Search jobs"}
+            {refreshing ? t("jobs.searching") : t("jobs.searchAction")}
           </Button>
         </form>
+        <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 xl:grid-cols-4">
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span className="block">{t("jobs.country")}</span>
+            <select
+              className={selectClass}
+              value={filters.countryCode}
+              onChange={(event) => {
+                const countryCode = event.target
+                  .value as Filters["countryCode"];
+                setRefreshing(true);
+                setFilters((current) => ({
+                  ...current,
+                  countryCode,
+                  market:
+                    countryCode === "CN"
+                      ? "CHINA"
+                      : countryCode === "US" || countryCode === "CA"
+                        ? "NORTH_AMERICA"
+                        : current.market,
+                }));
+              }}
+            >
+              <option value="">{t("jobs.allCountries")}</option>
+              {filters.market !== "CHINA" && (
+                <option value="US">{t("jobs.us")}</option>
+              )}
+              {filters.market !== "CHINA" && (
+                <option value="CA">{t("jobs.ca")}</option>
+              )}
+              {filters.market !== "NORTH_AMERICA" && (
+                <option value="CN">{t("jobs.cn")}</option>
+              )}
+            </select>
+          </label>
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span className="block">{t("jobs.workplace")}</span>
+            <select
+              className={selectClass}
+              value={filters.workplaceType}
+              onChange={(event) => {
+                setRefreshing(true);
+                setFilters((current) => ({
+                  ...current,
+                  workplaceType: event.target.value as Filters["workplaceType"],
+                }));
+              }}
+            >
+              <option value="">{t("jobs.allWorkplaces")}</option>
+              <option value="REMOTE">{t("jobs.remote")}</option>
+              <option value="HYBRID">{t("jobs.hybrid")}</option>
+              <option value="ONSITE">{t("jobs.onsite")}</option>
+            </select>
+          </label>
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span className="block">{t("jobs.employment")}</span>
+            <select
+              className={selectClass}
+              value={filters.employmentType}
+              onChange={(event) => {
+                setRefreshing(true);
+                setFilters((current) => ({
+                  ...current,
+                  employmentType: event.target
+                    .value as Filters["employmentType"],
+                }));
+              }}
+            >
+              <option value="">{t("jobs.allEmployment")}</option>
+              <option value="FULL_TIME">{t("jobs.fullTime")}</option>
+              <option value="PART_TIME">{t("jobs.partTime")}</option>
+              <option value="CONTRACT">{t("jobs.contract")}</option>
+              <option value="INTERNSHIP">{t("jobs.internship")}</option>
+            </select>
+          </label>
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span className="block">{t("jobs.sort")}</span>
+            <select
+              className={selectClass}
+              value={filters.sort}
+              onChange={(event) => {
+                setRefreshing(true);
+                setFilters((current) => ({
+                  ...current,
+                  sort: event.target.value as Filters["sort"],
+                }));
+              }}
+            >
+              <option value="recent">{t("jobs.recent")}</option>
+              <option value="title">{t("jobs.titleSort")}</option>
+            </select>
+          </label>
+        </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
           <div
             className="inline-flex rounded-xl bg-slate-100 p-1"
@@ -323,7 +543,7 @@ export default function JobsPage() {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                {view === "all" ? "All jobs" : "Saved jobs"}
+                {view === "all" ? t("jobs.allJobs") : t("jobs.savedJobs")}
               </button>
             ))}
           </div>
@@ -333,7 +553,7 @@ export default function JobsPage() {
               onClick={clearFilters}
               className="text-sm font-medium text-blue-700 hover:text-blue-900"
             >
-              Clear search and location
+              {t("jobs.clearFilters")}
             </button>
           )}
         </div>
@@ -354,10 +574,14 @@ export default function JobsPage() {
             id="job-results-heading"
             className="text-lg font-semibold text-slate-950"
           >
-            {filters.view === "saved" ? "Saved jobs" : "Your jobs"}
+            {filters.view === "saved"
+              ? t("jobs.savedJobs")
+              : t("jobs.yourJobs")}
           </h2>
           <p className="text-sm text-slate-500">
-            {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
+            {locale === "zh-CN"
+              ? `${jobs.length} ${t("jobs.jobs")}`
+              : `${jobs.length} ${jobs.length === 1 ? t("jobs.job") : t("jobs.jobs")}`}
           </p>
         </div>
         {jobs.length === 0 ? (
@@ -380,17 +604,17 @@ export default function JobsPage() {
             </div>
             <h3 className="mt-4 font-semibold text-slate-950">
               {filters.view === "saved"
-                ? "No saved jobs yet"
+                ? t("jobs.noSaved")
                 : hasFilters
-                  ? "No jobs match these filters"
-                  : "Your Jobs workspace is ready"}
+                  ? t("jobs.noMatch")
+                  : t("jobs.ready")}
             </h3>
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
               {filters.view === "saved"
-                ? "Save an opportunity from the Jobs list or job detail to keep it here."
+                ? t("jobs.noSavedHint")
                 : hasFilters
-                  ? "Try a broader title, company, or location."
-                  : "Add a job manually while production job sources are still being formed."}
+                  ? t("jobs.noMatchHint")
+                  : t("jobs.readyHint")}
             </p>
             {hasFilters && (
               <Button
@@ -398,7 +622,7 @@ export default function JobsPage() {
                 className="mt-5"
                 onClick={clearFilters}
               >
-                Clear filters
+                {t("jobs.clearFilters")}
               </Button>
             )}
           </div>
@@ -423,49 +647,112 @@ export default function JobsPage() {
         className="rounded-2xl border border-slate-200 bg-white shadow-sm"
       >
         <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-slate-800 marker:hidden sm:px-6">
-          Add a job manually
+          {t("jobs.addManual")}
           <span className="ml-2 text-xs font-normal text-slate-500">
-            For jobs you already found elsewhere
+            {t("jobs.addManualHint")}
           </span>
         </summary>
         <form
           className="grid gap-4 border-t border-slate-100 p-5 sm:grid-cols-2 sm:p-6"
           onSubmit={handleCreate}
         >
-          <Input label="Company" name="company" required maxLength={500} />
-          <Input label="Job title" name="title" required maxLength={500} />
-          <Input label="Location (optional)" name="location" maxLength={500} />
           <Input
-            label="Source URL (optional)"
+            label={t("jobs.company")}
+            name="company"
+            required
+            maxLength={500}
+          />
+          <Input
+            label={t("jobs.jobTitle")}
+            name="title"
+            required
+            maxLength={500}
+          />
+          <Input
+            label={t("jobs.optionalLocation")}
+            name="location"
+            maxLength={500}
+          />
+          <Input
+            label={t("jobs.sourceUrl")}
             name="source_url"
             type="url"
             placeholder="https://…"
           />
           <div className="sm:col-span-2">
             <Input
-              label="Application URL (optional)"
+              label={t("jobs.applicationUrl")}
               name="application_url"
               type="url"
               placeholder="https://…"
             />
           </div>
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span className="block">{t("jobs.market")}</span>
+            <select
+              className={selectClass}
+              name="market"
+              defaultValue="UNKNOWN"
+            >
+              <option value="UNKNOWN">{t("jobs.unknown")}</option>
+              <option value="NORTH_AMERICA">{t("jobs.northAmerica")}</option>
+              <option value="CHINA">{t("jobs.china")}</option>
+            </select>
+          </label>
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span className="block">{t("jobs.country")}</span>
+            <select
+              className={selectClass}
+              name="country_code"
+              defaultValue="UNKNOWN"
+            >
+              <option value="UNKNOWN">{t("jobs.unknown")}</option>
+              <option value="US">{t("jobs.us")}</option>
+              <option value="CA">{t("jobs.ca")}</option>
+              <option value="CN">{t("jobs.cn")}</option>
+            </select>
+          </label>
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span className="block">{t("jobs.workplace")}</span>
+            <select
+              className={selectClass}
+              name="workplace_type"
+              defaultValue="UNKNOWN"
+            >
+              <option value="UNKNOWN">{t("jobs.unknown")}</option>
+              <option value="REMOTE">{t("jobs.remote")}</option>
+              <option value="HYBRID">{t("jobs.hybrid")}</option>
+              <option value="ONSITE">{t("jobs.onsite")}</option>
+            </select>
+          </label>
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span className="block">{t("jobs.employment")}</span>
+            <select
+              className={selectClass}
+              name="employment_type"
+              defaultValue="UNKNOWN"
+            >
+              <option value="UNKNOWN">{t("jobs.unknown")}</option>
+              <option value="FULL_TIME">{t("jobs.fullTime")}</option>
+              <option value="PART_TIME">{t("jobs.partTime")}</option>
+              <option value="CONTRACT">{t("jobs.contract")}</option>
+              <option value="INTERNSHIP">{t("jobs.internship")}</option>
+            </select>
+          </label>
           <div className="sm:col-span-2">
             <Textarea
-              label="Job description"
+              label={t("jobs.description")}
               name="description"
               required
               minLength={20}
               rows={10}
-              placeholder="Paste the complete job description"
+              placeholder={t("jobs.descriptionPlaceholder")}
             />
           </div>
           <div className="sm:col-span-2 flex items-center justify-between gap-4">
-            <p className="text-xs text-slate-500">
-              Manual jobs are private to your account and are not presented as
-              live listings.
-            </p>
+            <p className="text-xs text-slate-500">{t("jobs.manualPrivacy")}</p>
             <Button type="submit" disabled={creating}>
-              {creating ? "Parsing job…" : "Add job"}
+              {creating ? t("jobs.parsing") : t("jobs.addJob")}
             </Button>
           </div>
         </form>

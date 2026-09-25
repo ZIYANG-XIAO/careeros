@@ -41,6 +41,10 @@ const job = {
   last_observed_at: "2026-09-23T00:00:00Z",
   availability_status: "UNKNOWN" as const,
   freshness_status: "UNKNOWN" as const,
+  market: "NORTH_AMERICA" as const,
+  country_code: "CA" as const,
+  workplace_type: "REMOTE" as const,
+  employment_type: "FULL_TIME" as const,
   captured_at: "2026-09-23T00:00:00Z",
   created_at: "2026-09-23T00:00:00Z",
   updated_at: "2026-09-23T00:00:00Z",
@@ -131,6 +135,11 @@ describe("JobsPage", () => {
         search: "platform",
         location: "remote",
         savedOnly: false,
+        market: undefined,
+        countryCode: undefined,
+        workplaceType: undefined,
+        employmentType: undefined,
+        sort: "recent",
       }),
     );
 
@@ -140,7 +149,43 @@ describe("JobsPage", () => {
         search: "platform",
         location: "remote",
         savedOnly: true,
+        market: undefined,
+        countryCode: undefined,
+        workplaceType: undefined,
+        employmentType: undefined,
+        sort: "recent",
       }),
+    );
+  });
+
+  it("applies market-aware filters using canonical values", async () => {
+    const user = userEvent.setup();
+    render(<JobsPage />);
+    await screen.findByText("Your Jobs workspace is ready");
+
+    await user.click(screen.getByRole("button", { name: "North America" }));
+    await user.selectOptions(screen.getAllByLabelText("Country")[0], "CA");
+    await user.selectOptions(
+      screen.getAllByLabelText("Workplace")[0],
+      "REMOTE",
+    );
+    await user.selectOptions(
+      screen.getAllByLabelText("Employment type")[0],
+      "FULL_TIME",
+    );
+    await user.selectOptions(screen.getByLabelText("Sort"), "title");
+
+    await vi.waitFor(() =>
+      expect(mockListJobs).toHaveBeenLastCalledWith(
+        "token",
+        expect.objectContaining({
+          market: "NORTH_AMERICA",
+          countryCode: "CA",
+          workplaceType: "REMOTE",
+          employmentType: "FULL_TIME",
+          sort: "title",
+        }),
+      ),
     );
   });
 

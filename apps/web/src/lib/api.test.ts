@@ -264,9 +264,14 @@ describe("API client", () => {
         search: " platform engineer ",
         location: "New York",
         savedOnly: true,
+        market: "NORTH_AMERICA",
+        countryCode: "US",
+        workplaceType: "HYBRID",
+        employmentType: "FULL_TIME",
+        sort: "title",
       });
       expect(f).toHaveBeenCalledWith(
-        `${BASE}/jobs?search=platform+engineer&location=New+York&saved_only=true`,
+        `${BASE}/jobs?search=platform+engineer&location=New+York&saved_only=true&market=NORTH_AMERICA&country_code=US&workplace_type=HYBRID&employment_type=FULL_TIME&sort=title`,
         {
           headers: { Authorization: `Bearer ${TOKEN}` },
           cache: "no-store",

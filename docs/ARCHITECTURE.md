@@ -262,6 +262,7 @@ Job Source
 → provider-neutral normalized candidate
 → deduplication
 → freshness/availability
+→ market/country/workplace/employment normalization
 → canonical CareerOS Job
 ```
 
@@ -278,6 +279,7 @@ Requirements:
 - keep unknown fields unknown;
 - avoid obvious duplicates using available stable signals;
 - represent freshness without claiming knowledge CareerOS lacks; and
+- keep UI locale independent from canonical job market and country; and
 - make ingestion retry-safe.
 
 Current product formation may use seed/demo/test jobs. Do not build a generic

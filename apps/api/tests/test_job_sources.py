@@ -16,9 +16,13 @@ from careeros_api.job_sources import (
 )
 from careeros_api.models import (
     JobAvailabilityStatus,
+    JobCountry,
+    JobEmploymentType,
     JobFreshnessStatus,
+    JobMarket,
     JobRequirementCategory,
     JobRequirementImportance,
+    JobWorkplaceType,
     RequirementConfidence,
 )
 
@@ -66,6 +70,10 @@ def candidate(
         observed_at=observed_at or datetime(2026, 9, 23, tzinfo=UTC),
         availability_status=JobAvailabilityStatus.AVAILABLE,
         freshness_status=JobFreshnessStatus.UNKNOWN,
+        market=JobMarket.NORTH_AMERICA,
+        country_code=JobCountry.US,
+        workplace_type=JobWorkplaceType.REMOTE,
+        employment_type=JobEmploymentType.FULL_TIME,
     )
 
 
@@ -121,6 +129,10 @@ async def test_source_ingestion_is_retry_safe_and_visible_through_canonical_api(
         assert job["canonical_url"] == "https://jobs.example.com/roles/123"
         assert job["availability_status"] == "AVAILABLE"
         assert job["freshness_status"] == "UNKNOWN"
+        assert job["market"] == "NORTH_AMERICA"
+        assert job["country_code"] == "US"
+        assert job["workplace_type"] == "REMOTE"
+        assert job["employment_type"] == "FULL_TIME"
         assert job["first_observed_at"] == first_observed.isoformat().replace("+00:00", "Z")
         assert job["last_observed_at"] == later_observed.isoformat().replace("+00:00", "Z")
 

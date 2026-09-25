@@ -189,9 +189,10 @@ edits and confirmation determine their downstream eligibility.
 
 The implemented Job contains user ownership, company, title, location, source
 and application URLs, source type/key, optional external identity and canonical
-URL, observed timestamps, explicit availability/freshness state, and timestamps.
-Current user-facing behavior creates manually entered Jobs; the M9 source
-boundary also supports normalized seed/demo/test ingestion.
+URL, observed timestamps, explicit availability/freshness state, market,
+country, workplace type, employment type, and timestamps. Current user-facing
+behavior creates manually entered Jobs; the source boundary also supports
+normalized seed/demo/test ingestion.
 
 The logical Job should remain capable of representing:
 
@@ -217,9 +218,10 @@ External Job Source
 ```
 
 The minimum implemented model uses source key, optional external job ID,
-canonical URL, first/last observed timestamps, and explicit
-availability/freshness state. Provider payloads are not stored as canonical Job
-truth.
+canonical URL, first/last observed timestamps, explicit availability/freshness,
+and constrained market metadata. `NORTH_AMERICA` supports `US` and `CA`;
+`CHINA` supports `CN`; unknown remains explicit. Workplace and employment types
+also preserve `UNKNOWN`. Provider payloads are not stored as canonical Job truth.
 
 Do not add a large generic ingestion schema before actual source requirements are
 known.

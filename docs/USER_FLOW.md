@@ -147,6 +147,7 @@ This flow is implemented for current user-owned Job data.
 
 ```text
 Jobs overview
+→ Choose market independently from interface language
 → Search/filter/browse
 → Job detail
 → Save or Apply
@@ -154,9 +155,11 @@ Jobs overview
 
 ### 6.1 Jobs overview
 
-The overview should support available/latest jobs, search, useful filters, and
-clear empty/loading/error states. Seed or demo data may support product formation
-before real job-source acquisition.
+The overview supports available/latest jobs, search, saved state, North America
+or China market, country, workplace, employment type, recent/title sorting, and
+clear empty/loading/error states. English/Simplified Chinese UI selection is
+independent from market selection. Seed or demo data may support product
+formation before real job-source acquisition.
 
 ### 6.2 Job detail
 
