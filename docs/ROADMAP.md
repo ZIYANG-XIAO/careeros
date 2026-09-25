@@ -371,7 +371,7 @@ coverage or site count.
 
 ## 7. V1 Formation — Wave C: Application Memory and Integration
 
-### M14 — Durable Application Domain
+### M14 — Durable Application Domain — implementation complete
 
 #### Goal
 
@@ -395,6 +395,15 @@ Create canonical Application Memory for CareerOS and externally found jobs.
 - the exact resume and relevant context used are preserved;
 - later current-data changes do not rewrite history; and
 - retries do not duplicate Application records.
+
+#### Delivered
+
+Implemented the Application, immutable Application Answer, and idempotent
+Application Operation schema/API. Applications support owned canonical Jobs or
+standalone external context, exact owned Resume Versions, stable company/role/
+URL/source snapshots, all V1 statuses, applied/status lifecycle timestamps,
+owner-only list/detail/update operations, and confirmed standard answer history.
+See `docs/APPLICATION_MEMORY.md` and `docs/VALIDATION_M14.md`.
 
 ### M15 — Applications Web Surface and Cross-Surface Integration
 
@@ -544,12 +553,12 @@ After a milestone:
 
 ## 14. Immediate next step
 
-M12 and M13 implementation and automated validation are complete. At the user's
-direction, unpacked-extension Chrome setup was skipped; representative M12/M13
-browser validation and the Wave B validation gate therefore remain open. Do not
-begin M14 until that gate is resumed and completed.
+M14 implementation and automated domain/API validation are complete. At the
+user's direction, unpacked-extension Chrome setup and the representative M12/M13
+browser gate remain deferred. The next implementation milestone is:
 
-> Remaining gate — representative Apply Anywhere browser validation
+> M15 — Applications Web Surface and Cross-Surface Integration
 
-Do not begin Application Memory, Application Strategy, resume tailoring, or
-automatic final submission while this gate remains open.
+Do not begin Application Strategy, resume tailoring, or automatic final
+submission as part of M15. The deferred browser gate remains required before V1
+hardening can be considered complete.

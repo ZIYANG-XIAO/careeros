@@ -19,7 +19,7 @@ the user through the Career Brain.
 
 ## Current implementation
 
-M0–M13 are implemented at repository level. Today the repository supports:
+M0–M14 are implemented at repository level. Today the repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
 - Clerk authentication and server-side user ownership;
@@ -45,15 +45,17 @@ M0–M13 are implemented at repository level. Today the repository supports:
   decisions, and aggregate extension preview;
 - explicit user-triggered filling for approved blank native controls, exact
   field revalidation, non-overwrite behavior, visible per-field review states,
-  and a hard no-submit boundary; and
+  and a hard no-submit boundary;
+- durable Application Memory for CareerOS and externally found jobs, including
+  exact Resume Version association, immutable approved answer history, lifecycle
+  status, ownership, and retry idempotency; and
 - an honest Applications placeholder that does not simulate tracking.
 
 The following V1 capabilities are planned, not implemented:
 
 - production job acquisition and real external source adapters;
 - automatic resume/file upload and broader custom-widget execution;
-- durable Application records and a functional Applications tracking surface;
-  and
+- the functional Applications tracking surface and extension integration; and
 - end-to-end Web/extension/Application Memory integration.
 
 Application Strategy and resume tailoring are deferred optional enhancements.
@@ -133,6 +135,7 @@ The `docs/` directory is the product and engineering source of truth:
 - `docs/FORM_MODEL.md` — M11 normalized form and adapter contract
 - `docs/ANSWER_ENGINE.md` — M12 answer-source and policy contract
 - `docs/FORM_EXECUTION.md` — M13 safe execution and review-state contract
+- `docs/APPLICATION_MEMORY.md` — M14 durable Application domain/API contract
 
 ## Repository structure
 

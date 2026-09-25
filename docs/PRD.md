@@ -23,7 +23,7 @@ directly to application assistance.
 
 ## 2. Current and planned scope
 
-### Implemented now — M0–M13
+### Implemented now — M0–M14
 
 - authenticated Web/API/PostgreSQL foundation;
 - Career Brain/Profile management and user ownership;
@@ -48,12 +48,15 @@ directly to application assistance.
   classification, and explicit answer/review/reuse decisions; and
 - explicit user-triggered form execution for approved blank native controls,
   exact field revalidation, non-overwrite behavior, visible review states, and
-  generic/Greenhouse/Lever/Ashby fixture coverage.
+  generic/Greenhouse/Lever/Ashby fixture coverage; and
+- durable user-owned Application Memory with external or canonical Job context,
+  exact Resume Version association, immutable approved standard answers,
+  lifecycle status/timestamps, and retry-safe create/update operations.
 
 ### Planned V1 formation
 
 - automatic resume/file upload and broader custom-widget execution;
-- durable Application domain and Applications surface;
+- Applications Web surface;
 - Web/extension/Application Memory integration; and
 - V1 hardening across both required scenarios.
 
@@ -303,7 +306,7 @@ the final submission. V1 must not auto-submit.
 
 ### 7.1 Durable Application
 
-Application becomes a stable core domain entity during V1 formation.
+Application is now a stable core domain entity.
 
 An Application should be capable of preserving:
 
@@ -331,8 +334,8 @@ V1 statuses:
 - Offer
 - Withdrawn
 
-The initial implementation may store current status and relevant timestamps
-while preserving a clean path to status history.
+The implemented domain stores current status and relevant timestamps while
+preserving a clean path to status history.
 
 ### 7.3 Applications surface
 

@@ -223,6 +223,11 @@ change external forms, persist answers, or create Applications. M13 extension
 execution consumes those decisions after explicit user action without moving
 authorization or answer policy into the page.
 
+M14 adds separate durable Application Memory. It accepts only explicitly
+user-confirmed standard, non-sensitive application-specific answer history; it
+does not automatically persist transient Answer Engine decisions or make those
+answers reusable.
+
 Conceptual pipeline:
 
 ```text

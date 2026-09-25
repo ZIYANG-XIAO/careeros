@@ -140,6 +140,30 @@ class ApplicationRecommendation(enum.StrEnum):
     LOW_PRIORITY = "LOW_PRIORITY"
 
 
+class ApplicationStatus(enum.StrEnum):
+    PREPARING = "PREPARING"
+    APPLIED = "APPLIED"
+    ASSESSMENT = "ASSESSMENT"
+    INTERVIEW = "INTERVIEW"
+    FINAL = "FINAL"
+    REJECTED = "REJECTED"
+    OFFER = "OFFER"
+    WITHDRAWN = "WITHDRAWN"
+
+
+class ApplicationOrigin(enum.StrEnum):
+    CAREEROS_JOB = "CAREEROS_JOB"
+    EXTERNAL_PAGE = "EXTERNAL_PAGE"
+    MANUAL = "MANUAL"
+
+
+class ApplicationAnswerSource(enum.StrEnum):
+    IDENTITY = "IDENTITY"
+    CAREER_BRAIN = "CAREER_BRAIN"
+    RESUME_VERSION = "RESUME_VERSION"
+    USER_PROVIDED = "USER_PROVIDED"
+
+
 # ---------------------------------------------------------------------------
 # M1A — Identity
 # ---------------------------------------------------------------------------
@@ -163,6 +187,9 @@ class User(Base):
     resumes: Mapped[list["Resume"]] = relationship(back_populates="user")
     jobs: Mapped[list["Job"]] = relationship(back_populates="user")
     saved_jobs: Mapped[list["SavedJob"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    applications: Mapped[list["Application"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
 
@@ -466,6 +493,7 @@ class ResumeVersion(Base):
     resume: Mapped["Resume"] = relationship(back_populates="versions")
     asset: Mapped["ResumeAsset"] = relationship()
     source_version: Mapped["ResumeVersion | None"] = relationship(remote_side=[id])
+    applications: Mapped[list["Application"]] = relationship(back_populates="resume_version")
 
     __table_args__ = (
         sa.UniqueConstraint("resume_id", "version_number"),
@@ -581,6 +609,7 @@ class Job(Base):
     saves: Mapped[list["SavedJob"]] = relationship(
         back_populates="job", cascade="all, delete-orphan"
     )
+    applications: Mapped[list["Application"]] = relationship(back_populates="job")
 
     __table_args__ = (
         sa.Index("ix_jobs_user_id", "user_id"),
@@ -769,4 +798,129 @@ class EvidenceMatchReference(Base):
     __table_args__ = (
         sa.UniqueConstraint("evidence_match_id", "career_evidence_revision_id"),
         sa.Index("ix_match_references_match_id", "evidence_match_id"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# M14 — Durable Application Memory
+# ---------------------------------------------------------------------------
+
+
+class Application(Base):
+    __tablename__ = "applications"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"))
+    job_id: Mapped[UUID | None] = mapped_column(
+        sa.ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True
+    )
+    resume_version_id: Mapped[UUID | None] = mapped_column(
+        sa.ForeignKey("resume_versions.id"), nullable=True
+    )
+    origin: Mapped[str] = mapped_column(sa.String(50))
+    company_snapshot: Mapped[str] = mapped_column(sa.String(500))
+    role_snapshot: Mapped[str] = mapped_column(sa.String(500))
+    application_url_snapshot: Mapped[str | None] = mapped_column(sa.String(2000))
+    source_snapshot: Mapped[str] = mapped_column(sa.String(100))
+    status: Mapped[str] = mapped_column(sa.String(50))
+    applied_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    status_updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    idempotency_key: Mapped[UUID] = mapped_column(sa.Uuid)
+    request_fingerprint: Mapped[str] = mapped_column(sa.String(64))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+    user: Mapped["User"] = relationship(back_populates="applications")
+    job: Mapped["Job | None"] = relationship(back_populates="applications")
+    resume_version: Mapped["ResumeVersion | None"] = relationship(back_populates="applications")
+    answers: Mapped[list["ApplicationAnswer"]] = relationship(
+        back_populates="application",
+        cascade="all, delete-orphan",
+        order_by="ApplicationAnswer.position",
+    )
+    operations: Mapped[list["ApplicationOperation"]] = relationship(
+        back_populates="application", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        sa.UniqueConstraint("user_id", "idempotency_key"),
+        sa.CheckConstraint(
+            "status IN ('PREPARING', 'APPLIED', 'ASSESSMENT', 'INTERVIEW', "
+            "'FINAL', 'REJECTED', 'OFFER', 'WITHDRAWN')",
+            name="ck_applications_status",
+        ),
+        sa.CheckConstraint(
+            "origin IN ('CAREEROS_JOB', 'EXTERNAL_PAGE', 'MANUAL')",
+            name="ck_applications_origin",
+        ),
+        sa.Index("ix_applications_user_id", "user_id"),
+        sa.Index("ix_applications_user_status", "user_id", "status"),
+        sa.Index("ix_applications_job_id", "job_id"),
+        sa.Index("ix_applications_resume_version_id", "resume_version_id"),
+    )
+
+
+class ApplicationAnswer(Base):
+    __tablename__ = "application_answers"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    application_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("applications.id", ondelete="CASCADE")
+    )
+    canonical_key: Mapped[str | None] = mapped_column(sa.String(100))
+    question_text: Mapped[str] = mapped_column(sa.String(500))
+    answer_text: Mapped[str] = mapped_column(sa.Text)
+    source_category: Mapped[str] = mapped_column(sa.String(50))
+    policy_category: Mapped[str] = mapped_column(sa.String(50))
+    sensitivity: Mapped[str] = mapped_column(sa.String(50))
+    position: Mapped[int] = mapped_column(sa.Integer)
+    confirmed_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    application: Mapped["Application"] = relationship(back_populates="answers")
+
+    __table_args__ = (
+        sa.UniqueConstraint("application_id", "position"),
+        sa.CheckConstraint(
+            "source_category IN ('IDENTITY', 'CAREER_BRAIN', 'RESUME_VERSION', 'USER_PROVIDED')",
+            name="ck_application_answers_source",
+        ),
+        sa.CheckConstraint("policy_category = 'STANDARD'", name="ck_application_answers_policy"),
+        sa.CheckConstraint("sensitivity = 'NONE'", name="ck_application_answers_sensitivity"),
+        sa.Index("ix_application_answers_application_id", "application_id"),
+    )
+
+
+class ApplicationOperation(Base):
+    __tablename__ = "application_operations"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"))
+    application_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("applications.id", ondelete="CASCADE")
+    )
+    idempotency_key: Mapped[UUID] = mapped_column(sa.Uuid)
+    request_fingerprint: Mapped[str] = mapped_column(sa.String(64))
+    operation_type: Mapped[str] = mapped_column(sa.String(50))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    application: Mapped["Application"] = relationship(back_populates="operations")
+
+    __table_args__ = (
+        sa.UniqueConstraint("user_id", "idempotency_key"),
+        sa.CheckConstraint(
+            "operation_type = 'STATUS_UPDATE'",
+            name="ck_application_operations_type",
+        ),
+        sa.Index("ix_application_operations_application_id", "application_id"),
     )

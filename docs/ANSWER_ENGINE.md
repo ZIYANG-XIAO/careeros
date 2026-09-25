@@ -115,3 +115,8 @@ decision in M12.
 M13 implements user-triggered page execution and visible per-field review state
 without weakening these decisions. Resume/file upload remains manual, and final
 Submit remains a user action. See `docs/FORM_EXECUTION.md`.
+
+M14 may separately store ordered application-specific answer history only when
+the client explicitly submits user-confirmed `STANDARD` / non-sensitive answers
+while creating an Application. It does not automatically persist transient M12
+decisions or turn those answers into reusable records.

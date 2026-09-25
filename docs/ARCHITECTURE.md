@@ -14,8 +14,8 @@ KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
                        ENHANCE (optional)
 ```
 
-It preserves working M0–M13 behavior while defining minimal extension points for
-Jobs discovery and Application Memory.
+It preserves working M0–M14 behavior while defining minimal extension points for
+Jobs discovery and cross-surface Application integration.
 
 The architectural principle is:
 
@@ -55,15 +55,19 @@ Implemented domains and workflows:
   guardrails, optional bounded semantic classification, canonical source
   retrieval, and explicit Fill/Suggest/Ask/Confirm/Unknown decisions; and
 - user-triggered provider-neutral form execution with exact target
-  revalidation, non-overwrite behavior, visible field states, and no submit.
+  revalidation, non-overwrite behavior, visible field states, and no submit;
+  and
+- durable Application Memory with external/canonical context snapshots, exact
+  Resume Version association, immutable approved answers, ownership, and retry
+  idempotency.
 
-Current Alembic head: `0008_m9_job_source_boundary`.
+Current Alembic head: `0009_m14_application_memory`.
 
 Not implemented today:
 
 - production job-source ingestion;
 - automatic resume/file upload and broader custom-widget execution;
-- Application domain; or
+- Applications Web/extension integration; or
 - Application Strategy/resume tailoring.
 
 ## 3. Architecture principles
@@ -123,8 +127,8 @@ External ATS/Forms   ─► ATS/Generic Adapters ─► normalized Form model �
 ```
 
 The extension foundation, normalized form/ATS adapter boundary, Answer Engine,
-and safe form-execution foundations are implemented. Application Memory remains
-planned.
+safe form execution, and Application Memory domain are implemented. Cross-surface
+Application integration remains planned.
 
 ## 5. Core domains vs product services
 
@@ -135,7 +139,7 @@ planned.
 - Career Evidence
 - Resume
 - Job
-- Application (planned)
+- Application
 
 ### Product services/workflows
 
@@ -404,9 +408,9 @@ content scripts receive a proposed value only for an approved `FILL` after the
 user requests execution; they never receive CareerOS credentials. See
 `docs/ANSWER_ENGINE.md` and `docs/FORM_EXECUTION.md`.
 
-## 18. Application architecture — planned
+## 18. Application architecture — implemented domain/API
 
-Application becomes the canonical record of application work and history.
+Application is the canonical record of application work and history.
 
 It must support both:
 
@@ -420,6 +424,12 @@ history, external/canonical job context, status, and timestamps.
 Creation and update operations must be transactionally safe and idempotent across
 extension retries. Later profile, Job, resume, or reusable-answer changes do not
 silently rewrite history.
+
+M14 implements this with Application, immutable Application Answer, and
+Application Operation tables. Create and status-update requests require UUID
+idempotency keys and reject reuse with different payloads. Current answer
+persistence accepts only explicitly confirmed standard/non-sensitive values;
+sensitive retention remains unapproved. See `docs/APPLICATION_MEMORY.md`.
 
 ## 19. Authentication and authorization
 

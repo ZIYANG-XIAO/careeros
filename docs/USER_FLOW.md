@@ -61,12 +61,14 @@ Implemented Web flows today:
   aggregate extension preview;
 - user-triggered approved-field execution with non-overwrite behavior, visible
   review states, and no final submission;
+- authenticated durable Application Memory APIs for CareerOS and externally
+  found jobs;
 - an Applications planned-state placeholder; and
 - Job Intelligence creation and review.
 
-Production job-source discovery, Application tracking, automatic file upload,
-and external application capture are planned flows described below, not current
-behavior.
+Production job-source discovery, the Applications UI, automatic file upload, and
+extension-driven application capture are planned flows described below, not
+current behavior.
 
 ## 4. First-time onboarding — Know Me
 
@@ -134,7 +136,7 @@ internal concepts such as `CareerEvidenceRevision` or `JobSnapshot`.
 
 ## 6. CareerOS Jobs flow — Discover
 
-This is a planned V1 formation flow.
+This flow is implemented for current user-owned Job data.
 
 ```text
 Jobs overview
@@ -303,12 +305,13 @@ compensation, legal, signature, or similar fields:
 
 ## 10. Application Memory flow — Remember
 
-This is a planned V1 formation flow.
+The durable domain and API are implemented in M14. The Web surface and automatic
+cross-surface capture remain planned for M15.
 
 ### 10.1 Before submission
 
-When application work begins, CareerOS may create an Application in Preparing
-state once the Application milestone defines the transaction and user intent.
+When application work begins, an approved client may idempotently create an
+Application in Preparing state with reviewed context.
 
 ### 10.2 After submission
 

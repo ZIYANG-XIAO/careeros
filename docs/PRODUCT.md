@@ -326,7 +326,7 @@ depends on it.
 
 ## 14. Current implementation boundary
 
-Implemented through M13:
+Implemented through M14:
 
 - project foundation;
 - Career Brain/Profile;
@@ -348,12 +348,15 @@ Implemented through M13:
   decision/review states; and
 - user-triggered execution for approved blank native controls with exact target
   revalidation, non-overwrite behavior, visible field states, initial ATS
-  fixture coverage, and no final submission.
+  fixture coverage, and no final submission; and
+- durable Application Memory for CareerOS and externally found jobs with stable
+  context snapshots, exact Resume Version association, immutable approved
+  answers, lifecycle status, ownership, and idempotency.
 
 Planned during V1 formation:
 
 - automatic resume/file upload and broader custom-widget execution;
-- Application domain and Applications surface; and
+- Applications Web surface and cross-surface integration; and
 - end-to-end integration and hardening.
 
 Deferred until after formation unless explicitly reprioritized:

@@ -7,8 +7,8 @@
 ## 1. Purpose
 
 This document defines CareerOS domain concepts for the re-baselined V1. It
-separates the implemented M0–M13 product state from planned V1 formation
-concepts. M10–M13 add no database migration.
+separates the implemented M0–M14 product state from planned V1 formation
+concepts. M14 adds the durable Application Memory migration.
 
 The model supports:
 
@@ -50,7 +50,7 @@ User
 ├── Resume → immutable Resume Versions
 ├── Job → snapshots → requirements → analyses/matches
 │   └── Saved Job (per-user interest state)
-└── Application (planned)
+└── Application
     ├── selected Resume Version
     ├── application-specific answers
     └── status and timestamps
@@ -88,8 +88,11 @@ The current migrations define:
 - `evidence_matches`
 - `evidence_match_references`
 - `saved_jobs`
+- `applications`
+- `application_answers`
+- `application_operations`
 
-Current Alembic head: `0008_m9_job_source_boundary`.
+Current Alembic head: `0009_m14_application_memory`.
 
 M12 adds a transient Answer Engine decision contract and no tables. Decisions
 reference owned canonical sources but are not persisted as Application or
@@ -98,10 +101,11 @@ Reusable Answer history.
 M13 adds a transient fill plan and execution result in the extension and no
 tables. Neither page markers nor fill results become Application history.
 
+M14 adds user-owned Applications, immutable ordered Application Answers, and a
+durable idempotency ledger for status updates.
+
 ### Planned, not implemented
 
-- Application;
-- Application Answer;
 - Reusable Answer;
 - application preferences beyond currently approved fields;
 - status history;
@@ -259,46 +263,46 @@ idempotent. Both identifiers are protected by cascading foreign keys.
 Saving means “I am interested in this opportunity.” It does not necessarily
 mean the user analyzed or applied. Save and unsave never create an Application.
 
-## 14. Application — planned core domain
+## 14. Application — implemented core domain
 
-Application is not implemented today. During V1 formation it should become a
-durable user-owned entity representing work toward or completion of an
-application.
+Application is a durable user-owned entity representing work toward or
+completion of an application.
 
-Conceptual fields:
+Implemented fields:
 
 - `id`
 - `user_id`
 - optional `job_id`
-- external company and role snapshot where no canonical Job exists
-- application URL
-- application source/context
+- company and role snapshot for every Application
+- application URL snapshot
+- application source/context snapshot
 - optional selected `resume_version_id`
 - status
 - `applied_at`
 - `created_at`
 - `updated_at`
+- `status_updated_at`
+- create idempotency key and request fingerprint
 
-An external application must be recordable even if the user never discovered or
-saved a Job in CareerOS. The implementation may create or associate a minimal
-canonical Job when useful, but this is an implementation decision for the
-Application milestone and must not block assistance.
+An external application is recordable even if the user never discovered or
+saved a Job in CareerOS. M14 either links an existing owned canonical Job or
+stores standalone external context; it does not create a Job as a prerequisite.
 
 ### 14.1 Status
 
-Conceptual V1 statuses:
+V1 API and database status values:
 
-- `preparing`
-- `applied`
-- `assessment`
-- `interview`
-- `final`
-- `rejected`
-- `offer`
-- `withdrawn`
+- `PREPARING`
+- `APPLIED`
+- `ASSESSMENT`
+- `INTERVIEW`
+- `FINAL`
+- `REJECTED`
+- `OFFER`
+- `WITHDRAWN`
 
-The first schema may store current status and timestamps while preserving a path
-to future status history.
+The implemented schema stores current status and timestamps while preserving a
+path to future status history.
 
 ### 14.2 Historical snapshot rule
 
@@ -342,11 +346,12 @@ Conceptual fields may include:
 The initial Answer Engine milestone must determine whether fixed structured
 fields, reusable records, or both best fit approved questions.
 
-### 15.4 Application-specific answer — planned
+### 15.4 Application-specific answer — implemented narrow history
 
-What was proposed, supplied, or used for one Application. Conceptual fields may
-include question text/key, answer, source, confidence, review state, sensitivity
-category, and user confirmation.
+M14 stores ordered, immutable, user-confirmed standard answers with question
+text/key, answer text, source category, policy category, sensitivity, position,
+and confirmation timestamp. Sensitive/consequential persistence remains
+prohibited pending an approved retention policy.
 
 Application-specific answers do not automatically become reusable.
 

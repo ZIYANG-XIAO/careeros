@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from careeros_api.answer_engine import router as answer_engine_router
+from careeros_api.application import router as application_router
 from careeros_api.career_brain import router as career_brain_router
 from careeros_api.config import Settings, get_settings
 from careeros_api.education import router as education_router
@@ -36,6 +37,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(job_router)
     application.include_router(job_intelligence_router)
     application.include_router(answer_engine_router)
+    application.include_router(application_router)
     return application
 
 

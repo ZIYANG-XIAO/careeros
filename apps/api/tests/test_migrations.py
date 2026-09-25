@@ -371,6 +371,66 @@ async def test_clean_migration_creates_expected_schema() -> None:
                 ):
                     assert col in reference_cols, f"Missing evidence_match_references column: {col}"
 
+                # -----------------------------------------------------------
+                # M14 durable Application Memory
+                # -----------------------------------------------------------
+
+                for tbl in (
+                    "applications",
+                    "application_answers",
+                    "application_operations",
+                ):
+                    assert tbl in table_names, f"Missing M14 table: {tbl}"
+
+                application_cols = await conn.run_sync(
+                    lambda sync_conn: {
+                        c["name"]: c for c in inspect(sync_conn).get_columns("applications")
+                    }
+                )
+                for col in (
+                    "user_id",
+                    "job_id",
+                    "resume_version_id",
+                    "company_snapshot",
+                    "role_snapshot",
+                    "application_url_snapshot",
+                    "source_snapshot",
+                    "status",
+                    "applied_at",
+                    "status_updated_at",
+                    "idempotency_key",
+                    "request_fingerprint",
+                ):
+                    assert col in application_cols, f"Missing applications column: {col}"
+
+                application_uniques = await conn.run_sync(
+                    lambda sync_conn: inspect(sync_conn).get_unique_constraints("applications")
+                )
+                assert any(
+                    set(constraint["column_names"]) == {"user_id", "idempotency_key"}
+                    for constraint in application_uniques
+                ), "Missing unique Application create idempotency constraint"
+
+                answer_uniques = await conn.run_sync(
+                    lambda sync_conn: inspect(sync_conn).get_unique_constraints(
+                        "application_answers"
+                    )
+                )
+                assert any(
+                    set(constraint["column_names"]) == {"application_id", "position"}
+                    for constraint in answer_uniques
+                ), "Missing immutable Application answer position constraint"
+
+                operation_uniques = await conn.run_sync(
+                    lambda sync_conn: inspect(sync_conn).get_unique_constraints(
+                        "application_operations"
+                    )
+                )
+                assert any(
+                    set(constraint["column_names"]) == {"user_id", "idempotency_key"}
+                    for constraint in operation_uniques
+                ), "Missing Application update idempotency constraint"
+
                 # --- FK educations.career_brain_id → career_brains.id ---
                 edu_fks = await conn.run_sync(
                     lambda sync_conn: inspect(sync_conn).get_foreign_keys("educations")

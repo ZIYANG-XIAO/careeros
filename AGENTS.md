@@ -22,7 +22,7 @@ another document is not authorization to implement it.
 
 ## 2. Current baseline
 
-M0–M13 are implemented. The repository currently contains:
+M0–M14 are implemented. The repository currently contains:
 
 - the Web, API, and PostgreSQL foundation;
 - authenticated user ownership and Career Brain/Profile editing;
@@ -42,13 +42,16 @@ M0–M13 are implemented. The repository currently contains:
   explicit decision/review states, and aggregate extension preview; and
 - user-triggered safe form execution with exact field revalidation,
   non-overwrite behavior, visible review states, generic/initial ATS fixture
-  coverage, and a hard no-submit boundary.
+  coverage, and a hard no-submit boundary; and
+- durable user-owned Application Memory with external/canonical Job context,
+  exact Resume Version association, immutable approved answer history,
+  lifecycle status, and retry-safe create/update operations.
 
 Not currently implemented:
 
 - a production job-discovery feed or real external source adapter;
 - automatic resume/file upload and broader custom-widget execution;
-- the durable Application domain and Applications UI;
+- the Applications Web UI and extension/Application integration;
 - Application Strategy or resume tailoring.
 
 Do not describe planned behavior as if it exists. Do not blindly continue the
@@ -90,7 +93,7 @@ Relatively stable core domains are:
 - Career Evidence
 - Resume
 - Job
-- Application (planned)
+- Application
 
 Product services and workflows consume those domains:
 
