@@ -107,6 +107,32 @@ class RecordApplicationSubmissionRequest(StrictModel):
         return value
 
 
+class ApplicationAssistantContextRequest(StrictModel):
+    application_url: AnyHttpUrl
+
+
+class ApplicationAssistantMatchResponse(StrictModel):
+    id: UUID
+    company: str
+    role: str
+    application_url: str | None
+    resume_version_id: UUID | None
+    status: str
+    origin: str
+    created_at: datetime
+
+
+class ApplicationAssistantResumeOptionResponse(StrictModel):
+    id: UUID
+    label: str
+
+
+class ApplicationAssistantContextResponse(StrictModel):
+    match_kind: Literal["EXACT_URL", "RECENT_PREPARING", "NONE"]
+    application: ApplicationAssistantMatchResponse | None
+    resume_versions: list[ApplicationAssistantResumeOptionResponse]
+
+
 class ApplicationAnswerResponse(StrictModel):
     id: UUID
     canonical_key: str | None

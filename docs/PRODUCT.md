@@ -326,7 +326,7 @@ depends on it.
 
 ## 14. Current implementation boundary
 
-Implemented through M15:
+Implemented through M15 plus M16 automated hardening:
 
 - project foundation;
 - Career Brain/Profile;
@@ -354,11 +354,14 @@ Implemented through M15:
   answers, lifecycle status, ownership, and idempotency; and
 - Applications list/detail/status/manual recovery plus CareerOS Job handoff and
   explicit extension recording after user submission.
+- data-minimized Application Assistant context, concurrent retry coverage,
+  post-redirect Preparing recovery, and automated contracts for both required
+  V1 paths.
 
 Planned during V1 formation:
 
 - automatic resume/file upload and broader custom-widget execution;
-- end-to-end integration and hardening.
+- representative unpacked-Chrome validation of both end-to-end paths.
 
 Deferred until after formation unless explicitly reprioritized:
 

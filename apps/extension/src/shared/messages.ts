@@ -225,12 +225,20 @@ export interface RecordApplicationRequestData {
   answers: ConfirmedApplicationAnswer[];
 }
 
+export interface PrepareApplicationRequestData {
+  company: string;
+  role: string;
+  resumeVersionId: string | null;
+  idempotencyKey: string;
+}
+
 export type PopupRequest =
   | { type: "CAREEROS_GET_AUTH_STATUS" }
   | { type: "CAREEROS_DETECT_ACTIVE_PAGE" }
   | { type: "CAREEROS_GET_APPLICATION_CONTEXT" }
   | ({ type: "CAREEROS_RESOLVE_ANSWERS" } & AnswerResolutionRequestData)
   | { type: "CAREEROS_APPLY_FILL_PLAN"; fields: FillPlanField[] }
+  | ({ type: "CAREEROS_PREPARE_APPLICATION" } & PrepareApplicationRequestData)
   | ({ type: "CAREEROS_RECORD_APPLICATION" } & RecordApplicationRequestData);
 
 export type ContentRequest =
@@ -267,6 +275,7 @@ export function parsePopupRequest(value: unknown): PopupRequest | null {
   }
   if (isAnswerResolutionRequest(value)) return value;
   if (isFillPlanRequest(value)) return value;
+  if (isPrepareApplicationRequest(value)) return value;
   if (isRecordApplicationRequest(value)) return value;
   return null;
 }
@@ -538,6 +547,38 @@ function isRecordApplicationRequest(value: unknown): value is {
     !Array.isArray(value.answers) ||
     value.answers.length > 200 ||
     !value.answers.every(isConfirmedApplicationAnswer)
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function isPrepareApplicationRequest(value: unknown): value is {
+  type: "CAREEROS_PREPARE_APPLICATION";
+} & PrepareApplicationRequestData {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      "type",
+      "company",
+      "role",
+      "resumeVersionId",
+      "idempotencyKey",
+    ]) ||
+    value.type !== "CAREEROS_PREPARE_APPLICATION" ||
+    typeof value.company !== "string" ||
+    value.company.trim().length === 0 ||
+    value.company.length > 500 ||
+    typeof value.role !== "string" ||
+    value.role.trim().length === 0 ||
+    value.role.length > 500 ||
+    !(
+      value.resumeVersionId === null ||
+      (typeof value.resumeVersionId === "string" &&
+        uuidPattern.test(value.resumeVersionId))
+    ) ||
+    typeof value.idempotencyKey !== "string" ||
+    !uuidPattern.test(value.idempotencyKey)
   ) {
     return false;
   }

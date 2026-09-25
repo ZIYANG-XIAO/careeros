@@ -74,3 +74,16 @@ or credentials. The external page never receives CareerOS domain data.
 Partial failures remain recoverable: forms are never submitted by CareerOS,
 tracking failures do not block the external URL, recording can be retried, and
 the Web manual path remains available.
+
+## 7. M16 hardening
+
+Assistant context lookup is server-owned and data-minimized. The extension sends
+the active application URL in a POST body and receives only an unambiguous owned
+Application candidate plus Resume Version IDs/labels. It no longer downloads
+complete Application lists or resume bodies for matching.
+
+When a user explicitly asks CareerOS to fill an unmatched external form, the
+extension first attempts an idempotent Preparing record. If submission navigates
+to a normal confirmation page, one recent Preparing record can be offered for
+explicit association and recording. Multiple candidates fail closed. Preparing
+failure does not block fill, manual submission, or Web recovery.

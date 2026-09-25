@@ -2,6 +2,7 @@ import type {
   AnswerResolution,
   ApplicationPageContext,
   ConfirmedApplicationAnswer,
+  DetectionStatus,
   FillExecutionResult,
 } from "../shared/messages";
 
@@ -74,4 +75,11 @@ export function selectedApplicationFields(
     };
   }
   return initialApplicationFields(context);
+}
+
+export function shouldShowApplicationMemory(
+  detectionStatus: DetectionStatus,
+  context: ApplicationPageContext,
+): boolean {
+  return detectionStatus === "APPLICATION_PAGE" || context.matchKind !== "NONE";
 }

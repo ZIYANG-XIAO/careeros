@@ -39,7 +39,10 @@ through CareerOS, distinguishes likely application, ordinary, and unsupported
 pages, and inspects supported forms into a provider-neutral model. It requests
 policy-controlled answer decisions and, after explicit user action, fills only
 approved blank native controls while showing per-field review states. Durable
-application context remains planned.
+Application Memory is connected through a data-minimized background API. When
+the user asks CareerOS to fill an independently found application, the extension
+first attempts to preserve reviewed Preparing context so it can recover after a
+post-submit redirect.
 
 It is not a second full CareerOS application.
 
@@ -65,11 +68,14 @@ Implemented Web flows today:
   found jobs;
 - Applications list/detail/status/manual recovery;
 - CareerOS Job handoff into Application Memory and explicit extension recording
-  after user submission; and
+  after user submission;
+- confirmation-page recovery from one recent reviewed Preparing Application;
+  and
 - Job Intelligence creation and review.
 
 Production job-source discovery, automatic file upload, and representative
-end-to-end hardening remain planned. Final submission remains user-controlled.
+unpacked-Chrome validation remain planned. Final submission remains
+user-controlled.
 
 ## 4. First-time onboarding — Know Me
 
@@ -328,6 +334,13 @@ User submits
 → preserve approved answer history
 → set Applied and applied_at
 ```
+
+Before user-triggered fill on an unmatched external application, CareerOS
+attempts an idempotent Preparing record using the reviewed popup context. If the
+site navigates to a normal confirmation page after submission, reopening the
+extension can offer the single recent Preparing record for explicit review and
+completion. Ambiguous recent records are not guessed, and failure to prepare
+never blocks the external manual workflow.
 
 ### 10.3 Applications list
 

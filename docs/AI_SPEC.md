@@ -234,6 +234,11 @@ page never receives a guessed Resume Version, and retained answer history is
 limited to standard/non-sensitive values actually filled before the user's
 explicit post-submit recording action.
 
+M16 minimizes extension context to one unambiguous owned Application candidate
+and Resume Version IDs/labels. Extracted resume content is not transferred for
+matching. Duplicate URL or recent candidates remain unresolved rather than
+being guessed.
+
 Conceptual pipeline:
 
 ```text

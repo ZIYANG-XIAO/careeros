@@ -14,6 +14,7 @@ import {
   confirmedApplicationAnswers,
   initialApplicationFields,
   selectedApplicationFields,
+  shouldShowApplicationMemory,
 } from "./application-memory";
 import { answerCopy } from "./answer-copy";
 import { detectionCopy } from "./detection-copy";
@@ -45,10 +46,12 @@ function App() {
   const [role, setRole] = useState("");
   const [resumeVersionId, setResumeVersionId] = useState("");
   const [useTrackedApplication, setUseTrackedApplication] = useState(false);
+  const [preparingApplication, setPreparingApplication] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordError, setRecordError] = useState<string | null>(null);
   const [recordedApplication, setRecordedApplication] =
     useState<TrackedApplication | null>(null);
+  const prepareKey = useRef(crypto.randomUUID());
   const recordKey = useRef(crypto.randomUUID());
 
   useEffect(() => {
@@ -77,33 +80,40 @@ function App() {
                     : "This page could not be inspected.",
               },
         );
-        if (response.ok && response.data.status === "APPLICATION_PAGE") {
-          setApplicationContext({ state: "loading" });
+        if (response.ok && response.data.status !== "UNSUPPORTED_PAGE") {
+          const isApplicationPage = response.data.status === "APPLICATION_PAGE";
+          if (isApplicationPage) setApplicationContext({ state: "loading" });
           let selectedResumeVersionId: string | null = null;
           try {
             const contextResponse = await send<ApplicationPageContext>({
               type: "CAREEROS_GET_APPLICATION_CONTEXT",
             });
             if (contextResponse.ok) {
-              const initial = initialApplicationFields(contextResponse.data);
-              selectedResumeVersionId = initial.resumeVersionId || null;
-              setCompany(initial.company);
-              setRole(initial.role);
-              setResumeVersionId(initial.resumeVersionId);
-              setUseTrackedApplication(
-                contextResponse.data.matchKind === "EXACT_URL",
+              const shouldShowContext = shouldShowApplicationMemory(
+                response.data.status,
+                contextResponse.data,
               );
-              setApplicationContext({
-                state: "ready",
-                value: contextResponse.data,
-              });
-              if (
-                contextResponse.data.application &&
-                contextResponse.data.application.status !== "PREPARING"
-              ) {
-                setRecordedApplication(contextResponse.data.application);
+              if (shouldShowContext) {
+                const initial = initialApplicationFields(contextResponse.data);
+                selectedResumeVersionId = initial.resumeVersionId || null;
+                setCompany(initial.company);
+                setRole(initial.role);
+                setResumeVersionId(initial.resumeVersionId);
+                setUseTrackedApplication(
+                  contextResponse.data.matchKind === "EXACT_URL",
+                );
+                setApplicationContext({
+                  state: "ready",
+                  value: contextResponse.data,
+                });
+                if (
+                  contextResponse.data.application &&
+                  contextResponse.data.application.status !== "PREPARING"
+                ) {
+                  setRecordedApplication(contextResponse.data.application);
+                }
               }
-            } else {
+            } else if (isApplicationPage) {
               setApplicationContext({
                 state: "error",
                 message:
@@ -113,11 +123,14 @@ function App() {
               });
             }
           } catch {
-            setApplicationContext({
-              state: "error",
-              message: "Application context is unavailable.",
-            });
+            if (isApplicationPage) {
+              setApplicationContext({
+                state: "error",
+                message: "Application context is unavailable.",
+              });
+            }
           }
+          if (!isApplicationPage) return;
           const fields = response.data.forms
             .flatMap((form) => form.fields)
             .slice(0, 200)
@@ -188,9 +201,45 @@ function App() {
   const hasReviewPlan = Boolean(fillPlan?.length);
   const resolvedFillCopy =
     fillResult?.state === "ready" ? fillCopy(fillResult.value) : null;
+  const shouldPrepareForRecovery = Boolean(
+    applicationContext?.state === "ready" &&
+    !useTrackedApplication &&
+    !recordedApplication &&
+    company.trim() &&
+    role.trim(),
+  );
 
   async function applyApprovedAnswers(): Promise<void> {
     if (!fillPlan || fillPlan.length === 0) return;
+    if (shouldPrepareForRecovery && applicationContext?.state === "ready") {
+      setPreparingApplication(true);
+      setRecordError(null);
+      try {
+        const prepared = await send<TrackedApplication>({
+          type: "CAREEROS_PREPARE_APPLICATION",
+          company: company.trim(),
+          role: role.trim(),
+          resumeVersionId: resumeVersionId || null,
+          idempotencyKey: prepareKey.current,
+        });
+        if (!prepared.ok) throw new Error(prepared.error);
+        setApplicationContext({
+          state: "ready",
+          value: {
+            ...applicationContext.value,
+            matchKind: "EXACT_URL",
+            application: prepared.data,
+          },
+        });
+        setUseTrackedApplication(true);
+      } catch {
+        setRecordError(
+          "CareerOS could not save recovery context, but you can still fill and submit manually.",
+        );
+      } finally {
+        setPreparingApplication(false);
+      }
+    }
     setFillResult({ state: "loading" });
     try {
       const response = await send<FillExecutionResult>({
@@ -296,7 +345,10 @@ function App() {
       </header>
 
       <section className="status-card" aria-live="polite">
-        <span className={`status-dot ${authenticated ? "connected" : ""}`} />
+        <span
+          className={`status-dot ${authenticated ? "connected" : ""}`}
+          aria-hidden="true"
+        />
         <div>
           <strong>
             {auth.state === "loading"
@@ -338,14 +390,22 @@ function App() {
       {hasReviewPlan ? (
         <button
           type="button"
-          disabled={fillResult?.state === "loading"}
+          disabled={
+            fillResult?.state === "loading" ||
+            preparingApplication ||
+            applicationContext?.state === "loading"
+          }
           onClick={() => void applyApprovedAnswers()}
         >
-          {fillResult?.state === "loading"
-            ? "Applying approved answers…"
-            : approvedFields > 0
-              ? `Fill ${approvedFields} approved ${approvedFields === 1 ? "field" : "fields"}`
-              : "Show review states on page"}
+          {preparingApplication
+            ? "Saving recovery context…"
+            : fillResult?.state === "loading"
+              ? "Applying approved answers…"
+              : approvedFields > 0
+                ? `${shouldPrepareForRecovery ? "Save context & fill" : "Fill"} ${approvedFields} approved ${approvedFields === 1 ? "field" : "fields"}`
+                : shouldPrepareForRecovery
+                  ? "Save context & show review states"
+                  : "Show review states on page"}
         </button>
       ) : null}
 
@@ -390,6 +450,13 @@ function App() {
                       ? "CareerOS found one recent application. Review the company and role before confirming."
                       : "No tracked job matched this page. Review the suggested context before confirming."}
               </p>
+              {!recordedApplication &&
+              applicationContext.value.matchKind === "NONE" ? (
+                <p className="memory-note">
+                  Choosing fill saves this reviewed context as Preparing so it
+                  can be recovered after a submit redirect.
+                </p>
+              ) : null}
 
               {!recordedApplication ? (
                 <div className="memory-form">
@@ -409,6 +476,7 @@ function App() {
                           setCompany(selected.company);
                           setRole(selected.role);
                           setResumeVersionId(selected.resumeVersionId);
+                          prepareKey.current = crypto.randomUUID();
                           recordKey.current = crypto.randomUUID();
                           void resolveForResume(selected.resumeVersionId);
                         }}
@@ -429,6 +497,7 @@ function App() {
                       )}
                       onChange={(event) => {
                         setCompany(event.target.value);
+                        prepareKey.current = crypto.randomUUID();
                         recordKey.current = crypto.randomUUID();
                       }}
                     />
@@ -444,6 +513,7 @@ function App() {
                       )}
                       onChange={(event) => {
                         setRole(event.target.value);
+                        prepareKey.current = crypto.randomUUID();
                         recordKey.current = crypto.randomUUID();
                       }}
                     />
@@ -458,6 +528,7 @@ function App() {
                       )}
                       onChange={(event) => {
                         setResumeVersionId(event.target.value);
+                        prepareKey.current = crypto.randomUUID();
                         recordKey.current = crypto.randomUUID();
                         void resolveForResume(event.target.value);
                       }}

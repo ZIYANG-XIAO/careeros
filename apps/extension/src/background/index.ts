@@ -100,6 +100,24 @@ async function recordApplication(
     : { ok: false, error: "UNAUTHENTICATED" };
 }
 
+async function prepareApplication(
+  request: Extract<
+    ReturnType<typeof parsePopupRequest>,
+    { type: "CAREEROS_PREPARE_APPLICATION" }
+  >,
+): Promise<ExtensionResponse<TrackedApplication>> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.url) return { ok: false, error: "UNSUPPORTED_PAGE" };
+  const url = new URL(tab.url);
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return { ok: false, error: "UNSUPPORTED_PAGE" };
+  }
+  const application = await api.prepareApplication(request, tab.url);
+  return application
+    ? { ok: true, data: application }
+    : { ok: false, error: "UNAUTHENTICATED" };
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Only extension-owned pages such as the popup may request privileged work.
   // Messages from content scripts carry sender.tab and are intentionally denied.
@@ -148,6 +166,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (request.type === "CAREEROS_RECORD_APPLICATION") {
     recordApplication(request)
+      .then(sendResponse)
+      .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
+    return true;
+  }
+
+  if (request.type === "CAREEROS_PREPARE_APPLICATION") {
+    prepareApplication(request)
       .then(sendResponse)
       .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
     return true;

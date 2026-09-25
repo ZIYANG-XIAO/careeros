@@ -64,7 +64,7 @@ if (/Authorization|Bearer|CAREEROS_RESOLVE_ANSWERS/.test(contentScript)) {
     "M13 content execution must not resolve answers or receive API credentials.",
   );
 }
-if (/CAREEROS_RECORD_APPLICATION/.test(contentScript)) {
+if (/CAREEROS_(?:PREPARE|RECORD)_APPLICATION/.test(contentScript)) {
   throw new Error(
     "M15 Application Memory operations must remain in the privileged background.",
   );
@@ -88,6 +88,22 @@ for (const file of ["background.js", "content.js", "popup.js"]) {
   }
 }
 
+const backgroundScript = await readFile(
+  path.join(buildDir, "background.js"),
+  "utf8",
+);
+const popupScript = await readFile(path.join(buildDir, "popup.js"), "utf8");
+if (!/applications\/assistant-context/.test(backgroundScript)) {
+  throw new Error(
+    "M16 must use the data-minimized assistant context endpoint.",
+  );
+}
+if (/extracted_text|structured_content/.test(backgroundScript + popupScript)) {
+  throw new Error(
+    "Resume content must not be bundled into the extension context workflow.",
+  );
+}
+
 console.log(
-  `Validated M15 permissions, execution/Application Memory boundaries, and CRX ID ${extensionId}.`,
+  `Validated M16 permissions, minimized context, execution/Application Memory boundaries, and CRX ID ${extensionId}.`,
 );

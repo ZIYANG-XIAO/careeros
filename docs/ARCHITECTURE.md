@@ -14,8 +14,9 @@ KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
                        ENHANCE (optional)
 ```
 
-It preserves working M0–M15 behavior while defining minimal extension points for
-Jobs discovery and V1 hardening.
+It preserves working M0–M15 behavior and the implemented M16 automated
+hardening while defining minimal extension points for Jobs discovery. The M16
+representative browser gate remains pending.
 
 The architectural principle is:
 
@@ -61,7 +62,9 @@ Implemented domains and workflows:
   Resume Version association, immutable approved answers, ownership, and retry
   idempotency; and
 - Applications Web workflows plus background-only extension matching and
-  explicit submission recording.
+  explicit submission recording; and
+- data-minimized assistant context lookup plus Preparing recovery after an
+  external redirect.
 
 Current Alembic head: `0010_m15_application_submission`.
 
@@ -203,8 +206,8 @@ The API owns:
 - core domain behavior;
 - persistence and transactions;
 - AI task boundaries and validation;
-- future answer policy;
-- future Application state; and
+- answer policy;
+- Application state; and
 - provider/source adapter orchestration.
 
 HTTP handlers should remain thin: validate transport input, establish user
@@ -221,6 +224,11 @@ fields and remain stable when storage or external providers change.
 Extension endpoints must enforce the same ownership and validation as Web
 endpoints. Idempotency is required where retries could duplicate Applications or
 other durable records.
+
+The M16 assistant-context endpoint accepts the active URL in a JSON body rather
+than a query string and returns only one unambiguous owned Application candidate
+plus Resume Version IDs/labels. Full resume content and the complete Application
+history are not transferred to the extension for matching.
 
 ## 10. PostgreSQL and migrations
 

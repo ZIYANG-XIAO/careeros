@@ -152,4 +152,18 @@ describe("extension message validation", () => {
       }),
     ).toBeNull();
   });
+
+  it("validates bounded application preparation without exposing it to content scripts", () => {
+    const request = {
+      type: "CAREEROS_PREPARE_APPLICATION",
+      company: "Acme",
+      role: "Engineer",
+      resumeVersionId: null,
+      idempotencyKey: "00000000-0000-4000-8000-000000000002",
+    };
+    expect(parsePopupRequest(request)).toEqual(request);
+    expect(parseContentRequest(request)).toBeNull();
+    expect(parsePopupRequest({ ...request, company: "" })).toBeNull();
+    expect(parsePopupRequest({ ...request, unexpected: true })).toBeNull();
+  });
 });

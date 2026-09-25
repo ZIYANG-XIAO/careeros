@@ -22,7 +22,9 @@ another document is not authorization to implement it.
 
 ## 2. Current baseline
 
-M0–M15 are implemented. The repository currently contains:
+M0–M15 are implemented. M16 automated hardening is implemented, while its
+representative unpacked-Chrome validation gate remains pending. The repository
+currently contains:
 
 - the Web, API, and PostgreSQL foundation;
 - authenticated user ownership and Career Brain/Profile editing;
@@ -47,7 +49,10 @@ M0–M15 are implemented. The repository currently contains:
   exact Resume Version association, immutable approved answer history,
   lifecycle status, and retry-safe create/update operations; and
 - the Applications Web list/detail/status/manual-recovery experience plus
-  CareerOS Job handoff and explicit extension-side submission recording.
+  CareerOS Job handoff and explicit extension-side submission recording; and
+- data-minimized Application Assistant context lookup, concurrent idempotency
+  hardening, automated two-path contracts, and post-redirect recovery through a
+  reviewed recent Preparing Application.
 
 Not currently implemented:
 

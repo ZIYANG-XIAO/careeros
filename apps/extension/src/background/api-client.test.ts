@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { CareerOsApiClient, matchApplication } from "./api-client";
+import { CareerOsApiClient } from "./api-client";
 
 describe("CareerOsApiClient", () => {
   it("uses a short-lived bearer token only in the API request", async () => {
@@ -245,42 +245,27 @@ describe("CareerOsApiClient", () => {
   it("matches application context and returns only resume labels", async () => {
     const applicationId = "00000000-0000-4000-8000-000000000010";
     const resumeVersionId = "00000000-0000-4000-8000-000000000011";
-    const request = vi
-      .fn()
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify([
-            {
-              id: applicationId,
-              company: "Acme",
-              role: "Engineer",
-              application_url: "https://jobs.example.com/apply/1?from=careeros",
-              resume_version_id: resumeVersionId,
-              status: "PREPARING",
-              origin: "CAREEROS_JOB",
-              created_at: "2026-09-25T01:00:00Z",
-            },
-          ]),
-          { status: 200 },
-        ),
-      )
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify([
-            {
-              name: "Base Resume",
-              versions: [
-                {
-                  id: resumeVersionId,
-                  version_number: 2,
-                  extracted_text: "must not leave the background",
-                },
-              ],
-            },
-          ]),
-          { status: 200 },
-        ),
-      );
+    const request = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          match_kind: "EXACT_URL",
+          application: {
+            id: applicationId,
+            company: "Acme",
+            role: "Engineer",
+            application_url: "https://jobs.example.com/apply/1?from=careeros",
+            resume_version_id: resumeVersionId,
+            status: "PREPARING",
+            origin: "CAREEROS_JOB",
+            created_at: "2026-09-25T01:00:00Z",
+          },
+          resume_versions: [
+            { id: resumeVersionId, label: "Base Resume · Version 2" },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
     const client = new CareerOsApiClient(
       "http://localhost:8000",
       { getToken: vi.fn().mockResolvedValue("session-token") },
@@ -311,6 +296,40 @@ describe("CareerOsApiClient", () => {
         { id: resumeVersionId, label: "Base Resume · Version 2" },
       ],
     });
+    expect(request).toHaveBeenCalledWith(
+      "http://localhost:8000/applications/assistant-context",
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          application_url: "https://jobs.example.com/apply/1?redirected=true",
+        }),
+      },
+    );
+  });
+
+  it("rejects inconsistent minimal application context", async () => {
+    const client = new CareerOsApiClient(
+      "http://localhost:8000",
+      { getToken: vi.fn().mockResolvedValue("session-token") },
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            match_kind: "EXACT_URL",
+            application: null,
+            resume_versions: [],
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    await expect(
+      client.getApplicationContext("https://jobs.example.com/apply", "Apply"),
+    ).rejects.toThrow("invalid application context");
   });
 
   it("records an external application through the authenticated boundary", async () => {
@@ -367,6 +386,58 @@ describe("CareerOsApiClient", () => {
     });
   });
 
+  it("prepares external context before form execution for redirect recovery", async () => {
+    const preparedId = "00000000-0000-4000-8000-000000000022";
+    const request = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: preparedId,
+          company: "Acme",
+          role: "Engineer",
+          application_url: "https://jobs.example.com/apply",
+          resume_version_id: null,
+          status: "PREPARING",
+          origin: "EXTERNAL_PAGE",
+          created_at: "2026-09-25T01:00:00Z",
+        }),
+        { status: 201 },
+      ),
+    );
+    const client = new CareerOsApiClient(
+      "http://localhost:8000",
+      { getToken: vi.fn().mockResolvedValue("session-token") },
+      request,
+    );
+    const input = {
+      company: " Acme ",
+      role: " Engineer ",
+      resumeVersionId: null,
+      idempotencyKey: "00000000-0000-4000-8000-000000000023",
+    };
+
+    await expect(
+      client.prepareApplication(input, "https://jobs.example.com/apply"),
+    ).resolves.toEqual(expect.objectContaining({ id: preparedId }));
+    expect(request).toHaveBeenCalledWith("http://localhost:8000/applications", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer session-token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        idempotency_key: input.idempotencyKey,
+        origin: "EXTERNAL_PAGE",
+        company: "Acme",
+        role: "Engineer",
+        application_url: "https://jobs.example.com/apply",
+        source: "jobs.example.com",
+        resume_version_id: null,
+        status: "PREPARING",
+        answers: [],
+      }),
+    });
+  });
+
   it("completes an existing preparing application instead of duplicating it", async () => {
     const applicationId = "00000000-0000-4000-8000-000000000025";
     const request = vi.fn().mockResolvedValue(
@@ -414,32 +485,5 @@ describe("CareerOsApiClient", () => {
         }),
       },
     );
-  });
-
-  it("uses one recent preparing application only as a reviewable fallback", () => {
-    const recent = {
-      id: "00000000-0000-4000-8000-000000000030",
-      company: "Acme",
-      role: "Engineer",
-      applicationUrl: "https://different.example/apply",
-      resumeVersionId: null,
-      status: "PREPARING" as const,
-      origin: "CAREEROS_JOB" as const,
-      createdAt: "2026-09-25T01:00:00Z",
-    };
-    expect(
-      matchApplication(
-        [recent],
-        "https://redirected.example/form",
-        Date.parse("2026-09-25T02:00:00Z"),
-      ),
-    ).toEqual({ kind: "RECENT_PREPARING", application: recent });
-    expect(
-      matchApplication(
-        [recent, { ...recent, id: "00000000-0000-4000-8000-000000000031" }],
-        "https://redirected.example/form",
-        Date.parse("2026-09-25T02:00:00Z"),
-      ),
-    ).toEqual({ kind: "NONE", application: null });
   });
 });

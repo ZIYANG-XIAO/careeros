@@ -19,7 +19,9 @@ the user through the Career Brain.
 
 ## Current implementation
 
-M0–M15 are implemented at repository level. Today the repository supports:
+M0–M15 and the automated M16 hardening slice are implemented at repository
+level. Representative unpacked-Chrome validation remains pending. Today the
+repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
 - Clerk authentication and server-side user ownership;
@@ -52,13 +54,17 @@ M0–M15 are implemented at repository level. Today the repository supports:
 - an Applications list/detail/status experience with exact resume and source
   context plus a manual Mark as applied fallback; and
 - CareerOS Job → external page context handoff and explicit extension-side
-  recording after the user submits, without automatic final submission.
+  recording after the user submits, without automatic final submission;
+- data-minimized assistant context lookup that never sends full resume content
+  to the extension; and
+- retry-safe Preparing recovery across an external post-submit redirect.
 
 The following V1 capabilities are planned, not implemented:
 
 - production job acquisition and real external source adapters;
 - automatic resume/file upload and broader custom-widget execution;
-- representative end-to-end hardening across both required application paths.
+- representative unpacked-Chrome validation across both required application
+  paths.
 
 Application Strategy and resume tailoring are deferred optional enhancements.
 Existing Job Intelligence remains available and must not become a mandatory
@@ -141,6 +147,7 @@ The `docs/` directory is the product and engineering source of truth:
 - `docs/APPLICATION_MEMORY.md` — M14 durable Application domain/API contract
 - `docs/APPLICATION_INTEGRATION.md` — M15 Web/extension integration contract
 - `docs/VALIDATION_M15.md` — M15 automated results and deferred browser gate
+- `docs/VALIDATION_M16.md` — M16 hardening results and remaining browser gate
 
 ## Repository structure
 

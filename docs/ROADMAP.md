@@ -482,6 +482,18 @@ Resume → Career Brain → job found elsewhere
 - Application Memory is historically accurate; and
 - critical failures have recovery behavior.
 
+### Automated hardening delivered; representative gate pending
+
+Implemented a data-minimized server-owned Application Assistant context API,
+ambiguous-URL fail-closed behavior, concurrent create/status idempotency
+coverage, post-redirect Preparing recovery, explicit extension message/build
+boundaries, keyboard focus visibility, and automated contracts for both V1
+paths. Full M0–M15 regression and production builds pass. See
+`docs/VALIDATION_M16.md`.
+
+M16 is not marked complete because the previously deferred unpacked-Chrome
+validation of both representative scenarios has not been executed.
+
 ## 9. Parallel/separate job-data acquisition track
 
 Real production job data may be integrated after the canonical boundary and
@@ -562,12 +574,12 @@ After a milestone:
 
 ## 14. Immediate next step
 
-M15 implementation and automated cross-surface validation are complete. At the
-user's direction, unpacked-extension Chrome setup and representative browser
-validation remain deferred. The next implementation milestone is:
+M16 automated hardening is complete. At the user's direction, unpacked-extension
+Chrome setup and representative browser validation remain deferred. The next
+required gate is:
 
-> M16 — V1 Hardening and End-to-End Validation
+> Run both M16 representative scenarios in unpacked Chrome
 
-Do not begin Application Strategy, resume tailoring, or automatic final
-submission as part of M16. The deferred browser gate and both representative
-end-to-end scenarios remain required before V1 can be considered complete.
+Do not mark M16 or V1 complete, and do not begin Application Strategy, resume
+tailoring, or automatic final submission, until that gate is explicitly resumed
+and passed.

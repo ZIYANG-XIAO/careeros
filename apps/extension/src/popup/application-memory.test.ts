@@ -9,6 +9,7 @@ import {
   confirmedApplicationAnswers,
   initialApplicationFields,
   selectedApplicationFields,
+  shouldShowApplicationMemory,
 } from "./application-memory";
 
 describe("application memory popup policy", () => {
@@ -125,5 +126,36 @@ describe("application memory popup policy", () => {
       role: "Engineer",
       resumeVersionId: "00000000-0000-4000-8000-000000000001",
     });
+  });
+
+  it("shows recent recovery context on a post-submit confirmation page", () => {
+    const context = {
+      pageUrl: "https://ats.example/application/complete",
+      pageTitle: "Application received",
+      siteHost: "ats.example",
+      matchKind: "RECENT_PREPARING",
+      application: {
+        id: "00000000-0000-4000-8000-000000000002",
+        company: "Acme",
+        role: "Engineer",
+        applicationUrl: "https://ats.example/application",
+        resumeVersionId: null,
+        status: "PREPARING",
+        origin: "EXTERNAL_PAGE",
+        createdAt: "2026-09-25T01:00:00Z",
+      },
+      resumeVersions: [],
+    } satisfies ApplicationPageContext;
+
+    expect(shouldShowApplicationMemory("NOT_APPLICATION_PAGE", context)).toBe(
+      true,
+    );
+    expect(
+      shouldShowApplicationMemory("NOT_APPLICATION_PAGE", {
+        ...context,
+        matchKind: "NONE",
+        application: null,
+      }),
+    ).toBe(false);
   });
 });

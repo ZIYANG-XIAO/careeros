@@ -1,9 +1,10 @@
 """Authenticated durable Application Memory endpoints."""
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from hashlib import sha256
-from typing import Annotated
+from typing import Annotated, Literal
+from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -14,6 +15,10 @@ from sqlalchemy.orm import selectinload
 
 from careeros_api.application_schemas import (
     ApplicationAnswerResponse,
+    ApplicationAssistantContextRequest,
+    ApplicationAssistantContextResponse,
+    ApplicationAssistantMatchResponse,
+    ApplicationAssistantResumeOptionResponse,
     ApplicationResponse,
     ApplicationSummaryResponse,
     CreateApplicationRequest,
@@ -133,6 +138,119 @@ def _conflict(message: str) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_409_CONFLICT,
         detail={"code": "IDEMPOTENCY_CONFLICT", "message": message},
+    )
+
+
+def _normalized_application_url(value: str | None) -> str | None:
+    if value is None:
+        return None
+    try:
+        parsed = urlsplit(value)
+        if parsed.scheme not in {"http", "https"} or parsed.hostname is None:
+            return None
+        port = parsed.port
+    except ValueError:
+        return None
+    host = parsed.hostname.casefold()
+    if ":" in host:
+        host = f"[{host}]"
+    default_port = 80 if parsed.scheme == "http" else 443
+    port_suffix = f":{port}" if port is not None and port != default_port else ""
+    path = parsed.path.rstrip("/") or "/"
+    return f"{parsed.scheme.casefold()}://{host}{port_suffix}{path}"
+
+
+def _assistant_match(
+    applications: list[Application],
+    application_url: str,
+    now: datetime,
+) -> tuple[Literal["EXACT_URL", "RECENT_PREPARING", "NONE"], Application | None]:
+    normalized_url = _normalized_application_url(application_url)
+    exact = [
+        application
+        for application in applications
+        if _normalized_application_url(application.application_url_snapshot) == normalized_url
+    ]
+    if len(exact) == 1:
+        return "EXACT_URL", exact[0]
+    if len(exact) > 1:
+        preparing = [
+            application
+            for application in exact
+            if application.status == ApplicationStatus.PREPARING
+        ]
+        if len(preparing) == 1:
+            return "EXACT_URL", preparing[0]
+        return "NONE", None
+
+    recent_cutoff = now - timedelta(hours=6)
+    recent_preparing = [
+        application
+        for application in applications
+        if application.status == ApplicationStatus.PREPARING
+        and application.created_at >= recent_cutoff
+        and application.created_at <= now
+    ]
+    if len(recent_preparing) == 1:
+        return "RECENT_PREPARING", recent_preparing[0]
+    return "NONE", None
+
+
+@router.post("/assistant-context", response_model=ApplicationAssistantContextResponse)
+async def get_application_assistant_context(
+    body: ApplicationAssistantContextRequest,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApplicationAssistantContextResponse:
+    applications = (
+        (
+            await session.execute(
+                select(Application)
+                .where(Application.user_id == user.id)
+                .order_by(Application.created_at.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    match_kind, application = _assistant_match(
+        list(applications), str(body.application_url), datetime.now(UTC)
+    )
+    resume_rows = (
+        await session.execute(
+            select(ResumeVersion.id, Resume.name, ResumeVersion.version_number)
+            .join(Resume)
+            .where(Resume.user_id == user.id)
+            .order_by(
+                Resume.is_primary.desc(),
+                Resume.updated_at.desc(),
+                ResumeVersion.version_number.desc(),
+            )
+        )
+    ).all()
+    return ApplicationAssistantContextResponse(
+        match_kind=match_kind,
+        application=(
+            ApplicationAssistantMatchResponse(
+                id=application.id,
+                company=application.company_snapshot,
+                role=application.role_snapshot,
+                application_url=application.application_url_snapshot,
+                resume_version_id=application.resume_version_id,
+                status=application.status,
+                origin=application.origin,
+                created_at=application.created_at,
+            )
+            if application is not None
+            else None
+        ),
+        resume_versions=[
+            ApplicationAssistantResumeOptionResponse(
+                id=version_id,
+                label=f"{resume_name} · Version {version_number}",
+            )
+            for version_id, resume_name, version_number in resume_rows
+        ],
     )
 
 
@@ -344,9 +462,18 @@ async def update_application_status(
             operation is None
             or operation.application_id != application.id
             or operation.request_fingerprint != request_fingerprint
+            or operation.operation_type != "STATUS_UPDATE"
         ):
             raise _conflict("The update idempotency key was already used differently")
-        return _response(application)
+        refreshed = await session.scalar(
+            select(Application)
+            .options(selectinload(Application.answers))
+            .execution_options(populate_existing=True)
+            .where(Application.id == application.id, Application.user_id == user.id)
+        )
+        if refreshed is None:  # pragma: no cover - defensive invariant
+            raise RuntimeError("Updated application could not be reloaded")
+        return _response(refreshed)
 
     now = datetime.now(UTC)
     if application.applied_at is None and body.status != ApplicationStatus.PREPARING:

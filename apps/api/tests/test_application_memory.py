@@ -1,3 +1,4 @@
+import asyncio
 from io import BytesIO
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -98,6 +99,13 @@ def test_application_endpoints_require_authentication() -> None:
     with TestClient(application) as client:
         assert client.get("/applications").status_code == 401
         assert client.post("/applications", json=external_payload()).status_code == 401
+        assert (
+            client.post(
+                "/applications/assistant-context",
+                json={"application_url": "https://jobs.example.com/apply"},
+            ).status_code
+            == 401
+        )
 
 
 @pytest.mark.asyncio
@@ -151,6 +159,20 @@ async def test_create_is_idempotent_and_detects_key_reuse() -> None:
         assert retry.json() == first.json()
         assert conflict.status_code == 409
         assert conflict.json()["detail"]["code"] == "IDEMPOTENCY_CONFLICT"
+        assert len((await client.get("/applications")).json()) == 1
+
+
+@pytest.mark.asyncio
+async def test_concurrent_create_retries_do_not_duplicate_application() -> None:
+    key = uuid4()
+    payload = external_payload(idempotency_key=key)
+    async with make_integration_client() as client:
+        responses = await asyncio.gather(
+            *(client.post("/applications", json=payload) for _ in range(5))
+        )
+
+        assert sorted(response.status_code for response in responses) == [200, 200, 200, 200, 201]
+        assert len({response.json()["id"] for response in responses}) == 1
         assert len((await client.get("/applications")).json()) == 1
 
 
@@ -225,6 +247,95 @@ async def test_canonical_job_and_exact_resume_are_owned_and_snapshotted(tmp_path
 
 
 @pytest.mark.asyncio
+async def test_assistant_context_is_minimal_exact_and_ambiguity_safe(tmp_path: Path) -> None:
+    async with make_integration_client(
+        resume_parser=EmptyResumeParser(),
+        resume_storage_dir=str(tmp_path),
+    ) as client:
+        upload = await client.post(
+            "/resume-imports",
+            files={"file": ("private.docx", resume_docx(), "application/octet-stream")},
+        )
+        assert upload.status_code == 201
+        resume_version_id = upload.json()["resume_version_id"]
+        created = await client.post(
+            "/applications",
+            json={
+                **external_payload(),
+                "resume_version_id": resume_version_id,
+            },
+        )
+        assert created.status_code == 201
+
+        context = await client.post(
+            "/applications/assistant-context",
+            json={"application_url": "https://jobs.example.com/platform/apply/?redirect=1#form"},
+        )
+        assert context.status_code == 200, context.text
+        body = context.json()
+        assert body["match_kind"] == "EXACT_URL"
+        assert body["application"] == {
+            "id": created.json()["id"],
+            "company": "External Corp",
+            "role": "Platform Engineer",
+            "application_url": "https://jobs.example.com/platform/apply",
+            "resume_version_id": resume_version_id,
+            "status": "PREPARING",
+            "origin": "EXTERNAL_PAGE",
+            "created_at": created.json()["created_at"],
+        }
+        assert body["resume_versions"] == [
+            {
+                "id": resume_version_id,
+                "label": "private · Version 1",
+            }
+        ]
+        assert "extracted_text" not in context.text
+        assert "structured_content" not in context.text
+
+        duplicate = await client.post(
+            "/applications",
+            json=external_payload(company="Another role at the same URL"),
+        )
+        assert duplicate.status_code == 201
+        ambiguous = await client.post(
+            "/applications/assistant-context",
+            json={"application_url": "https://jobs.example.com/platform/apply"},
+        )
+        assert ambiguous.status_code == 200
+        assert ambiguous.json()["match_kind"] == "NONE"
+        assert ambiguous.json()["application"] is None
+
+
+@pytest.mark.asyncio
+async def test_assistant_context_recent_fallback_is_unique_and_owner_scoped() -> None:
+    owner_id, other_id = uuid4(), uuid4()
+    async with make_integration_client(user_id=owner_id) as owner:
+        created = await owner.post("/applications", json=external_payload())
+        assert created.status_code == 201
+
+        recent = await owner.post(
+            "/applications/assistant-context",
+            json={"application_url": "https://redirected.example.com/application"},
+        )
+        assert recent.status_code == 200
+        assert recent.json()["match_kind"] == "RECENT_PREPARING"
+        assert recent.json()["application"]["id"] == created.json()["id"]
+
+        async with make_integration_client(user_id=other_id) as other:
+            isolated = await other.post(
+                "/applications/assistant-context",
+                json={"application_url": "https://jobs.example.com/platform/apply"},
+            )
+            assert isolated.status_code == 200
+            assert isolated.json() == {
+                "match_kind": "NONE",
+                "application": None,
+                "resume_versions": [],
+            }
+
+
+@pytest.mark.asyncio
 async def test_status_update_is_idempotent_and_preserves_applied_at() -> None:
     async with make_integration_client() as client:
         created = await client.post("/applications", json=external_payload())
@@ -251,6 +362,28 @@ async def test_status_update_is_idempotent_and_preserves_applied_at() -> None:
         assert later.status_code == 200
         assert later.json()["status"] == "INTERVIEW"
         assert later.json()["applied_at"] == first.json()["applied_at"]
+
+
+@pytest.mark.asyncio
+async def test_concurrent_status_retries_return_the_committed_state() -> None:
+    async with make_integration_client() as client:
+        created = await client.post("/applications", json=external_payload())
+        application_id = created.json()["id"]
+        update_payload = {"idempotency_key": str(uuid4()), "status": "APPLIED"}
+
+        responses = await asyncio.gather(
+            *(
+                client.patch(
+                    f"/applications/{application_id}/status",
+                    json=update_payload,
+                )
+                for _ in range(5)
+            )
+        )
+
+        assert all(response.status_code == 200 for response in responses)
+        assert {response.json()["status"] for response in responses} == {"APPLIED"}
+        assert len({response.json()["applied_at"] for response in responses}) == 1
 
 
 @pytest.mark.asyncio

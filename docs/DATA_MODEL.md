@@ -7,9 +7,9 @@
 ## 1. Purpose
 
 This document defines CareerOS domain concepts for the re-baselined V1. It
-separates the implemented M0–M15 product state from planned V1 formation
-concepts. M14 adds durable Application Memory and M15 adds retry-safe submission
-recording.
+separates the implemented M0–M15 product state plus M16 automated hardening from
+planned V1 formation concepts. M14 adds durable Application Memory and M15 adds
+retry-safe submission recording. M16 adds no tables.
 
 The model supports:
 
@@ -108,6 +108,10 @@ durable idempotency ledger for status updates.
 M15 extends the operation ledger with `RECORD_SUBMISSION`, allowing an owned
 Preparing Application to atomically preserve a previously unset Resume Version,
 append approved immutable answers, and record Applied without duplicate retries.
+
+M16 adds a data-minimized assistant-context API over the same canonical tables.
+It returns only one unambiguous owned Application candidate and Resume Version
+identifiers/labels; it does not return extracted resume text or raw form data.
 
 ### Planned, not implemented
 

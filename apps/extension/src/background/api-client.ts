@@ -11,6 +11,7 @@ import type {
   AuthStatus,
   CanonicalFieldKey,
   FieldConfidence,
+  PrepareApplicationRequestData,
   QuestionCategory,
   RecordApplicationRequestData,
   ReusePolicy,
@@ -97,30 +98,30 @@ export class CareerOsApiClient {
   ): Promise<ApplicationPageContext | null> {
     const token = await this.tokenProvider.getToken();
     if (!token) return null;
-    const headers = { Authorization: `Bearer ${token}` };
-    const [applicationResponse, resumeResponse] = await Promise.all([
-      this.request(`${this.apiUrl}/applications`, { headers }),
-      this.request(`${this.apiUrl}/resumes`, { headers }),
-    ]);
-    if (applicationResponse.status === 401 || resumeResponse.status === 401) {
-      return null;
-    }
-    if (!applicationResponse.ok || !resumeResponse.ok) {
+    const response = await this.request(
+      `${this.apiUrl}/applications/assistant-context`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ application_url: pageUrl }),
+      },
+    );
+    if (response.status === 401) return null;
+    if (!response.ok) {
       throw new Error("CareerOS application context is unavailable");
     }
-    const applications = parseApplicationList(await applicationResponse.json());
-    const resumeVersions = parseResumeOptions(await resumeResponse.json());
-    if (!applications || !resumeVersions) {
+    const assistantContext = parseAssistantContext(await response.json());
+    if (!assistantContext) {
       throw new Error("CareerOS returned invalid application context");
     }
-    const match = matchApplication(applications, pageUrl);
     return {
       pageUrl,
       pageTitle: pageTitle.slice(0, 500),
       siteHost: new URL(pageUrl).hostname.slice(0, 100),
-      matchKind: match.kind,
-      application: match.application,
-      resumeVersions,
+      ...assistantContext,
     };
   }
 
@@ -178,6 +179,41 @@ export class CareerOsApiClient {
     const application = parseApplication(await response.json());
     if (!application)
       throw new Error("CareerOS returned an invalid Application");
+    return application;
+  }
+
+  async prepareApplication(
+    input: PrepareApplicationRequestData,
+    pageUrl: string,
+  ): Promise<TrackedApplication | null> {
+    const token = await this.tokenProvider.getToken();
+    if (!token) return null;
+    const response = await this.request(`${this.apiUrl}/applications`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        idempotency_key: input.idempotencyKey,
+        origin: "EXTERNAL_PAGE",
+        company: input.company.trim(),
+        role: input.role.trim(),
+        application_url: pageUrl,
+        source: new URL(pageUrl).hostname.slice(0, 100),
+        resume_version_id: input.resumeVersionId,
+        status: "PREPARING",
+        answers: [],
+      }),
+    });
+    if (response.status === 401) return null;
+    if (!response.ok) {
+      throw new Error(`CareerOS API returned ${response.status}`);
+    }
+    const application = parseApplication(await response.json());
+    if (!application) {
+      throw new Error("CareerOS returned an invalid Application");
+    }
     return application;
   }
 }
@@ -454,86 +490,55 @@ function parseApplication(value: unknown): TrackedApplication | null {
   };
 }
 
-function parseApplicationList(value: unknown): TrackedApplication[] | null {
-  if (!Array.isArray(value) || value.length > 10_000) return null;
-  const applications = value.map(parseApplication);
-  return applications.some((application) => application === null)
-    ? null
-    : (applications as TrackedApplication[]);
-}
-
 function parseResumeOptions(value: unknown): ResumeVersionOption[] | null {
-  if (!Array.isArray(value) || value.length > 1_000) return null;
+  if (!Array.isArray(value) || value.length > 10_000) return null;
   const options: ResumeVersionOption[] = [];
-  for (const resume of value) {
+  for (const version of value) {
     if (
-      !isRecord(resume) ||
-      typeof resume.name !== "string" ||
-      resume.name.length === 0 ||
-      resume.name.length > 500 ||
-      !Array.isArray(resume.versions) ||
-      resume.versions.length > 1_000
+      !isRecord(version) ||
+      !hasExactKeys(version, ["id", "label"]) ||
+      typeof version.id !== "string" ||
+      !uuidPattern.test(version.id) ||
+      typeof version.label !== "string" ||
+      version.label.length === 0 ||
+      version.label.length > 1_000
     ) {
       return null;
     }
-    for (const version of resume.versions) {
-      if (
-        !isRecord(version) ||
-        typeof version.id !== "string" ||
-        !uuidPattern.test(version.id) ||
-        typeof version.version_number !== "number" ||
-        !Number.isInteger(version.version_number) ||
-        version.version_number < 1
-      ) {
-        return null;
-      }
-      options.push({
-        id: version.id,
-        label: `${resume.name} · Version ${version.version_number}`,
-      });
-    }
+    options.push({ id: version.id, label: version.label });
   }
   return options;
 }
 
-function normalizedApplicationUrl(value: string): string | null {
-  try {
-    const url = new URL(value);
-    const path = url.pathname.replace(/\/+$/, "") || "/";
-    return `${url.origin.toLowerCase()}${path}`;
-  } catch {
+function parseAssistantContext(
+  value: unknown,
+): Pick<
+  ApplicationPageContext,
+  "matchKind" | "application" | "resumeVersions"
+> | null {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, ["match_kind", "application", "resume_versions"]) ||
+    !["EXACT_URL", "RECENT_PREPARING", "NONE"].includes(
+      value.match_kind as string,
+    )
+  ) {
     return null;
   }
-}
-
-export function matchApplication(
-  applications: TrackedApplication[],
-  pageUrl: string,
-  now = Date.now(),
-): {
-  kind: ApplicationPageContext["matchKind"];
-  application: TrackedApplication | null;
-} {
-  const normalizedPageUrl = normalizedApplicationUrl(pageUrl);
-  const exact = applications.find(
-    (application) =>
-      application.applicationUrl !== null &&
-      normalizedApplicationUrl(application.applicationUrl) ===
-        normalizedPageUrl,
-  );
-  if (exact) return { kind: "EXACT_URL", application: exact };
-
-  const recentPreparing = applications.filter((application) => {
-    if (application.status !== "PREPARING") return false;
-    const createdAt = Date.parse(application.createdAt);
-    return (
-      Number.isFinite(createdAt) &&
-      now - createdAt >= 0 &&
-      now - createdAt <= 6 * 60 * 60 * 1_000
-    );
-  });
-  if (recentPreparing.length === 1) {
-    return { kind: "RECENT_PREPARING", application: recentPreparing[0] };
+  const application =
+    value.application === null ? null : parseApplication(value.application);
+  const resumeVersions = parseResumeOptions(value.resume_versions);
+  if (
+    (value.application !== null && application === null) ||
+    resumeVersions === null ||
+    (value.match_kind === "NONE" && application !== null) ||
+    (value.match_kind !== "NONE" && application === null)
+  ) {
+    return null;
   }
-  return { kind: "NONE", application: null };
+  return {
+    matchKind: value.match_kind as ApplicationPageContext["matchKind"],
+    application,
+    resumeVersions,
+  };
 }
