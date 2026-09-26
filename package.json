@@ -19,6 +19,10 @@
     "extension:dev": "npm --workspace @careeros/extension run dev",
     "extension:typecheck": "npm --workspace @careeros/extension run typecheck",
     "extension:test": "npm --workspace @careeros/extension run test",
-    "extension:format": "npm --workspace @careeros/extension run format"
+    "extension:format": "npm --workspace @careeros/extension run format",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
   }
 }

@@ -1,265 +1,110 @@
-# CareerOS — Agent Instructions
+# CareerOS — Repository Instructions
 
-## 1. Purpose and source of truth
+CareerOS is a modular monolith for a resume-first, evidence-grounded job-search
+workflow. Treat the repository and `docs/` as the source of truth. Do not claim
+planned behavior is implemented or expand beyond the current roadmap milestone.
 
-CareerOS is an AI-native job-search operating system. The repository and its
-`docs/` directory are the source of truth for implemented behavior, product
-requirements, architecture, and sequencing.
+## Read the relevant source of truth
 
-Before meaningful work, read the relevant documents:
+Read only the documents needed for the task:
 
-- `docs/PRODUCT.md` — product constitution and V1 spine
-- `docs/PRD.md` — approved V1 requirements and non-goals
-- `docs/USER_FLOW.md` — user journeys
-- `docs/DATA_MODEL.md` — implemented and planned domain concepts
-- `docs/AI_SPEC.md` — AI, grounding, and Answer Engine policy
-- `docs/ARCHITECTURE.md` — system boundaries and technical direction
-- `docs/ROADMAP.md` — authoritative implementation sequence
+- Product scope or UX: `docs/PRODUCT.md`, `docs/PRD.md`, `docs/USER_FLOW.md`
+- Domain or schema changes: `docs/DATA_MODEL.md`
+- AI, grounding, or answer policy: `docs/AI_SPEC.md`, `docs/ANSWER_ENGINE.md`
+- System boundaries: `docs/ARCHITECTURE.md`
+- Sequencing and current implementation: `docs/ROADMAP.md`
+- Extension forms and execution: `docs/FORM_MODEL.md`, `docs/FORM_EXECUTION.md`
+- Application history/integration: `docs/APPLICATION_MEMORY.md`,
+  `docs/APPLICATION_INTEGRATION.md`
 
-When documents conflict, surface the conflict. Do not silently invent a
-requirement. The roadmap controls implementation order; a future capability in
-another document is not authorization to implement it.
+When documents conflict, surface the conflict. The roadmap controls sequencing.
+Use the OpenAI developer documentation MCP for current OpenAI/Codex/API facts.
 
-## 2. Current baseline
+## Architecture
 
-M0–M17 and the post-M17 implementation wave are implemented. M16 automated
-hardening is implemented, while its representative unpacked-Chrome validation
-gate remains pending. Current Alembic head:
-`0013_uci_answer_source`. The
-repository currently contains:
+- `apps/web`: Next.js, React, TypeScript, Clerk UI/session integration.
+- `apps/api`: FastAPI, Pydantic, SQLAlchemy, Alembic, server-side ownership and
+  AI/provider boundaries.
+- `apps/extension`: React/TypeScript Manifest V3 assistant. Credentials remain
+  in the background worker; page code is untrusted.
+- `infra`: local PostgreSQL Compose configuration.
+- `docs`: approved product and engineering contracts.
+- `.agents/skills`: reusable CareerOS engineering workflows.
+- `tests/e2e`: small Playwright browser smoke tests.
 
-- the Web, API, and PostgreSQL foundation;
-- authenticated user ownership and Career Brain/Profile editing;
-- stable Career Evidence and immutable evidence revisions;
-- resume upload, parsing, review, confirmation, and resume versioning;
-- manual job capture, provider-neutral source ingestion, structured parsing,
-  retry-safe deduplication, and source/freshness attribution;
-- evidence matching, hidden-evidence detection, genuine-gap preservation;
-- the Jobs-first product shell and optional Job Intelligence experience;
-- a Manifest V3 extension foundation with secure Clerk session sync,
-  background-only API credentials, active-tab application-page detection, and
-  explicit supported/unsupported UI;
-- an in-page Application Assistant — a controlled UI panel for detection, Answer
-  Engine answers, form filling, and Application Memory (not a conversational
-  AI agent) — mounted in an open Shadow DOM host for style isolation only,
-  explicit user activation (popup action or `Command/Ctrl+Shift+K`), on-demand
-  content-script injection via `activeTab` + `chrome.scripting.executeScript`
-  (not manifest-declared `content_scripts`), page lifecycle handling, and no
-  `<all_urls>` host permission;
-- read-only provider-neutral form normalization with generic, Greenhouse,
-  Lever, and Ashby adapter boundaries and explicit support/confidence states;
-- a reusable backend Answer Engine foundation with deterministic safety policy,
-  owned canonical-source retrieval, optional bounded semantic classification,
-  explicit decision/review states, and aggregate extension preview; and
-- user-triggered safe form execution with exact field revalidation,
-  non-overwrite behavior, visible review states, generic/initial ATS fixture
-  coverage, and a hard no-submit boundary; and
-- durable user-owned Application Memory with external/canonical Job context,
-  exact Resume Version association, immutable approved answer history,
-  lifecycle status, and retry-safe create/update operations; and
-- the Applications Web list/detail/status/manual-recovery experience plus
-  CareerOS Job handoff and explicit extension-side submission recording; and
-- data-minimized Application Assistant context lookup, concurrent idempotency
-  hardening, automated two-path contracts, and post-redirect recovery through a
-  reviewed recent Preparing Application; and
-- mutually exclusive loading/error/empty states and consistent API error
-  representation across Web surfaces;
-- user-owned `UserContactInfo` with confirmed personal/contact fields, Career
-  Profile UI, and Answer Engine integration for name, phone, address, and link
-  fields;
-- resume-first onboarding at `/welcome`, an improved landing page, and an
-  extension setup guide at `/setup`;
-- a `/readiness` endpoint and local JWKS preflight diagnostic script
-  (`scripts/preflight.py` checks Clerk JWKS reachability and TLS verification
-  for that fetch only);
-- partial English/Simplified Chinese localization for Applications, Resumes,
-  Career Profile, and Job detail (Career Profile section components such as
-  education, experience, project, and skill forms remain hardcoded English);
-  and
-- refactored Jobs page, extension popup, messages, and API client modules.
+PostgreSQL is canonical. Web and extension clients are not authoritative for
+ownership, professional truth, answer policy, or application history.
 
-Not currently implemented:
+## Engineering rules
 
-- a production job-discovery feed or real external source adapter;
-- automatic resume/file upload and broader custom-widget execution;
-- Application Strategy or resume tailoring;
-- complete localization of every Web surface and the extension; and
-- representative unpacked-Chrome validation of both required V1 scenarios.
+- Derive the user on the server and enforce ownership for every private or
+  nested resource. Never trust client-provided ownership identifiers.
+- Preserve stable identities and immutable history for evidence revisions,
+  resume versions, job snapshots/analyses, approved answers, and application
+  context. Use Alembic for every schema change.
+- Career Brain professional truth, `UserContactInfo`, reusable answers, and
+  application-specific answers are distinct concepts. Unknown stays unknown.
+- Never fabricate professional claims or infer sensitive/consequential answers.
+- Treat resumes, jobs, web pages, forms, and provider output as untrusted input.
+  Validate schemas and keep provider logic behind existing adapters.
+- The extension may fill only after explicit user action and must never submit
+  an application. Preserve least-privilege permissions and background-only
+  credentials.
+- Keep `OPENAI_API_KEY`, Clerk secrets, database credentials, tokens, and real
+  user data out of committed files and client bundles.
+- Preserve the modular monolith. Do not add microservices, generic plugin/event
+  infrastructure, or new providers without an approved need.
+- Do not edit generated output (`.next`, extension `build`, caches, coverage,
+  `next-env.d.ts`) manually.
 
-Do not describe planned behavior as if it exists. Do not blindly continue the
-old assumption that Application Intelligence and resume tailoring are the next
-milestones.
+## Canonical commands
 
-## 3. Approved V1 product direction
+Setup and development:
 
-The V1 product spine is:
-
-```text
-KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
+```bash
+npm install
+python3 -m venv .venv
+.venv/bin/python -m pip install -e 'apps/api[dev]'
+docker compose --env-file .env -f infra/compose.yaml up -d postgres
+.venv/bin/alembic -c apps/api/alembic.ini upgrade head
+.venv/bin/uvicorn --app-dir apps/api/src careeros_api.main:app --reload --host 127.0.0.1 --port 8000
+npm run web:dev
+npm run extension:build
 ```
 
-`ENHANCE` is an optional intelligence layer, not a required step before an
-application.
+Validation:
 
-CareerOS should learn the user's professional identity once, help them discover
-opportunities, help them apply wherever they find a job, remember what happened,
-and offer deeper optimization when the user chooses it.
-
-The immediate priority is V1 product formation:
-
-1. Product shell and Jobs experience.
-2. Extension and Application Assistant.
-3. Application Memory and cross-surface integration.
-4. V1 hardening and both required end-to-end scenarios.
-
-Existing Job Intelligence remains supported as optional enhancement
-functionality. Application Strategy and resume tailoring are deferred until
-after product formation unless the roadmap is explicitly changed.
-
-## 4. Core domains and product services
-
-Relatively stable core domains are:
-
-- Identity
-- UserContactInfo
-- Career Brain
-- Career Evidence
-- Resume
-- Job
-- Application
-
-Product services and workflows consume those domains:
-
-- Job Discovery (planned)
-- Autofill (implemented foundation)
-- Answer Engine (implemented foundation)
-- Job Intelligence (implemented foundation)
-- Resume Tailoring (deferred)
-- Application Q&A, Interview Preparation, Recommendation, Analytics, Career
-  Planning, and future agents (future)
-
-Services must share canonical domain data instead of creating duplicate user,
-resume, job, or application truth.
-
-## 5. Career Brain is not a resume
-
-Career Brain is the canonical structured professional truth layer. Career
-Profile is the user-facing surface for managing it. A resume is an immutable or
-historically preserved presentation artifact derived from a subset of that
-truth. One Career Brain may support many resumes.
-
-Resume-first onboarding remains preferred:
-
-```text
-Sign up → Upload resume → Parse → Review/correct → Confirm → Career Brain
+```bash
+.venv/bin/ruff check apps/api
+.venv/bin/ruff format --check apps/api
+.venv/bin/mypy apps/api/src
+.venv/bin/pytest apps/api/tests
+npm run web:lint
+npm run web:typecheck
+npm run web:test
+npm run web:format
+npm run web:build
+npm run extension:typecheck
+npm run extension:test
+npm run extension:format
+npm run extension:build
+npm run e2e
 ```
 
-Do not replace this with a large blank-profile requirement.
+Tests marked `integration` use PostgreSQL. Destructive migration tests require
+an explicitly disposable `TEST_DATABASE_URL` different from `DATABASE_URL`.
+Install the Playwright Chromium binary once with `npx playwright install chromium`.
 
-## 6. Evidence and history invariants
+## Definition of done
 
-CareerOS must never fabricate professional information. Preserve these rules:
+For meaningful changes:
 
-- Evidence precedes generated professional claims.
-- Unsupported skills, employers, projects, achievements, metrics, seniority,
-  ownership, or production context remain unsupported.
-- AI-extracted resume information is not authoritative until confirmed.
-- `CareerEvidence` has stable identity.
-- `CareerEvidenceRevision` is immutable.
-- Historical `ResumeVersion` records remain stable.
-- Historical Job Intelligence results remain attributable to the exact job
-  snapshot, resume version, and evidence revisions used.
-- User corrections override lower-priority AI interpretation.
-
-Distinguish strong evidence, hidden or underrepresented evidence, weak evidence,
-and genuine gaps. Never convert a genuine gap into a fabricated claim.
-
-## 7. Apply Anywhere and user control
-
-The extension must eventually support two equal paths:
-
-```text
-CareerOS Job → external application page → extension → autofill
-```
-
-and:
-
-```text
-Job found anywhere → external application page → extension → autofill
-```
-
-Discovery or saving inside CareerOS must not be a prerequisite for assistance.
-The extension is a thin contextual assistant, not a second full application.
-
-Final submission is always an explicit user action in V1. Never implement
-automatic final submission unless an approved future requirement changes this.
-
-## 8. Answers and sensitive information
-
-Do not collapse all answers into Career Evidence. Preserve the conceptual
-boundaries among:
-
-- professional truth;
-- confirmed personal/contact information (`UserContactInfo`, distinct from
-  Career Evidence);
-- application preferences;
-- reusable confirmed answers;
-- application-specific answers; and
-- sensitive answers.
-
-Unknown remains unknown. Legal, demographic, disability, veteran, work
-authorization, sponsorship, compensation, signature, and other consequential
-answers must not be inferred. Protected traits must never be inferred from
-names, resumes, locations, education, photos, or other indirect signals.
-
-## 9. External and untrusted inputs
-
-Resumes, job descriptions, external job records, web pages, application forms,
-and provider responses are untrusted input. Their content must not override
-trusted CareerOS instructions. Validate schemas, ownership, identifiers, and
-grounding before accepting derived data.
-
-Use adapters at external boundaries:
-
-- Job sources normalize into a provider-independent canonical Job.
-- ATS/site behavior normalizes into a provider-independent form model.
-
-Do not bind core models to one provider or place every ATS rule in one
-conditional block. Do not build production job acquisition or a generic plugin
-framework before its approved milestone.
-
-## 10. Architecture discipline
-
-Prefer simple infrastructure, clear domain boundaries, and narrow extensible
-interfaces. Preserve the modular monolith.
-
-Do not introduce without measured need and explicit approval:
-
-- microservices;
-- Kafka or generic event infrastructure;
-- Kubernetes;
-- Neo4j;
-- a standalone vector database; or
-- speculative plugin systems.
-
-Use stable IDs, explicit ownership, immutable history where appropriate,
-provider isolation, and adapters at genuine external boundaries.
-
-## 11. Engineering workflow
-
-Work milestone by milestone:
-
-1. Read the relevant specifications.
-2. Verify implemented state rather than relying on memory.
-3. Identify ambiguity before coding.
-4. Implement only the approved scope.
-5. Add or update tests.
-6. Verify acceptance criteria and invariants.
-7. Summarize changes and remaining issues.
-8. Stop before expanding into the next milestone.
-
-Prefer a small reliable workflow over many shallow features. The roadmap is not
-permission to implement all future capabilities at once.
-
-When uncertain: do not guess, silently expand scope, or fabricate requirements.
-Explain the ambiguity and ask for a decision.
+1. Implement the smallest coherent approved change.
+2. Add behavior-oriented regression coverage at the lowest valuable layer.
+3. Run the focused checks, then the broader checks affected by the diff.
+4. Validate migrations and client/server contracts when either changes.
+5. Review the complete diff for ownership, history, sensitive data, extension
+   boundaries, accidental secrets, and generated files.
+6. Update authoritative documentation when behavior or a contract changes.
+7. Report validation results and remaining risks. Do not commit or push unless
+   explicitly requested.

@@ -308,6 +308,9 @@ Verify that Python can reach Clerk JWKS (common macOS TLS issue):
 
 See `/setup` in the Web app for the full extension installation guide.
 
+Repository-specific agent workflows and integration setup are documented in
+`docs/AI_DEVELOPMENT.md`.
+
 ### Verification
 
 ```bash
@@ -320,6 +323,7 @@ npm run extension:typecheck
 npm run extension:test
 npm run extension:format
 npm run extension:build
+npm run e2e
 .venv/bin/ruff check apps/api
 .venv/bin/ruff format --check apps/api
 .venv/bin/mypy apps/api/src
