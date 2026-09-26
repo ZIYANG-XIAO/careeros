@@ -335,6 +335,7 @@ export type Job = {
   created_at: string;
   updated_at: string;
   is_saved: boolean;
+  saved_at: string | null;
   latest_snapshot: JobSnapshot;
 };
 

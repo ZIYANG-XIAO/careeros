@@ -211,16 +211,22 @@ async def test_save_and_unsave_are_durable_idempotent_and_filterable() -> None:
         assert first_save.status_code == 200
         assert second_save.status_code == 200
         assert first_save.json()["is_saved"] is True
+        assert first_save.json()["saved_at"] is not None
         assert second_save.json()["is_saved"] is True
+        assert second_save.json()["saved_at"] == first_save.json()["saved_at"]
 
         detail = await client.get(f"/jobs/{job_id}")
         saved = await client.get("/jobs", params={"saved_only": True})
         assert detail.json()["is_saved"] is True
+        assert detail.json()["saved_at"] == first_save.json()["saved_at"]
         assert [item["id"] for item in saved.json()] == [job_id]
+        assert saved.json()[0]["saved_at"] == first_save.json()["saved_at"]
 
         assert (await client.delete(f"/jobs/{job_id}/save")).status_code == 204
         assert (await client.delete(f"/jobs/{job_id}/save")).status_code == 204
-        assert (await client.get(f"/jobs/{job_id}")).json()["is_saved"] is False
+        reloaded = (await client.get(f"/jobs/{job_id}")).json()
+        assert reloaded["is_saved"] is False
+        assert reloaded["saved_at"] is None
         assert (await client.get("/jobs", params={"saved_only": True})).json() == []
 
 

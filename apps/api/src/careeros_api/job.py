@@ -112,6 +112,7 @@ class JobResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     is_saved: bool
+    saved_at: datetime | None
     latest_snapshot: JobSnapshotResponse
 
 
@@ -154,7 +155,9 @@ def _snapshot_response(snapshot: JobSnapshot) -> JobSnapshotResponse:
     )
 
 
-def _job_response(job: Job, *, is_saved: bool = False) -> JobResponse:
+def _job_response(
+    job: Job, *, is_saved: bool = False, saved_at: datetime | None = None
+) -> JobResponse:
     latest = max(job.snapshots, key=lambda snapshot: snapshot.version_number)
     return JobResponse(
         id=job.id,
@@ -179,6 +182,7 @@ def _job_response(job: Job, *, is_saved: bool = False) -> JobResponse:
         created_at=job.created_at,
         updated_at=job.updated_at,
         is_saved=is_saved,
+        saved_at=saved_at,
         latest_snapshot=_snapshot_response(latest),
     )
 
@@ -276,7 +280,10 @@ async def list_jobs(
 ) -> list[JobResponse]:
     statement = (
         select(Job)
-        .add_columns(SavedJob.id.is_not(None).label("is_saved"))
+        .add_columns(
+            SavedJob.id.is_not(None).label("is_saved"),
+            SavedJob.created_at.label("saved_at"),
+        )
         .outerjoin(
             SavedJob,
             (SavedJob.job_id == Job.id) & (SavedJob.user_id == user.id),
@@ -305,7 +312,10 @@ async def list_jobs(
         statement = statement.order_by(Job.created_at.desc())
 
     result = await session.execute(statement)
-    return [_job_response(job, is_saved=is_saved) for job, is_saved in result.all()]
+    return [
+        _job_response(job, is_saved=is_saved, saved_at=saved_at)
+        for job, is_saved, saved_at in result.all()
+    ]
 
 
 @router.get("/{job_id}", response_model=JobResponse)
@@ -316,7 +326,10 @@ async def get_job(
 ) -> JobResponse:
     result = await session.execute(
         select(Job)
-        .add_columns(SavedJob.id.is_not(None).label("is_saved"))
+        .add_columns(
+            SavedJob.id.is_not(None).label("is_saved"),
+            SavedJob.created_at.label("saved_at"),
+        )
         .outerjoin(
             SavedJob,
             (SavedJob.job_id == Job.id) & (SavedJob.user_id == user.id),
@@ -327,8 +340,8 @@ async def get_job(
     row = result.one_or_none()
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
-    job, is_saved = row
-    return _job_response(job, is_saved=is_saved)
+    job, is_saved, saved_at = row
+    return _job_response(job, is_saved=is_saved, saved_at=saved_at)
 
 
 @router.post("/{job_id}/save", response_model=JobResponse)
@@ -346,7 +359,10 @@ async def save_job(
         .on_conflict_do_nothing(index_elements=["user_id", "job_id"])
     )
     await session.flush()
-    return _job_response(job, is_saved=True)
+    saved_at = await session.scalar(
+        select(SavedJob.created_at).where(SavedJob.user_id == user.id, SavedJob.job_id == job.id)
+    )
+    return _job_response(job, is_saved=True, saved_at=saved_at)
 
 
 @router.delete("/{job_id}/save", status_code=status.HTTP_204_NO_CONTENT)

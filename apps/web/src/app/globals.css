@@ -1,24 +1,135 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans:
+    var(--font-ibm-plex-sans), var(--font-ibm-plex-sans-sc), -apple-system,
+    "Helvetica Neue", sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
+
+  /* Greys */
+  --color-ground: #f4f2ee;
+  --color-rail: #faf9f6;
+  --color-surface: #ffffff;
+  --color-sunken: #efede8;
+  --color-skeleton: #e7e4de;
+  --color-row-divider: #f0eee9;
+  --color-border: #e2dfd8;
+  --color-border-strong: #cbc7bd;
+  --color-ink: #1a1a19;
+  --color-ink-2: #56554f;
+  --color-ink-3: #6e6c64;
+  --color-icon-muted: #8b8880;
+  --color-closed-row: #fbfaf8;
+
+  /* Accent */
+  --color-accent: #3d31c9;
+  --color-accent-hover: #2e2499;
+  --color-accent-soft: #eceafd;
+  --color-accent-soft-border: #d8d4f7;
+  --color-accent-tint: #f6f5fe;
+  --color-accent-tint-2: #f1effe;
+  --color-accent-drop: #a79bff;
+  --color-accent-focus-ring: rgba(61, 49, 201, 0.22);
+
+  /* Status pairs (bg / ink) */
+  --color-status-preparing-bg: #eceae4;
+  --color-status-preparing-ink: #4f4e48;
+  --color-status-applied-bg: #e7e4fb;
+  --color-status-applied-ink: #362ca8;
+  --color-status-assessment-bg: #faeeda;
+  --color-status-assessment-ink: #7a5310;
+  --color-status-interview-bg: #f7e6f2;
+  --color-status-interview-ink: #7e2a69;
+  --color-status-final-bg: #ddeef3;
+  --color-status-final-ink: #0e5468;
+  --color-status-offer-bg: #ddefe4;
+  --color-status-offer-ink: #14684a;
+  --color-status-rejected-bg: #f4e7e3;
+  --color-status-rejected-ink: #8a4530;
+  --color-status-withdrawn-ink: #6e6c64;
+
+  /* Evidence panels (border / bg) */
+  --color-evidence-strong-border: #bfdfcc;
+  --color-evidence-strong-bg: #f1f9f4;
+  --color-evidence-hidden-border: #d8d4f7;
+  --color-evidence-hidden-bg: #f1effe;
+  --color-evidence-weak-border: #e5d0a6;
+  --color-evidence-weak-bg: #fdf8ee;
+  --color-evidence-gap-border: #dcc0b6;
+  --color-evidence-gap-bg: #fcf5f2;
+
+  /* Field states */
+  --color-field-error-border: #8a4530;
+  --color-field-error-bg: #fdf7f5;
+  --color-field-warn-border: #c79b3f;
+
+  /* Fixed chrome */
+  --spacing-rail: 208px;
+  --spacing-panel: 520px;
+
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-control: 9px;
+  --radius-card-inner: 10px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  --shadow-raised: 0 1px 2px rgba(26, 26, 25, 0.06);
+  --shadow-overlay: 0 16px 40px -12px rgba(26, 26, 25, 0.24);
+  --shadow-panel-edge: -16px 0 40px -28px rgba(26, 26, 25, 0.35);
+  --shadow-sticky-footer: 0 -6px 16px -12px rgba(26, 26, 25, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-ground: #121213;
+    --color-rail: #1a1a1c;
+    --color-surface: #232326;
+    --color-sunken: #2f2f33;
+    --color-skeleton: #43434a;
+    --color-row-divider: #2f2f33;
+    --color-border: #43434a;
+    --color-border-strong: #56555c;
+    --color-ink: #f3f2ef;
+    --color-ink-2: #b3b1aa;
+    --color-ink-3: #8c8a83;
+    --color-icon-muted: #8c8a83;
+    --color-closed-row: #1a1a1c;
+
+    --color-accent: #a79bff;
+    --color-accent-hover: #c9c1ff;
+    --color-accent-soft: #272159;
+    --color-accent-soft-border: #3a3373;
+    --color-accent-tint: #1e1c3a;
+    --color-accent-tint-2: #221f42;
+    --color-accent-drop: #6c5ce0;
+  }
+}
+
 :root {
   color-scheme: light;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
 body {
   margin: 0;
-  background: #f8fafc;
-  color: #172033;
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+code,
+.font-mono {
+  font-family: var(--font-mono);
 }
 
 ::selection {
-  background: #bfdbfe;
-  color: #172033;
+  background: var(--color-accent-soft-border);
+  color: var(--color-ink);
 }
