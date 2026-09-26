@@ -54,16 +54,28 @@ async def test_create_contact_info() -> None:
             json={
                 "first_name": "Jane",
                 "last_name": "Doe",
+                "full_name_native": "王小明",
+                "full_name_latin": "Xiaoming Wang",
+                "name_order": "FAMILY_GIVEN",
+                "contact_email": "jobs@example.com",
                 "phone": "+1 (555) 123-4567",
+                "wechat_id": "wx-career",
                 "linkedin_url": "https://linkedin.com/in/janedoe",
+                "github_url": "https://github.com/janedoe",
             },
         )
         assert resp.status_code == 200
         data = resp.json()
         assert data["first_name"] == "Jane"
         assert data["last_name"] == "Doe"
+        assert data["full_name_native"] == "王小明"
+        assert data["full_name_latin"] == "Xiaoming Wang"
+        assert data["name_order"] == "FAMILY_GIVEN"
+        assert data["contact_email"] == "jobs@example.com"
         assert data["phone"] == "+1 (555) 123-4567"
+        assert data["wechat_id"] == "wx-career"
         assert data["linkedin_url"] == "https://linkedin.com/in/janedoe"
+        assert data["github_url"] == "https://github.com/janedoe"
         assert data["id"] is not None
         assert data["confirmed_at"] is not None
         assert data["created_at"] is not None
@@ -125,6 +137,16 @@ async def test_invalid_linkedin_url_rejected() -> None:
     async with make_integration_client() as client:
         resp = await client.put("/contact-info", json={"linkedin_url": "not-a-url"})
         assert resp.status_code == 422
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_invalid_contact_email_and_name_order_rejected() -> None:
+    async with make_integration_client() as client:
+        invalid_email = await client.put("/contact-info", json={"contact_email": "not-an-email"})
+        invalid_order = await client.put("/contact-info", json={"name_order": "ALWAYS_GUESS"})
+        assert invalid_email.status_code == 422
+        assert invalid_order.status_code == 422
 
 
 @pytest.mark.integration

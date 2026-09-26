@@ -62,6 +62,7 @@ SENSITIVE_RULES: tuple[tuple[re.Pattern[str], QuestionCategory], ...] = (
         re.compile(r"\b(?:sponsor(?:ship)?|visa sponsorship|immigration support)\b", re.I),
         QuestionCategory.SPONSORSHIP,
     ),
+    (re.compile(r"(?:签证赞助|签证支持|移民支持)"), QuestionCategory.SPONSORSHIP),
     (
         re.compile(
             r"\b(?:authori[sz](?:ed|ation) to work|legally work|right to work|work eligibility)\b",
@@ -69,6 +70,7 @@ SENSITIVE_RULES: tuple[tuple[re.Pattern[str], QuestionCategory], ...] = (
         ),
         QuestionCategory.WORK_AUTHORIZATION,
     ),
+    (re.compile(r"(?:工作许可|工作授权|合法工作资格)"), QuestionCategory.WORK_AUTHORIZATION),
     (
         re.compile(
             r"\b(?:social security|ssn|passport|national id|government[- ]issued id)\b",
@@ -76,6 +78,7 @@ SENSITIVE_RULES: tuple[tuple[re.Pattern[str], QuestionCategory], ...] = (
         ),
         QuestionCategory.GOVERNMENT_ID,
     ),
+    (re.compile(r"(?:身份证|护照号码|政府证件)"), QuestionCategory.GOVERNMENT_ID),
     (
         re.compile(
             r"\b(?:salary|compensation|desired pay|pay expectation|expected pay|pay range)\b",
@@ -83,14 +86,17 @@ SENSITIVE_RULES: tuple[tuple[re.Pattern[str], QuestionCategory], ...] = (
         ),
         QuestionCategory.COMPENSATION,
     ),
+    (re.compile(r"(?:期望薪资|当前薪资|薪酬|工资|月薪|年薪)"), QuestionCategory.COMPENSATION),
     (
         re.compile(r"\b(?:disab(?:ility|led)|medical condition|accommodation)\b", re.I),
         QuestionCategory.DISABILITY,
     ),
+    (re.compile(r"(?:残障|残疾|健康状况|医疗状况)"), QuestionCategory.DISABILITY),
     (
         re.compile(r"\b(?:veteran|military status|armed forces)\b", re.I),
         QuestionCategory.VETERAN,
     ),
+    (re.compile(r"(?:退伍军人|服役情况|军人身份)"), QuestionCategory.VETERAN),
     (
         re.compile(
             r"\b(?:race|racial|ethnicity|ethnic|gender|sexual orientation|pronouns?"
@@ -100,15 +106,24 @@ SENSITIVE_RULES: tuple[tuple[re.Pattern[str], QuestionCategory], ...] = (
         QuestionCategory.DEMOGRAPHIC,
     ),
     (
+        re.compile(r"(?:性别|民族|国籍|婚姻状况|出生日期|年龄|户籍|政治面貌)"),
+        QuestionCategory.DEMOGRAPHIC,
+    ),
+    (
         re.compile(r"\b(?:signature|electronically sign|digital signature)\b", re.I),
         QuestionCategory.SIGNATURE,
     ),
+    (re.compile(r"(?:签名|电子签名)"), QuestionCategory.SIGNATURE),
     (
         re.compile(
             r"\b(?:attest|certify|legal terms|terms and conditions|background check"
             r"|criminal|conviction|at least 18)\b",
             re.I,
         ),
+        QuestionCategory.LEGAL_ATTESTATION,
+    ),
+    (
+        re.compile(r"(?:法律声明|证明|背景调查|犯罪记录|条款和条件)"),
         QuestionCategory.LEGAL_ATTESTATION,
     ),
 )
@@ -141,14 +156,20 @@ CONTACT_INFO_KEYS = frozenset(
         CanonicalFieldKey.PERSON_FIRST_NAME,
         CanonicalFieldKey.PERSON_LAST_NAME,
         CanonicalFieldKey.PERSON_FULL_NAME,
+        CanonicalFieldKey.PERSON_NATIVE_FULL_NAME,
+        CanonicalFieldKey.PERSON_LATIN_FULL_NAME,
+        CanonicalFieldKey.CONTACT_EMAIL,
         CanonicalFieldKey.CONTACT_PHONE,
+        CanonicalFieldKey.CONTACT_WECHAT,
         CanonicalFieldKey.ADDRESS_LINE_1,
         CanonicalFieldKey.ADDRESS_LINE_2,
         CanonicalFieldKey.ADDRESS_CITY,
+        CanonicalFieldKey.ADDRESS_DISTRICT,
         CanonicalFieldKey.ADDRESS_REGION,
         CanonicalFieldKey.ADDRESS_POSTAL_CODE,
         CanonicalFieldKey.ADDRESS_COUNTRY,
         CanonicalFieldKey.PROFESSIONAL_LINKEDIN_URL,
+        CanonicalFieldKey.PROFESSIONAL_GITHUB_URL,
         CanonicalFieldKey.PROFESSIONAL_PORTFOLIO_URL,
     }
 )
@@ -156,10 +177,23 @@ CONTACT_INFO_KEYS = frozenset(
 CONTACT_FIELD_MAPPINGS: tuple[tuple[CanonicalFieldKey, str, AnswerSourceCategory], ...] = (
     (CanonicalFieldKey.PERSON_FIRST_NAME, "first_name", AnswerSourceCategory.USER_CONTACT_INFO),
     (CanonicalFieldKey.PERSON_LAST_NAME, "last_name", AnswerSourceCategory.USER_CONTACT_INFO),
+    (
+        CanonicalFieldKey.PERSON_NATIVE_FULL_NAME,
+        "full_name_native",
+        AnswerSourceCategory.USER_CONTACT_INFO,
+    ),
+    (
+        CanonicalFieldKey.PERSON_LATIN_FULL_NAME,
+        "full_name_latin",
+        AnswerSourceCategory.USER_CONTACT_INFO,
+    ),
+    (CanonicalFieldKey.CONTACT_EMAIL, "contact_email", AnswerSourceCategory.USER_CONTACT_INFO),
     (CanonicalFieldKey.CONTACT_PHONE, "phone", AnswerSourceCategory.USER_CONTACT_INFO),
+    (CanonicalFieldKey.CONTACT_WECHAT, "wechat_id", AnswerSourceCategory.USER_CONTACT_INFO),
     (CanonicalFieldKey.ADDRESS_LINE_1, "address_line_1", AnswerSourceCategory.USER_CONTACT_INFO),
     (CanonicalFieldKey.ADDRESS_LINE_2, "address_line_2", AnswerSourceCategory.USER_CONTACT_INFO),
     (CanonicalFieldKey.ADDRESS_CITY, "city", AnswerSourceCategory.USER_CONTACT_INFO),
+    (CanonicalFieldKey.ADDRESS_DISTRICT, "district", AnswerSourceCategory.USER_CONTACT_INFO),
     (CanonicalFieldKey.ADDRESS_REGION, "region", AnswerSourceCategory.USER_CONTACT_INFO),
     (
         CanonicalFieldKey.ADDRESS_POSTAL_CODE,
@@ -170,6 +204,11 @@ CONTACT_FIELD_MAPPINGS: tuple[tuple[CanonicalFieldKey, str, AnswerSourceCategory
     (
         CanonicalFieldKey.PROFESSIONAL_LINKEDIN_URL,
         "linkedin_url",
+        AnswerSourceCategory.USER_CONTACT_INFO,
+    ),
+    (
+        CanonicalFieldKey.PROFESSIONAL_GITHUB_URL,
+        "github_url",
         AnswerSourceCategory.USER_CONTACT_INFO,
     ),
     (
@@ -219,6 +258,9 @@ async def _load_answer_sources(
     user: User,
     keys: set[CanonicalFieldKey],
     resume_version: ResumeVersion | None,
+    *,
+    market: str,
+    form_locale: str | None,
 ) -> dict[CanonicalFieldKey, ResolvedAnswer]:
     sources: dict[CanonicalFieldKey, ResolvedAnswer] = {}
     if CanonicalFieldKey.CONTACT_EMAIL in keys and user.email and user.email.strip():
@@ -307,16 +349,40 @@ async def _load_answer_sources(
                         source_reference_id=source_reference_id,
                     )
             if CanonicalFieldKey.PERSON_FULL_NAME in keys:
-                first_name = contact.first_name
-                last_name = contact.last_name
-                if first_name and first_name.strip() and last_name and last_name.strip():
+                full_name = _market_full_name(contact, market, form_locale)
+                if full_name is not None:
                     sources[CanonicalFieldKey.PERSON_FULL_NAME] = ResolvedAnswer(
-                        value=f"{first_name.strip()} {last_name.strip()}",
+                        value=full_name,
                         source_category=AnswerSourceCategory.USER_CONTACT_INFO,
                         source_reference_id=source_reference_id,
                     )
 
     return sources
+
+
+def _market_full_name(
+    contact: UserContactInfo,
+    market: str,
+    form_locale: str | None,
+) -> str | None:
+    chinese_context = market == "CHINA" or bool(
+        form_locale and form_locale.casefold().startswith("zh")
+    )
+    preferred = contact.full_name_native if chinese_context else contact.full_name_latin
+    fallback = contact.full_name_latin if chinese_context else contact.full_name_native
+    if preferred and preferred.strip():
+        return preferred.strip()
+    if fallback and fallback.strip():
+        return fallback.strip()
+
+    first_name = contact.first_name.strip() if contact.first_name else ""
+    last_name = contact.last_name.strip() if contact.last_name else ""
+    if not first_name or not last_name or contact.name_order == "UNKNOWN":
+        return None
+    ordered = (
+        (last_name, first_name) if contact.name_order == "FAMILY_GIVEN" else (first_name, last_name)
+    )
+    return ("" if chinese_context else " ").join(ordered)
 
 
 def _sensitive_decision(
@@ -482,7 +548,19 @@ async def resolve_answer_decisions(
             field.mapping_confidence,
         )
     keys = {key for key, _confidence in effective.values() if key is not None}
-    sources = await _load_answer_sources(session, user, keys, resume_version)
+    effective_form_locale = request.form_locale
+    if effective_form_locale is None and any(
+        field.question and re.search(r"[\u3400-\u9fff]", field.question) for field in request.fields
+    ):
+        effective_form_locale = "zh-CN"
+    sources = await _load_answer_sources(
+        session,
+        user,
+        keys,
+        resume_version,
+        market=request.market,
+        form_locale=effective_form_locale,
+    )
 
     decisions: list[AnswerDecision] = []
     for field in request.fields:

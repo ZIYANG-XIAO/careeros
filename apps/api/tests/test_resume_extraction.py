@@ -10,7 +10,13 @@ from careeros_api.resume_extraction import (
     extract_resume_text,
 )
 from careeros_api.resume_parser import SYSTEM_INSTRUCTIONS
-from careeros_api.resume_schemas import ParsedResumeDraft, ParsedSkill, validate_grounding
+from careeros_api.resume_schemas import (
+    ParsedContactInfo,
+    ParsedContactValue,
+    ParsedResumeDraft,
+    ParsedSkill,
+    validate_grounding,
+)
 
 
 def make_docx(*lines: str) -> bytes:
@@ -60,6 +66,16 @@ def test_grounding_rejects_invented_field_hidden_behind_real_citation() -> None:
     draft = ParsedResumeDraft(skills=[ParsedSkill(name="Kubernetes", source_text="Python")])
     with pytest.raises(ValueError, match="not supported"):
         validate_grounding(draft, "Python")
+
+
+def test_grounding_applies_to_contact_candidates() -> None:
+    draft = ParsedResumeDraft(
+        contact_info=ParsedContactInfo(
+            phone=ParsedContactValue(value="+1 555 0100", source_text="Jane Doe")
+        )
+    )
+    with pytest.raises(ValueError, match="not supported"):
+        validate_grounding(draft, "Jane Doe\n+1 555 0100")
 
 
 def test_prompt_injection_is_explicitly_treated_as_untrusted_data() -> None:

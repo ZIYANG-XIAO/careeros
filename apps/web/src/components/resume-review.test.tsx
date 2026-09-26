@@ -28,6 +28,7 @@ const resumeImport: ResumeImport = {
   status: "READY_FOR_REVIEW",
   error_code: null,
   error_message: null,
+  contact_info_candidate: {},
   created_at: "2026-09-20T00:00:00Z",
   confirmed_at: null,
   items: [
@@ -140,7 +141,7 @@ describe("ResumeReview", () => {
     await user.click(
       screen.getByRole("button", { name: "Confirm accepted facts" }),
     );
-    expect(mockConfirm).toHaveBeenCalledWith("token", "import-1");
+    expect(mockConfirm).toHaveBeenCalledWith("token", "import-1", {});
     expect(
       await screen.findByText(/Accepted facts are now in your Career Brain/),
     ).toBeInTheDocument();
@@ -156,5 +157,38 @@ describe("ResumeReview", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Career Brain was not changed",
     );
+  });
+
+  it("only applies explicitly selected contact candidates", async () => {
+    const user = userEvent.setup();
+    const withContacts: ResumeImport = {
+      ...resumeImport,
+      contact_info_candidate: {
+        first_name: "Ada",
+        last_name: "Lovelace",
+        phone: "+44 1234567",
+      },
+    };
+    render(
+      <ResumeReview
+        initialImport={withContacts}
+        currentContactInfo={{ first_name: "Existing" }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("checkbox", { name: "Use First name" }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: "Use Last name" }),
+    ).toBeChecked();
+    await user.click(screen.getByRole("checkbox", { name: "Use Phone" }));
+    await user.click(
+      screen.getByRole("button", { name: "Confirm accepted facts" }),
+    );
+
+    expect(mockConfirm).toHaveBeenCalledWith("token", "import-1", {
+      last_name: "Lovelace",
+    });
   });
 });

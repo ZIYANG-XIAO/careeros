@@ -13,6 +13,7 @@ from sqlalchemy.orm import selectinload
 
 from careeros_api.auth import get_current_user
 from careeros_api.config import Settings, get_settings
+from careeros_api.contact_info import ContactInfoUpsertRequest, apply_contact_info_updates
 from careeros_api.db import get_db_session
 from careeros_api.models import Resume, ResumeDraftItem, ResumeImport, ResumeVersion, User
 from careeros_api.resume_extraction import ResumeFileError, detect_resume_type, extract_resume_text
@@ -51,6 +52,7 @@ class ResumeImportResponse(BaseModel):
     status: str
     error_code: str | None
     error_message: str | None
+    contact_info_candidate: dict[str, str]
     items: list[ResumeDraftItemResponse]
     created_at: datetime
     confirmed_at: datetime | None
@@ -86,14 +88,29 @@ class UpdateDraftItemRequest(BaseModel):
     data: dict[str, object]
 
 
-def resume_parser_dependency() -> ResumeParser:
+class ConfirmResumeImportRequest(BaseModel):
+    contact_info: ContactInfoUpsertRequest | None = None
+
+
+def resume_parser_dependency() -> ResumeParser | None:
     try:
         return get_resume_parser()
-    except ResumeParsingError as error:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(error),
-        ) from error
+    except ResumeParsingError:
+        return None
+
+
+def _contact_info_candidate(version: ResumeVersion) -> dict[str, str]:
+    raw_contact = version.structured_content.get("contact_info", {})
+    if not isinstance(raw_contact, dict):
+        return {}
+    result: dict[str, str] = {}
+    for field, raw_candidate in raw_contact.items():
+        if not isinstance(field, str) or not isinstance(raw_candidate, dict):
+            continue
+        value = raw_candidate.get("value")
+        if isinstance(value, str) and value.strip():
+            result[field] = value.strip()
+    return result
 
 
 def _item_response(item: ResumeDraftItem) -> ResumeDraftItemResponse:
@@ -120,6 +137,7 @@ def _import_response(resume_import: ResumeImport) -> ResumeImportResponse:
         status=resume_import.status,
         error_code=resume_import.error_code,
         error_message=resume_import.error_message,
+        contact_info_candidate=_contact_info_candidate(version),
         items=[
             _item_response(item) for item in sorted(resume_import.items, key=lambda x: x.position)
         ],
@@ -172,20 +190,36 @@ async def upload_resume(
     file: Annotated[UploadFile, File()],
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    parser: Annotated[ResumeParser, Depends(resume_parser_dependency)],
+    parser: Annotated[ResumeParser | None, Depends(resume_parser_dependency)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> ResumeImportResponse:
     data = await file.read(settings.max_resume_size_bytes + 1)
     if not data:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Empty file")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "EMPTY_FILE", "message": "The uploaded resume is empty"},
+        )
     if len(data) > settings.max_resume_size_bytes:
+        limit_mb = settings.max_resume_size_bytes / (1024 * 1024)
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="Resume exceeds the 5 MB upload limit",
+            detail={
+                "code": "FILE_TOO_LARGE",
+                "message": f"Resume exceeds the {limit_mb:g} MB upload limit",
+                "max_size_bytes": settings.max_resume_size_bytes,
+            },
         )
     try:
         content_type, suffix = await asyncio.to_thread(detect_resume_type, data)
         extracted_text = await asyncio.to_thread(extract_resume_text, data, content_type)
+        if parser is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={
+                    "code": "PARSER_UNAVAILABLE",
+                    "message": "Resume parsing is not configured on this server",
+                },
+            )
         parser_output = await parser.parse_resume_to_career_draft(extracted_text)
         draft = ParsedResumeDraft.model_validate(parser_output)
         validate_grounding(draft, extracted_text)
@@ -273,10 +307,14 @@ async def confirm_import(
     import_id: UUID,
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    body: ConfirmResumeImportRequest | None = None,
 ) -> ResumeImportResponse:
     try:
         resume_import = await get_owned_import(session, import_id, user.id, lock=True)
+        was_confirmed = resume_import.status == "CONFIRMED"
         await confirm_resume_import(session, resume_import)
+        if not was_confirmed and body is not None and body.contact_info is not None:
+            await apply_contact_info_updates(session, user.id, body.contact_info)
         return _import_response(resume_import)
     except ResumeStateError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error

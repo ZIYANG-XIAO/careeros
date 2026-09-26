@@ -152,10 +152,17 @@ separate from Career Evidence and Career Brain professional facts.
 Implemented fields include:
 
 - first name, last name, and preferred name;
-- phone;
-- address line 1, address line 2, city, region, postal code, and country code;
-- LinkedIn URL; and
+- native-script full name, Latin-script full name, and name order;
+- contact email;
+- phone and WeChat ID;
+- address line 1, address line 2, city, district, region, postal code, and
+  country code;
+- LinkedIn URL and GitHub URL; and
 - portfolio URL.
+
+Resume import may surface grounded, unconfirmed contact-info candidates for
+review; they are never written to `UserContactInfo` without explicit user
+confirmation.
 
 Requirements:
 

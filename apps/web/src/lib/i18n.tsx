@@ -201,14 +201,24 @@ const messages = {
     "contactInfo.firstName": "First name",
     "contactInfo.lastName": "Last name",
     "contactInfo.preferredName": "Preferred name (optional)",
+    "contactInfo.fullNameNative": "Name in native script",
+    "contactInfo.fullNameLatin": "Name in Latin script (optional)",
+    "contactInfo.nameOrder": "Name order",
+    "contactInfo.nameOrder.unknown": "Not confirmed",
+    "contactInfo.nameOrder.familyGiven": "Family name, then given name",
+    "contactInfo.nameOrder.givenFamily": "Given name, then family name",
+    "contactInfo.contactEmail": "Job-search email",
     "contactInfo.phone": "Phone",
+    "contactInfo.wechatId": "WeChat ID (optional)",
     "contactInfo.addressLine1": "Address line 1",
     "contactInfo.addressLine2": "Address line 2",
     "contactInfo.city": "City",
+    "contactInfo.district": "District or county",
     "contactInfo.region": "State or region",
     "contactInfo.postalCode": "Postal code",
     "contactInfo.countryCode": "Country code",
     "contactInfo.linkedinUrl": "LinkedIn URL",
+    "contactInfo.githubUrl": "GitHub URL",
     "contactInfo.portfolioUrl": "Portfolio URL",
     "contactInfo.save": "Save contact information",
     "contactInfo.saving": "Saving…",
@@ -304,7 +314,20 @@ const messages = {
     "resumes.uploadingStatus":
       "Securely uploading, extracting, and organizing your resume…",
     "resumes.uploadError":
-      "We could not extract this resume. Use a readable PDF or DOCX under 5 MB and try again.",
+      "We could not upload this resume. Check the file and try again.",
+    "resumes.uploadError.tooLarge":
+      "This resume is larger than 10 MB. Choose a smaller PDF or DOCX.",
+    "resumes.uploadError.unsupportedType":
+      "Use a PDF or DOCX file. Other file types are not supported.",
+    "resumes.uploadError.empty": "This file is empty. Choose another resume.",
+    "resumes.uploadError.noText":
+      "We could not find readable text in this resume. Try a text-based PDF or DOCX.",
+    "resumes.uploadError.malformed":
+      "This file appears damaged or invalid. Export it again as PDF or DOCX.",
+    "resumes.uploadError.parserUnavailable":
+      "Resume parsing is not configured on this server yet.",
+    "resumes.uploadError.parsingFailed":
+      "We could not organize the information in this resume. Try another PDF or DOCX.",
     "resumes.signInRequired": "Sign in to manage resumes.",
     "resumes.empty.title": "No resumes yet",
     "resumes.empty.hint":
@@ -461,6 +484,13 @@ const messages = {
     "resumeReview.section.PROJECT": "Projects",
     "resumeReview.section.PROJECT_DETAIL": "Project details",
     "resumeReview.section.SKILL": "Skills",
+    "resumeReview.contact.title": "Contact details found in your resume",
+    "resumeReview.contact.description":
+      "Review these unconfirmed candidates. Empty profile fields are selected automatically; existing information is never replaced unless you select it.",
+    "resumeReview.contact.useField": "Use",
+    "resumeReview.contact.currentValue": "Current profile value:",
+    "resumeReview.contact.selectionHint":
+      "Only selected values are saved to Contact Info when you confirm this import. They do not become Career Evidence.",
     "resumeReview.field.institution": "Institution",
     "resumeReview.field.degree": "Degree",
     "resumeReview.field.field_of_study": "Field of study",
@@ -731,14 +761,24 @@ const messages = {
     "contactInfo.firstName": "名",
     "contactInfo.lastName": "姓",
     "contactInfo.preferredName": "常用名（选填）",
+    "contactInfo.fullNameNative": "中文或母语姓名",
+    "contactInfo.fullNameLatin": "英文或拼音姓名（选填）",
+    "contactInfo.nameOrder": "姓名顺序",
+    "contactInfo.nameOrder.unknown": "尚未确认",
+    "contactInfo.nameOrder.familyGiven": "姓在前，名在后",
+    "contactInfo.nameOrder.givenFamily": "名在前，姓在后",
+    "contactInfo.contactEmail": "求职邮箱",
     "contactInfo.phone": "电话",
+    "contactInfo.wechatId": "微信号（选填）",
     "contactInfo.addressLine1": "地址第一行",
     "contactInfo.addressLine2": "地址第二行",
     "contactInfo.city": "城市",
+    "contactInfo.district": "区县",
     "contactInfo.region": "州/省或地区",
     "contactInfo.postalCode": "邮政编码",
     "contactInfo.countryCode": "国家/地区代码",
     "contactInfo.linkedinUrl": "LinkedIn 链接",
+    "contactInfo.githubUrl": "GitHub 链接",
     "contactInfo.portfolioUrl": "作品集链接",
     "contactInfo.save": "保存联系信息",
     "contactInfo.saving": "保存中…",
@@ -827,8 +867,19 @@ const messages = {
     "resumes.upload": "上传简历",
     "resumes.extracting": "提取简历中…",
     "resumes.uploadingStatus": "正在安全上传、提取并整理你的简历…",
-    "resumes.uploadError":
-      "无法提取此简历。请使用 5 MB 以内可读的 PDF 或 DOCX 后重试。",
+    "resumes.uploadError": "无法上传此简历。请检查文件后重试。",
+    "resumes.uploadError.tooLarge":
+      "此简历超过 10 MB，请选择更小的 PDF 或 DOCX。",
+    "resumes.uploadError.unsupportedType":
+      "请使用 PDF 或 DOCX 文件，暂不支持其他格式。",
+    "resumes.uploadError.empty": "此文件为空，请选择另一份简历。",
+    "resumes.uploadError.noText":
+      "未能在简历中找到可读文字，请使用文字版 PDF 或 DOCX。",
+    "resumes.uploadError.malformed":
+      "文件可能已损坏或格式无效，请重新导出为 PDF 或 DOCX。",
+    "resumes.uploadError.parserUnavailable": "当前服务器尚未配置简历解析功能。",
+    "resumes.uploadError.parsingFailed":
+      "无法整理此简历中的信息，请尝试另一份 PDF 或 DOCX。",
     "resumes.signInRequired": "登录后管理简历。",
     "resumes.empty.title": "还没有简历",
     "resumes.empty.hint":
@@ -972,6 +1023,13 @@ const messages = {
     "resumeReview.section.PROJECT": "项目",
     "resumeReview.section.PROJECT_DETAIL": "项目详情",
     "resumeReview.section.SKILL": "技能",
+    "resumeReview.contact.title": "简历中识别到的联系方式",
+    "resumeReview.contact.description":
+      "请审核这些尚未确认的候选信息。空白资料会默认勾选；已有内容只有在你主动勾选后才会被替换。",
+    "resumeReview.contact.useField": "采用",
+    "resumeReview.contact.currentValue": "当前资料：",
+    "resumeReview.contact.selectionHint":
+      "确认导入时只会把已勾选的内容保存到联系方式；这些内容不会成为 Career Evidence。",
     "resumeReview.field.institution": "学校",
     "resumeReview.field.degree": "学位",
     "resumeReview.field.field_of_study": "专业",

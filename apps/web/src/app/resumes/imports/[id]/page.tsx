@@ -8,15 +8,16 @@ import { useEffect, useState } from "react";
 import { ResumeReview } from "@/components/resume-review";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { getResumeImport } from "@/lib/api";
+import { getContactInfo, getResumeImport } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import type { ResumeImport } from "@/lib/types";
+import type { ContactInfo, ResumeImport } from "@/lib/types";
 
 export default function ResumeImportPage() {
   const { id } = useParams<{ id: string }>();
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { t } = useI18n();
   const [resumeImport, setResumeImport] = useState<ResumeImport | null>(null);
+  const [contactInfo, setContactInfo] = useState<ContactInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
   const [prevFetchKey, setPrevFetchKey] = useState(0);
@@ -25,6 +26,7 @@ export default function ResumeImportPage() {
     setPrevFetchKey(fetchKey);
     setError(null);
     setResumeImport(null);
+    setContactInfo(null);
   }
 
   useEffect(() => {
@@ -34,8 +36,14 @@ export default function ResumeImportPage() {
       try {
         const token = await getToken();
         if (!token) throw new Error("Missing authentication token");
-        const result = await getResumeImport(token, id);
-        if (!cancelled) setResumeImport(result);
+        const [result, currentContactInfo] = await Promise.all([
+          getResumeImport(token, id),
+          getContactInfo(token),
+        ]);
+        if (!cancelled) {
+          setResumeImport(result);
+          setContactInfo(currentContactInfo);
+        }
       } catch {
         if (!cancelled) setError(t("resumes.import.loadError"));
       }
@@ -45,14 +53,15 @@ export default function ResumeImportPage() {
     };
   }, [getToken, id, isLoaded, isSignedIn, t, fetchKey]);
 
-  if (!isLoaded || (isSignedIn && !resumeImport && !error)) return <Spinner />;
+  if (!isLoaded || (isSignedIn && (!resumeImport || !contactInfo) && !error))
+    return <Spinner />;
   if (!isSignedIn)
     return (
       <p className="text-sm text-slate-600">
         {t("resumes.import.signInRequired")}
       </p>
     );
-  if (error || !resumeImport) {
+  if (error || !resumeImport || !contactInfo) {
     return (
       <div className="mx-auto max-w-4xl space-y-4">
         <div
@@ -98,7 +107,10 @@ export default function ResumeImportPage() {
           {t("resumes.import.description")}
         </p>
       </header>
-      <ResumeReview initialImport={resumeImport} />
+      <ResumeReview
+        initialImport={resumeImport}
+        currentContactInfo={contactInfo}
+      />
     </div>
   );
 }

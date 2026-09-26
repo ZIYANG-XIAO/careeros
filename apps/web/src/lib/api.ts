@@ -57,6 +57,7 @@ export class ApiError extends Error {
     public readonly status: number,
     public readonly category: ApiErrorCategory,
     public readonly detail?: string,
+    public readonly code?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -89,16 +90,30 @@ function formatErrorDetail(raw: unknown): string | undefined {
 async function throwApiError(response: Response): Promise<never> {
   const text = await response.text().catch(() => "");
   let detail: string | undefined;
+  let code: string | undefined;
   try {
     const parsed = JSON.parse(text) as {
       detail?: unknown;
       message?: unknown;
     };
     const rawDetail = parsed.detail ?? parsed.message;
-    detail =
-      rawDetail !== undefined
-        ? formatErrorDetail(rawDetail)
-        : text || undefined;
+    if (
+      rawDetail &&
+      typeof rawDetail === "object" &&
+      !Array.isArray(rawDetail)
+    ) {
+      const structured = rawDetail as { code?: unknown; message?: unknown };
+      code = typeof structured.code === "string" ? structured.code : undefined;
+      detail =
+        typeof structured.message === "string"
+          ? structured.message
+          : formatErrorDetail(rawDetail);
+    } else {
+      detail =
+        rawDetail !== undefined
+          ? formatErrorDetail(rawDetail)
+          : text || undefined;
+    }
   } catch {
     detail = text || undefined;
   }
@@ -108,6 +123,7 @@ async function throwApiError(response: Response): Promise<never> {
     response.status,
     category,
     detail,
+    code,
   );
 }
 
@@ -310,12 +326,18 @@ export async function removeResumeDraftItem(
 export async function confirmResumeImport(
   token: string,
   importId: string,
+  contactInfo?: Partial<ContactInfo>,
 ): Promise<ResumeImport> {
   const response = await fetch(
     `${apiBaseUrl()}/resume-imports/${importId}/confirm`,
     {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
+      body: JSON.stringify(
+        contactInfo && Object.keys(contactInfo).length > 0
+          ? { contact_info: contactInfo }
+          : {},
+      ),
     },
   );
   return handleResponse<ResumeImport>(response);

@@ -23,6 +23,8 @@ from careeros_api.models import (
     Skill,
 )
 from careeros_api.resume_schemas import (
+    ParsedContactInfo,
+    ParsedContactValue,
     ParsedDetail,
     ParsedEducation,
     ParsedExperience,
@@ -43,6 +45,8 @@ def make_resume_docx() -> bytes:
         "Career Tracker",
         "Built a job application tracker",
         "Python, SQL",
+        "Ada Lovelace",
+        "+44 1234567",
     ):
         document.add_paragraph(line)
     buffer = BytesIO()
@@ -94,6 +98,11 @@ def parsed_resume() -> ParsedResumeDraft:
             ParsedSkill(name="Python", source_text="Python"),
             ParsedSkill(name="SQL", source_text="SQL"),
         ],
+        contact_info=ParsedContactInfo(
+            first_name=ParsedContactValue(value="Ada", source_text="Ada Lovelace"),
+            last_name=ParsedContactValue(value="Lovelace", source_text="Ada Lovelace"),
+            phone=ParsedContactValue(value="+44 1234567", source_text="+44 1234567"),
+        ),
     )
 
 
@@ -135,6 +144,12 @@ async def test_upload_review_correct_remove_confirm_and_library(tmp_path: Path) 
         assert upload.status_code == 201, upload.text
         imported = upload.json()
         assert imported["status"] == "READY_FOR_REVIEW"
+        assert imported["contact_info_candidate"] == {
+            "first_name": "Ada",
+            "last_name": "Lovelace",
+            "phone": "+44 1234567",
+        }
+        assert (await client.get("/contact-info")).json()["id"] is None
         assert parser.seen_text is not None
         assert "Improved API latency by 40%" in parser.seen_text
         assert len(list(tmp_path.iterdir())) == 1
@@ -187,9 +202,22 @@ async def test_upload_review_correct_remove_confirm_and_library(tmp_path: Path) 
         assert removed.status_code == 200
         assert removed.json()["status"] == "REMOVED"
 
-        confirmed = await client.post(f"/resume-imports/{imported['id']}/confirm")
+        confirmed = await client.post(
+            f"/resume-imports/{imported['id']}/confirm",
+            json={
+                "contact_info": {
+                    "first_name": "Ada",
+                    "last_name": "Lovelace",
+                    "phone": "+44 1234567",
+                }
+            },
+        )
         assert confirmed.status_code == 200, confirmed.text
         assert confirmed.json()["status"] == "CONFIRMED"
+        contact = (await client.get("/contact-info")).json()
+        assert contact["first_name"] == "Ada"
+        assert contact["last_name"] == "Lovelace"
+        assert contact["phone"] == "+44 1234567"
 
         brain = (await client.get("/career-brain")).json()
         assert brain["educations"][0]["institution"] == "State University"
@@ -318,6 +346,25 @@ async def test_upload_validation_and_malformed_parser_output(tmp_path: Path) -> 
         assert malformed_ai.status_code == 422
         assert malformed_ai.json()["detail"]["code"] == "PARSING_FAILED"
         assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.asyncio
+async def test_upload_limit_returns_stable_error_before_file_processing(tmp_path: Path) -> None:
+    parser = FakeResumeParser(parsed_resume())
+    async with make_integration_client(
+        resume_parser=parser,
+        resume_storage_dir=str(tmp_path),
+        max_resume_size_bytes=10,
+    ) as client:
+        response = await client.post(
+            "/resume-imports",
+            files={"file": ("resume.pdf", b"%PDF-123456", "application/pdf")},
+        )
+
+    assert response.status_code == 413
+    assert response.json()["detail"]["code"] == "FILE_TOO_LARGE"
+    assert response.json()["detail"]["max_size_bytes"] == 10
+    assert parser.seen_text is None
 
 
 @pytest.mark.asyncio

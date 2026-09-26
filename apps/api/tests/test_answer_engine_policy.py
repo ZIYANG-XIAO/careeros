@@ -215,13 +215,29 @@ async def test_missing_contact_info_asks_for_name_fields() -> None:
     ("canonical_key", "payload_field", "payload_value", "expected_answer", "source_category"),
     [
         ("PERSON_LAST_NAME", "last_name", "Doe", "Doe", "USER_CONTACT_INFO"),
+        (
+            "CONTACT_EMAIL",
+            "contact_email",
+            "jobs@example.com",
+            "jobs@example.com",
+            "USER_CONTACT_INFO",
+        ),
         ("CONTACT_PHONE", "phone", "+1 (555) 123-4567", "+1 (555) 123-4567", "USER_CONTACT_INFO"),
+        ("CONTACT_WECHAT", "wechat_id", "wx-career", "wx-career", "USER_CONTACT_INFO"),
         ("ADDRESS_LINE_1", "address_line_1", "123 Main St", "123 Main St", "USER_CONTACT_INFO"),
         ("ADDRESS_LINE_2", "address_line_2", "Apt 4", "Apt 4", "USER_CONTACT_INFO"),
         ("ADDRESS_CITY", "city", "Boston", "Boston", "USER_CONTACT_INFO"),
+        ("ADDRESS_DISTRICT", "district", "Chaoyang", "Chaoyang", "USER_CONTACT_INFO"),
         ("ADDRESS_REGION", "region", "MA", "MA", "USER_CONTACT_INFO"),
         ("ADDRESS_POSTAL_CODE", "postal_code", "02108", "02108", "USER_CONTACT_INFO"),
         ("ADDRESS_COUNTRY", "country_code", "us", "US", "USER_CONTACT_INFO"),
+        (
+            "PROFESSIONAL_GITHUB_URL",
+            "github_url",
+            "https://github.com/janedoe",
+            "https://github.com/janedoe",
+            "USER_CONTACT_INFO",
+        ),
         (
             "PROFESSIONAL_LINKEDIN_URL",
             "linkedin_url",
@@ -275,7 +291,11 @@ async def test_person_full_name_combines_first_and_last() -> None:
     async with make_integration_client() as client:
         saved = await client.put(
             "/contact-info",
-            json={"first_name": "Jane", "last_name": "Doe"},
+            json={
+                "first_name": "Jane",
+                "last_name": "Doe",
+                "name_order": "GIVEN_FAMILY",
+            },
         )
         assert saved.status_code == 200
 
@@ -297,6 +317,76 @@ async def test_person_full_name_combines_first_and_last() -> None:
         assert decision["action"] == "FILL"
         assert decision["proposed_answer"] == "Jane Doe"
         assert decision["source_category"] == "USER_CONTACT_INFO"
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    ("market", "form_locale", "expected"),
+    [
+        ("CHINA", "zh-CN", "王小明"),
+        ("NORTH_AMERICA", "en-US", "Xiaoming Wang"),
+    ],
+)
+async def test_person_full_name_uses_confirmed_market_representation(
+    market: str, form_locale: str, expected: str
+) -> None:
+    async with make_integration_client() as client:
+        saved = await client.put(
+            "/contact-info",
+            json={
+                "full_name_native": "王小明",
+                "full_name_latin": "Xiaoming Wang",
+                "first_name": "小明",
+                "last_name": "王",
+                "name_order": "FAMILY_GIVEN",
+            },
+        )
+        assert saved.status_code == 200
+
+        response = await client.post(
+            "/answer-engine/resolve",
+            json={
+                "market": market,
+                "form_locale": form_locale,
+                "fields": [
+                    field(
+                        "full-name",
+                        canonical_key="PERSON_FULL_NAME",
+                        question="姓名" if market == "CHINA" else "Full name",
+                    )
+                ],
+            },
+        )
+
+        assert response.status_code == 200, response.text
+        assert response.json()["decisions"][0]["proposed_answer"] == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_unconfirmed_name_order_does_not_guess_full_name() -> None:
+    async with make_integration_client() as client:
+        saved = await client.put(
+            "/contact-info",
+            json={"first_name": "小明", "last_name": "王"},
+        )
+        assert saved.status_code == 200
+
+        response = await client.post(
+            "/answer-engine/resolve",
+            json={
+                "fields": [
+                    field(
+                        "full-name",
+                        canonical_key="PERSON_FULL_NAME",
+                        question="Full name",
+                    )
+                ]
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["decisions"][0]["action"] == "ASK"
 
 
 @pytest.mark.asyncio

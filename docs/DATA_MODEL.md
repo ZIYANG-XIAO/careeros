@@ -12,7 +12,8 @@ the post-M17 wave from planned V1 formation concepts. M14 adds durable
 Application Memory and M15 adds retry-safe submission recording. M16 adds no
 tables. Migration `0012_user_contact_info` adds `UserContactInfo`. Migration
 `0013_uci_answer_source` adds the `USER_CONTACT_INFO` answer
-source category.
+source category. Migration `0014_dual_market_profile` adds dual-market name and
+contact fields to `UserContactInfo`.
 
 The model supports:
 
@@ -98,7 +99,7 @@ The current migrations define:
 - `application_operations`
 - `user_contact_info`
 
-Current Alembic head: `0013_uci_answer_source`.
+Current Alembic head: `0014_dual_market_profile`.
 
 M12 adds a transient Answer Engine decision contract and no tables. Decisions
 reference owned canonical sources but are not persisted as Application or
@@ -121,6 +122,11 @@ identifiers/labels; it does not return extracted resume text or raw form data.
 M17 adds canonical market/country/workplace/employment metadata on Jobs. The
 post-M17 wave adds `UserContactInfo` for confirmed personal/contact fields used
 by Career Profile and the Answer Engine. It does not create Career Evidence.
+Migration `0014_dual_market_profile` extends `UserContactInfo` with
+native/Latin full name, name order, contact email, WeChat ID, district, and
+GitHub URL, and resume import may surface unconfirmed contact-info candidates
+that only become part of `UserContactInfo` when the user explicitly confirms
+them.
 
 ### Planned, not implemented
 
@@ -150,16 +156,22 @@ from Career Evidence and Career Brain professional facts. One record per user.
 Implemented fields:
 
 - `first_name`, `last_name`, `preferred_name`;
-- `phone`;
-- `address_line_1`, `address_line_2`, `city`, `region`, `postal_code`,
-  `country_code`;
-- `linkedin_url`, `portfolio_url`;
+- `full_name_native`, `full_name_latin`, `name_order`
+  (`UNKNOWN` | `GIVEN_FAMILY` | `FAMILY_GIVEN`);
+- `contact_email`;
+- `phone`, `wechat_id`;
+- `address_line_1`, `address_line_2`, `city`, `district`, `region`,
+  `postal_code`, `country_code`;
+- `linkedin_url`, `github_url`, `portfolio_url`;
 - `confirmed_at`; and
 - `created_at`, `updated_at`.
 
 Contact info is explicitly confirmed on save. The Answer Engine uses confirmed
-contact info for deterministic name, phone, address, and link mappings. Contact
-info is not inferred from resumes, email, or indirect signals.
+contact info for deterministic name, phone, address, and link mappings.
+Contact info is never auto-applied from resumes, email, or indirect signals:
+resume import may extract grounded contact-info candidates for review, but a
+value only becomes confirmed `UserContactInfo` when the user submits it
+explicitly, including as part of confirming the resume import.
 
 ## 7. Career Brain
 

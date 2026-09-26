@@ -13,10 +13,13 @@ import {
 
 import { LoadErrorBanner } from "@/components/load-error-banner";
 import { Spinner } from "@/components/ui/spinner";
-import { listResumes, uploadResume } from "@/lib/api";
+import { ApiError, listResumes, uploadResume } from "@/lib/api";
 import { formatLocaleDate, useI18n } from "@/lib/i18n";
 import { useDataFetch } from "@/lib/use-data-fetch";
 import type { ResumeSummary } from "@/lib/types";
+
+const MAX_RESUME_SIZE_BYTES = 10 * 1024 * 1024;
+const SUPPORTED_RESUME_EXTENSIONS = new Set(["pdf", "docx"]);
 
 export default function ResumesPage() {
   const { isLoaded, isSignedIn, getToken, userId } = useAuth();
@@ -60,6 +63,22 @@ export default function ResumesPage() {
   async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (!extension || !SUPPORTED_RESUME_EXTENSIONS.has(extension)) {
+      setUploadError(t("resumes.uploadError.unsupportedType"));
+      event.target.value = "";
+      return;
+    }
+    if (file.size === 0) {
+      setUploadError(t("resumes.uploadError.empty"));
+      event.target.value = "";
+      return;
+    }
+    if (file.size > MAX_RESUME_SIZE_BYTES) {
+      setUploadError(t("resumes.uploadError.tooLarge"));
+      event.target.value = "";
+      return;
+    }
     setUploading(true);
     setUploadError(null);
     try {
@@ -67,8 +86,26 @@ export default function ResumesPage() {
       if (!token) throw new Error("Missing authentication token");
       const result = await uploadResume(token, file);
       router.push(`/resumes/imports/${result.id}`);
-    } catch {
-      setUploadError(t("resumes.uploadError"));
+    } catch (error) {
+      if (error instanceof ApiError) {
+        const errorKey = {
+          FILE_TOO_LARGE: "resumes.uploadError.tooLarge",
+          UNSUPPORTED_FILE_TYPE: "resumes.uploadError.unsupportedType",
+          EMPTY_FILE: "resumes.uploadError.empty",
+          EMPTY_DOCUMENT: "resumes.uploadError.noText",
+          MALFORMED_FILE: "resumes.uploadError.malformed",
+          EXTRACTION_FAILED: "resumes.uploadError.malformed",
+          PARSER_UNAVAILABLE: "resumes.uploadError.parserUnavailable",
+          PARSING_FAILED: "resumes.uploadError.parsingFailed",
+        }[error.code ?? ""];
+        setUploadError(
+          errorKey
+            ? t(errorKey as Parameters<typeof t>[0])
+            : t("resumes.uploadError"),
+        );
+      } else {
+        setUploadError(t("resumes.uploadError"));
+      }
       event.target.value = "";
     } finally {
       setUploading(false);

@@ -22,7 +22,7 @@ the user through the Career Brain.
 M0–M17 and the post-M17 implementation wave are implemented at repository
 level. M16 automated hardening is implemented; representative unpacked-Chrome
 validation remains pending. Current Alembic head:
-`0013_uci_answer_source`.
+`0014_dual_market_profile`.
 Today the repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
@@ -73,8 +73,11 @@ Today the repository supports:
 - an in-page Application Assistant — a controlled UI panel for detection,
   answers, form filling, and Application Memory — with open Shadow DOM style
   isolation, on-demand content-script injection, explicit activation, and
-  keyboard shortcut support; and
-- refactored Jobs page, extension popup, messages, and API client modules.
+  keyboard shortcut support;
+- refactored Jobs page, extension popup, messages, and API client modules; and
+- dual-market contact profile fields (native/Latin full name, name order,
+  contact email, WeChat ID, district, GitHub URL) and explicit,
+  user-confirmed contact-info candidates surfaced from resume import.
 
 The following V1 capabilities are planned, not implemented:
 
@@ -212,7 +215,8 @@ python3 -m venv .venv
 
 Set the Clerk variables in the local environment files. Keep
 `OPENAI_API_KEY` server-only; never place it in the Web environment or prefix it
-with `NEXT_PUBLIC_`.
+with `NEXT_PUBLIC_`. Resume uploads default to 10 MB; the API limit can be
+changed with `MAX_RESUME_SIZE_BYTES`.
 
 ### Start PostgreSQL and migrate
 
@@ -221,7 +225,7 @@ docker compose --env-file .env -f infra/compose.yaml up -d postgres
 .venv/bin/alembic -c apps/api/alembic.ini upgrade head
 ```
 
-The current migration head is `0013_uci_answer_source`.
+The current migration head is `0014_dual_market_profile`.
 
 ### Start the API
 

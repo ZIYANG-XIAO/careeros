@@ -247,6 +247,15 @@ describe("API client", () => {
         `${BASE}/resume-imports/import-1/confirm`,
         expect.objectContaining({ method: "POST" }),
       );
+
+      await confirmResumeImport(TOKEN, "import-1", { first_name: "Ada" });
+      expect(f).toHaveBeenLastCalledWith(
+        `${BASE}/resume-imports/import-1/confirm`,
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ contact_info: { first_name: "Ada" } }),
+        }),
+      );
     });
 
     it("lists the authenticated user's resume library", async () => {
@@ -635,6 +644,24 @@ describe("API client", () => {
           detail: "Invalid filter value",
         }),
       );
+    });
+
+    it("preserves stable structured error codes", async () => {
+      setup(
+        {
+          detail: {
+            code: "PARSER_UNAVAILABLE",
+            message: "Resume parsing is not configured",
+          },
+        },
+        503,
+      );
+      await expect(listResumes(TOKEN)).rejects.toMatchObject({
+        status: 503,
+        category: "unavailable",
+        code: "PARSER_UNAVAILABLE",
+        detail: "Resume parsing is not configured",
+      });
     });
 
     it("throws ApiError instances from handleResponse callers", async () => {

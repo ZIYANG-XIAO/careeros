@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     openai_job_matcher_model: str = "gpt-5-mini"
     openai_answer_classifier_model: str = "gpt-5-mini"
     resume_storage_dir: str = ".local/resume-assets"
-    max_resume_size_bytes: int = 5 * 1024 * 1024
+    max_resume_size_bytes: int = 10 * 1024 * 1024
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

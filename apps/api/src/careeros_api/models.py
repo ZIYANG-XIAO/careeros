@@ -238,14 +238,21 @@ class UserContactInfo(Base):
     first_name: Mapped[str | None] = mapped_column(sa.String(100))
     last_name: Mapped[str | None] = mapped_column(sa.String(100))
     preferred_name: Mapped[str | None] = mapped_column(sa.String(100))
+    full_name_native: Mapped[str | None] = mapped_column(sa.String(200))
+    full_name_latin: Mapped[str | None] = mapped_column(sa.String(200))
+    name_order: Mapped[str] = mapped_column(sa.String(20), default="UNKNOWN")
+    contact_email: Mapped[str | None] = mapped_column(sa.String(255))
     phone: Mapped[str | None] = mapped_column(sa.String(20))
+    wechat_id: Mapped[str | None] = mapped_column(sa.String(100))
     address_line_1: Mapped[str | None] = mapped_column(sa.String(255))
     address_line_2: Mapped[str | None] = mapped_column(sa.String(255))
     city: Mapped[str | None] = mapped_column(sa.String(100))
+    district: Mapped[str | None] = mapped_column(sa.String(100))
     region: Mapped[str | None] = mapped_column(sa.String(100))
     postal_code: Mapped[str | None] = mapped_column(sa.String(20))
     country_code: Mapped[str | None] = mapped_column(sa.String(2))
     linkedin_url: Mapped[str | None] = mapped_column(sa.String(2000))
+    github_url: Mapped[str | None] = mapped_column(sa.String(2000))
     portfolio_url: Mapped[str | None] = mapped_column(sa.String(2000))
     confirmed_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
@@ -256,6 +263,13 @@ class UserContactInfo(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="contact_info")
+
+    __table_args__ = (
+        sa.CheckConstraint(
+            "name_order IN ('UNKNOWN', 'GIVEN_FAMILY', 'FAMILY_GIVEN')",
+            name="ck_user_contact_info_name_order",
+        ),
+    )
 
 
 class CareerBrain(Base):

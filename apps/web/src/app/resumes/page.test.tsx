@@ -155,7 +155,47 @@ describe("ResumesPage", () => {
     });
     await user.upload(screen.getByLabelText("Upload resume"), file);
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "readable PDF or DOCX under 5 MB",
+      "Check the file and try again",
     );
+  });
+
+  it("explains when the server parser is not configured", async () => {
+    const user = userEvent.setup();
+    mockUploadResume.mockRejectedValue(
+      new ApiError(
+        "Resume parsing is not configured",
+        503,
+        "unavailable",
+        undefined,
+        "PARSER_UNAVAILABLE",
+      ),
+    );
+    renderResumesPage();
+    await screen.findByText("No resumes yet");
+
+    await user.upload(
+      screen.getByLabelText("Upload resume"),
+      new File(["resume"], "resume.pdf", { type: "application/pdf" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "not configured on this server",
+    );
+  });
+
+  it("rejects files larger than 10 MB before uploading", async () => {
+    const user = userEvent.setup();
+    renderResumesPage();
+    await screen.findByText("No resumes yet");
+
+    await user.upload(
+      screen.getByLabelText("Upload resume"),
+      new File([new Uint8Array(10 * 1024 * 1024 + 1)], "large.pdf", {
+        type: "application/pdf",
+      }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "larger than 10 MB",
+    );
+    expect(mockUploadResume).not.toHaveBeenCalled();
   });
 });

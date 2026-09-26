@@ -15,11 +15,15 @@ class CanonicalFieldKey(StrEnum):
     PERSON_FIRST_NAME = "PERSON_FIRST_NAME"
     PERSON_LAST_NAME = "PERSON_LAST_NAME"
     PERSON_FULL_NAME = "PERSON_FULL_NAME"
+    PERSON_NATIVE_FULL_NAME = "PERSON_NATIVE_FULL_NAME"
+    PERSON_LATIN_FULL_NAME = "PERSON_LATIN_FULL_NAME"
     CONTACT_EMAIL = "CONTACT_EMAIL"
     CONTACT_PHONE = "CONTACT_PHONE"
+    CONTACT_WECHAT = "CONTACT_WECHAT"
     ADDRESS_LINE_1 = "ADDRESS_LINE_1"
     ADDRESS_LINE_2 = "ADDRESS_LINE_2"
     ADDRESS_CITY = "ADDRESS_CITY"
+    ADDRESS_DISTRICT = "ADDRESS_DISTRICT"
     ADDRESS_REGION = "ADDRESS_REGION"
     ADDRESS_POSTAL_CODE = "ADDRESS_POSTAL_CODE"
     ADDRESS_COUNTRY = "ADDRESS_COUNTRY"
@@ -132,6 +136,8 @@ class AnswerFieldInput(StrictModel):
 class AnswerResolutionRequest(StrictModel):
     fields: list[AnswerFieldInput] = Field(min_length=1, max_length=200)
     selected_resume_version_id: UUID | None = None
+    market: str = Field(default="UNKNOWN", pattern="^(UNKNOWN|NORTH_AMERICA|CHINA)$")
+    form_locale: str | None = Field(default=None, max_length=35)
 
     @model_validator(mode="after")
     def field_ids_are_unique(self) -> "AnswerResolutionRequest":

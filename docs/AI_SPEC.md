@@ -302,9 +302,11 @@ Confirmed facts about the user's career. It may be eligible Career Evidence.
 ### Confirmed personal/contact information
 
 User-provided name, phone, address, and professional link fields stored in
-`UserContactInfo`. These are not Career Evidence and are not inferred from
-resumes or email. The Answer Engine may use confirmed contact info
-deterministically with source category `USER_CONTACT_INFO`.
+`UserContactInfo`. These are not Career Evidence. Resume import may surface
+grounded contact-info candidates for review, but nothing is written to
+`UserContactInfo` without explicit user confirmation, and none of it is
+inferred from email or indirect signals. The Answer Engine may use confirmed
+contact info deterministically with source category `USER_CONTACT_INFO`.
 
 ### Application preference
 

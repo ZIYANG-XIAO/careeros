@@ -586,6 +586,19 @@ changing the V1 spine or marking M16 complete:
 - Jobs page, extension popup, shared messages, and API client split into smaller
   modules without changing approved product behavior.
 
+### Phase I — Dual-market contact profile
+
+- migration `0014_dual_market_profile` extends `UserContactInfo` with
+  `full_name_native`, `full_name_latin`, `name_order`, `contact_email`,
+  `wechat_id`, `district`, and `github_url`;
+- Career Profile contact-info UI updated for the new fields;
+- resume parsing (`resume-parser-v2`) extracts grounded, unconfirmed
+  contact-info candidates, surfaced on the resume import for explicit user
+  review and only persisted to `UserContactInfo` when confirmed as part of, or
+  after, confirming the resume import; and
+- resume upload limit raised to 10 MB (`MAX_RESUME_SIZE_BYTES`) with a
+  structured upload error contract (stable `code`/`message`/limit fields).
+
 Remaining limitations after this wave:
 
 - no production job acquisition;

@@ -52,6 +52,35 @@ class ParsedSkill(GroundedModel):
     name: str = Field(min_length=1, max_length=500)
 
 
+class ParsedContactValue(GroundedModel):
+    value: str = Field(min_length=1, max_length=2000)
+
+
+class ParsedContactInfo(BaseModel):
+    """Unconfirmed contact candidates kept separate from Career Evidence."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    first_name: ParsedContactValue | None = None
+    last_name: ParsedContactValue | None = None
+    preferred_name: ParsedContactValue | None = None
+    full_name_native: ParsedContactValue | None = None
+    full_name_latin: ParsedContactValue | None = None
+    contact_email: ParsedContactValue | None = None
+    phone: ParsedContactValue | None = None
+    wechat_id: ParsedContactValue | None = None
+    address_line_1: ParsedContactValue | None = None
+    address_line_2: ParsedContactValue | None = None
+    city: ParsedContactValue | None = None
+    district: ParsedContactValue | None = None
+    region: ParsedContactValue | None = None
+    postal_code: ParsedContactValue | None = None
+    country_code: ParsedContactValue | None = None
+    linkedin_url: ParsedContactValue | None = None
+    github_url: ParsedContactValue | None = None
+    portfolio_url: ParsedContactValue | None = None
+
+
 class ParsedResumeDraft(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -59,6 +88,7 @@ class ParsedResumeDraft(BaseModel):
     experiences: list[ParsedExperience] = Field(default_factory=list, max_length=100)
     projects: list[ParsedProject] = Field(default_factory=list, max_length=100)
     skills: list[ParsedSkill] = Field(default_factory=list, max_length=500)
+    contact_info: ParsedContactInfo = Field(default_factory=ParsedContactInfo)
 
 
 def normalize_for_grounding(value: str) -> str:
@@ -77,6 +107,11 @@ def validate_grounding(draft: ParsedResumeDraft, resume_text: str) -> None:
         grounded_objects.append(project)
         grounded_objects.extend(project.details)
     grounded_objects.extend(draft.skills)
+    grounded_objects.extend(
+        candidate
+        for field in ParsedContactInfo.model_fields
+        if (candidate := getattr(draft.contact_info, field)) is not None
+    )
 
     for item in grounded_objects:
         normalized_citation = normalize_for_grounding(item.source_text)

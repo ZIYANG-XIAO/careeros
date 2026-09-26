@@ -180,6 +180,43 @@ describe("provider-neutral form normalization", () => {
     });
   });
 
+  it("normalizes deterministic Simplified Chinese application fields", () => {
+    document.body.innerHTML = `
+      <form aria-label="Job application">
+        <label>姓名 <input name="candidate_name" /></label>
+        <label>姓 <input name="family_name_cn" /></label>
+        <label>名 <input name="given_name_cn" /></label>
+        <label>手机号码 <input name="mobile_cn" /></label>
+        <label>微信号 <input name="wechat" /></label>
+        <label>现居城市 <input name="current_city_cn" /></label>
+        <label>区县 <input name="district_cn" /></label>
+        <label>毕业院校 <input name="school_cn" /></label>
+        <label>专业 <input name="major_cn" /></label>
+        <button type="submit">提交申请</button>
+      </form>
+    `;
+
+    const result = detectApplicationPage(
+      document,
+      "https://careers.example.cn/jobs/engineer/apply",
+    );
+
+    expect(result.forms[0].fields.map((field) => field.canonicalKey)).toEqual([
+      "PERSON_FULL_NAME",
+      "PERSON_LAST_NAME",
+      "PERSON_FIRST_NAME",
+      "CONTACT_PHONE",
+      "CONTACT_WECHAT",
+      "ADDRESS_CITY",
+      "ADDRESS_DISTRICT",
+      "EDUCATION_SCHOOL",
+      "EDUCATION_FIELD_OF_STUDY",
+    ]);
+    expect(
+      result.forms[0].fields.every((field) => field.confidence === "HIGH"),
+    ).toBe(true);
+  });
+
   it("does not collect a prefilled answer while reading a wrapping label", () => {
     document.body.innerHTML = `
       <form aria-label="Job application">

@@ -11,7 +11,36 @@ import {
   updateResumeDraftItem,
 } from "@/lib/api";
 import { type MessageKey, useI18n } from "@/lib/i18n";
-import type { ResumeDraftItem, ResumeImport } from "@/lib/types";
+import type {
+  ContactInfo,
+  ContactCandidateField,
+  ResumeDraftItem,
+  ResumeImport,
+} from "@/lib/types";
+
+const contactFields: Array<{
+  field: ContactCandidateField;
+  label: MessageKey;
+}> = [
+  { field: "first_name", label: "contactInfo.firstName" },
+  { field: "last_name", label: "contactInfo.lastName" },
+  { field: "preferred_name", label: "contactInfo.preferredName" },
+  { field: "full_name_native", label: "contactInfo.fullNameNative" },
+  { field: "full_name_latin", label: "contactInfo.fullNameLatin" },
+  { field: "contact_email", label: "contactInfo.contactEmail" },
+  { field: "phone", label: "contactInfo.phone" },
+  { field: "wechat_id", label: "contactInfo.wechatId" },
+  { field: "address_line_1", label: "contactInfo.addressLine1" },
+  { field: "address_line_2", label: "contactInfo.addressLine2" },
+  { field: "city", label: "contactInfo.city" },
+  { field: "district", label: "contactInfo.district" },
+  { field: "region", label: "contactInfo.region" },
+  { field: "postal_code", label: "contactInfo.postalCode" },
+  { field: "country_code", label: "contactInfo.countryCode" },
+  { field: "linkedin_url", label: "contactInfo.linkedinUrl" },
+  { field: "github_url", label: "contactInfo.githubUrl" },
+  { field: "portfolio_url", label: "contactInfo.portfolioUrl" },
+];
 
 const editableFields: Record<ResumeDraftItem["item_type"], string[]> = {
   EDUCATION: [
@@ -180,9 +209,11 @@ function DraftCard({
 
 export function ResumeReview({
   initialImport,
+  currentContactInfo = {},
   onConfirmed,
 }: {
   initialImport: ResumeImport;
+  currentContactInfo?: Partial<ContactInfo>;
   onConfirmed?: (resumeImport: ResumeImport) => void;
 }) {
   const { getToken } = useAuth();
@@ -190,6 +221,27 @@ export function ResumeReview({
   const [resumeImport, setResumeImport] = useState(initialImport);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [contactValues, setContactValues] = useState<
+    Partial<Record<ContactCandidateField, string>>
+  >(initialImport.contact_info_candidate ?? {});
+  const [selectedContactFields, setSelectedContactFields] = useState<
+    Set<ContactCandidateField>
+  >(
+    () =>
+      new Set(
+        contactFields
+          .map(({ field }) => field)
+          .filter(
+            (field) =>
+              Boolean(initialImport.contact_info_candidate?.[field]) &&
+              !currentContactInfo[field],
+          ),
+      ),
+  );
+
+  const availableContactFields = contactFields.filter(({ field }) =>
+    Boolean(contactValues[field]),
+  );
 
   const grouped = useMemo(() => {
     const groups = new Map<string, ResumeDraftItem[]>();
@@ -237,7 +289,16 @@ export function ResumeReview({
     try {
       const token = await getToken();
       if (!token) throw new Error("Missing authentication token");
-      const confirmed = await confirmResumeImport(token, resumeImport.id);
+      const confirmedContactInfo: Partial<ContactInfo> = {};
+      for (const field of selectedContactFields) {
+        const value = contactValues[field]?.trim();
+        if (value) confirmedContactInfo[field] = value;
+      }
+      const confirmed = await confirmResumeImport(
+        token,
+        resumeImport.id,
+        confirmedContactInfo,
+      );
       setResumeImport(confirmed);
       onConfirmed?.(confirmed);
     } catch {
@@ -249,6 +310,71 @@ export function ResumeReview({
 
   return (
     <div className="space-y-6">
+      {availableContactFields.length > 0 && (
+        <section
+          aria-labelledby="resume-contact-heading"
+          className="rounded-2xl border border-blue-200 bg-blue-50/50 p-5"
+        >
+          <h2
+            id="resume-contact-heading"
+            className="text-lg font-semibold text-slate-950"
+          >
+            {t("resumeReview.contact.title")}
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            {t("resumeReview.contact.description")}
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {availableContactFields.map(({ field, label }) => {
+              const currentValue = currentContactInfo[field];
+              return (
+                <div
+                  key={field}
+                  className="rounded-xl border border-slate-200 bg-white p-3"
+                >
+                  <label className="mb-2 flex items-start gap-2 text-sm font-medium text-slate-800">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={selectedContactFields.has(field)}
+                      disabled={resumeImport.status === "CONFIRMED"}
+                      onChange={(event) => {
+                        setSelectedContactFields((current) => {
+                          const next = new Set(current);
+                          if (event.target.checked) next.add(field);
+                          else next.delete(field);
+                          return next;
+                        });
+                      }}
+                    />
+                    {t("resumeReview.contact.useField")} {t(label)}
+                  </label>
+                  <Input
+                    label={t(label)}
+                    value={contactValues[field] ?? ""}
+                    disabled={resumeImport.status === "CONFIRMED"}
+                    onChange={(event) =>
+                      setContactValues((current) => ({
+                        ...current,
+                        [field]: event.target.value,
+                      }))
+                    }
+                  />
+                  {currentValue && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      {t("resumeReview.contact.currentValue")} {currentValue}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-4 text-xs leading-5 text-slate-600">
+            {t("resumeReview.contact.selectionHint")}
+          </p>
+        </section>
+      )}
+
       {grouped.map(([section, items]) => (
         <section key={section} aria-labelledby={`section-${section}`}>
           <div className="mb-3 flex items-center justify-between">
