@@ -7,6 +7,8 @@ export type CanonicalFieldKey =
   | "PERSON_FIRST_NAME"
   | "PERSON_LAST_NAME"
   | "PERSON_FULL_NAME"
+  | "PERSON_NATIVE_GIVEN_NAME"
+  | "PERSON_NATIVE_FAMILY_NAME"
   | "PERSON_NATIVE_FULL_NAME"
   | "PERSON_LATIN_FULL_NAME"
   | "CONTACT_EMAIL"
@@ -74,6 +76,7 @@ export interface NormalizedApplicationForm {
 export interface PageDetection {
   status: DetectionStatus;
   adapter: FormAdapterId | null;
+  formLocale?: string | null;
   reasons: string[];
   forms: NormalizedApplicationForm[];
 }
@@ -129,6 +132,8 @@ export interface AnswerFieldInput {
 export interface AnswerResolutionRequestData {
   fields: AnswerFieldInput[];
   selectedResumeVersionId: string | null;
+  market: "UNKNOWN" | "NORTH_AMERICA" | "CHINA";
+  formLocale: string | null;
 }
 
 export interface AnswerDecision {
@@ -196,6 +201,7 @@ export interface TrackedApplication {
   resumeVersionId: string | null;
   status: ApplicationStatus;
   origin: "CAREEROS_JOB" | "EXTERNAL_PAGE" | "MANUAL";
+  market?: "UNKNOWN" | "NORTH_AMERICA" | "CHINA";
   createdAt: string;
 }
 

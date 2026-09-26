@@ -131,7 +131,7 @@ describe("safe form execution", () => {
       "https://jobs.lever.co/example/123/apply",
       "field-0-0",
       'input[name="name"]',
-      "PERSON_FULL_NAME",
+      "PERSON_LATIN_FULL_NAME",
       "TEXT",
     ],
     [

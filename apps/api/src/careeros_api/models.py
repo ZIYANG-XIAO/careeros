@@ -238,6 +238,8 @@ class UserContactInfo(Base):
     first_name: Mapped[str | None] = mapped_column(sa.String(100))
     last_name: Mapped[str | None] = mapped_column(sa.String(100))
     preferred_name: Mapped[str | None] = mapped_column(sa.String(100))
+    given_name_native: Mapped[str | None] = mapped_column(sa.String(100))
+    family_name_native: Mapped[str | None] = mapped_column(sa.String(100))
     full_name_native: Mapped[str | None] = mapped_column(sa.String(200))
     contact_email: Mapped[str | None] = mapped_column(sa.String(255))
     phone: Mapped[str | None] = mapped_column(sa.String(20))
@@ -411,6 +413,7 @@ class Skill(Base):
         sa.ForeignKey("career_brains.id", ondelete="CASCADE")
     )
     name: Mapped[str] = mapped_column(sa.String(500))
+    preferred: Mapped[bool] = mapped_column(sa.Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=sa.func.now()
     )

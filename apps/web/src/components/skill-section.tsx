@@ -49,13 +49,31 @@ function SkillSection({ skills, onMutate }: SkillSectionProps) {
     try {
       const token = await getToken();
       if (!token) return;
-      await updateSkill(token, editTarget.id, { name });
+      await updateSkill(token, editTarget.id, {
+        name,
+        preferred: editTarget.preferred,
+      });
       await onMutate();
       setEditTarget(null);
     } catch {
       setMutationError(t("skill.error.update"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTogglePreferred = async (skill: SkillSummary) => {
+    setMutationError(null);
+    try {
+      const token = await getToken();
+      if (!token) return;
+      await updateSkill(token, skill.id, {
+        name: skill.name,
+        preferred: !skill.preferred,
+      });
+      await onMutate();
+    } catch {
+      setMutationError(t("skill.error.update"));
     }
   };
 
@@ -124,6 +142,36 @@ function SkillSection({ skills, onMutate }: SkillSectionProps) {
               className="group/skill inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700"
             >
               {skill.name}
+              <button
+                type="button"
+                onClick={() => handleTogglePreferred(skill)}
+                className={`rounded transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+                  skill.preferred
+                    ? "text-rose-500 opacity-100"
+                    : "text-slate-400 opacity-100 hover:text-rose-500 sm:opacity-0 sm:transition-opacity sm:focus-within:opacity-100 sm:group-hover/skill:opacity-100"
+                }`}
+                aria-pressed={skill.preferred}
+                aria-label={
+                  skill.preferred
+                    ? `${t("skill.unprefer")} ${skill.name}`
+                    : `${t("skill.prefer")} ${skill.name}`
+                }
+              >
+                <svg
+                  className="h-3.5 w-3.5"
+                  fill={skill.preferred ? "currentColor" : "none"}
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                  />
+                </svg>
+              </button>
               <button
                 type="button"
                 onClick={() => setEditTarget(skill)}

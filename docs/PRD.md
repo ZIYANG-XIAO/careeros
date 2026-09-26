@@ -151,8 +151,8 @@ separate from Career Evidence and Career Brain professional facts.
 
 Implemented fields include:
 
-- first name and last name (always given name and family name respectively,
-  regardless of script or cultural convention) and preferred name;
+- confirmed Latin-script given/family names, confirmed native-script
+  given/family names, and preferred name;
 - an optional full name in another script, for forms that want a single
   native-script name field rather than a first/last split;
 - contact email;

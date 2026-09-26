@@ -59,20 +59,28 @@ When `UserContactInfo` is confirmed, these canonical keys map directly:
 
 | Canonical key | Source field | Source category |
 |---|---|---|
-| `PERSON_FIRST_NAME` | `first_name` | `USER_CONTACT_INFO` |
-| `PERSON_LAST_NAME` | `last_name` | `USER_CONTACT_INFO` |
-| `PERSON_FULL_NAME` | `first_name` + `last_name` | `USER_CONTACT_INFO` |
+| `PERSON_FIRST_NAME` | Latin-script `first_name` | `USER_CONTACT_INFO` |
+| `PERSON_LAST_NAME` | Latin-script `last_name` | `USER_CONTACT_INFO` |
+| `PERSON_LATIN_FULL_NAME` | `first_name` + `last_name` | `USER_CONTACT_INFO` |
+| `PERSON_NATIVE_GIVEN_NAME` | `given_name_native` | `USER_CONTACT_INFO` |
+| `PERSON_NATIVE_FAMILY_NAME` | `family_name_native` | `USER_CONTACT_INFO` |
+| `PERSON_NATIVE_FULL_NAME` | exact `full_name_native`, or confirmed native parts | `USER_CONTACT_INFO` |
+| `PERSON_FULL_NAME` | market/locale-selected confirmed representation | `USER_CONTACT_INFO` |
+| `CONTACT_EMAIL` | `contact_email`, then authenticated email | `USER_CONTACT_INFO` or `IDENTITY` |
 | `CONTACT_PHONE` | `phone` | `USER_CONTACT_INFO` |
+| `CONTACT_WECHAT` | `wechat_id` | `USER_CONTACT_INFO` |
 | `ADDRESS_LINE_1` | `address_line_1` | `USER_CONTACT_INFO` |
 | `ADDRESS_LINE_2` | `address_line_2` | `USER_CONTACT_INFO` |
 | `ADDRESS_CITY` | `city` | `USER_CONTACT_INFO` |
+| `ADDRESS_DISTRICT` | `district` | `USER_CONTACT_INFO` |
 | `ADDRESS_REGION` | `region` | `USER_CONTACT_INFO` |
 | `ADDRESS_POSTAL_CODE` | `postal_code` | `USER_CONTACT_INFO` |
 | `ADDRESS_COUNTRY` | `country_code` | `USER_CONTACT_INFO` |
 | `PROFESSIONAL_LINKEDIN_URL` | `linkedin_url` | `USER_CONTACT_INFO` |
+| `PROFESSIONAL_GITHUB_URL` | `github_url` | `USER_CONTACT_INFO` |
 | `PROFESSIONAL_PORTFOLIO_URL` | `portfolio_url` | `USER_CONTACT_INFO` |
 
-The engine does not derive names from email, select among ambiguous records,
+The engine does not transliterate names, derive names from email, select among ambiguous records,
 treat a project URL as a portfolio, or generate a cover letter. Unconfirmed
 contact info, preferences, reusable answers, and Application context remain
 unknown until their approved domains exist.

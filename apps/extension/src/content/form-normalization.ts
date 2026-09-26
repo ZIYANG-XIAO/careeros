@@ -134,7 +134,7 @@ function autocompleteMatch(control: SupportedControl): CanonicalMatch | null {
 const TEXT_MATCHERS: ReadonlyArray<[RegExp, CanonicalFieldKey]> = [
   [/\b(first|given)\s*name\b/, "PERSON_FIRST_NAME"],
   [/\b(last|family|sur)\s*name\b/, "PERSON_LAST_NAME"],
-  [/\b(full|legal|candidate)\s*name\b|^name$/, "PERSON_FULL_NAME"],
+  [/\b(full|legal|candidate)\s*name\b|^name$/, "PERSON_LATIN_FULL_NAME"],
   [/\be[- ]?mail(?: address)?\b/, "CONTACT_EMAIL"],
   [/\b(phone|telephone|mobile)(?: number)?\b/, "CONTACT_PHONE"],
   [/\baddress\s*(line)?\s*1\b|\bstreet address\b/, "ADDRESS_LINE_1"],
@@ -157,7 +157,7 @@ const TEXT_MATCHERS: ReadonlyArray<[RegExp, CanonicalFieldKey]> = [
     "EXPERIENCE_COMPANY",
   ],
   [/\b(current|most recent|latest)\s+(job )?title\b/, "EXPERIENCE_TITLE"],
-  [/(?:中文姓名|姓名)/, "PERSON_FULL_NAME"],
+  [/(?:中文姓名|姓名)/, "PERSON_NATIVE_FULL_NAME"],
   [/(?:英文姓名|英文名|拼音姓名)/, "PERSON_LATIN_FULL_NAME"],
   [/(?:电子邮箱|邮箱)/, "CONTACT_EMAIL"],
   [/(?:手机号码|手机号|联系电话|手机)/, "CONTACT_PHONE"],
@@ -178,7 +178,7 @@ const TEXT_MATCHERS: ReadonlyArray<[RegExp, CanonicalFieldKey]> = [
 const EXACT_TEXT_MATCHERS: ReadonlyArray<[RegExp, CanonicalFieldKey]> = [
   [/^(first|given) name$/, "PERSON_FIRST_NAME"],
   [/^(last|family|surname)$/, "PERSON_LAST_NAME"],
-  [/^(full|legal|candidate) name$|^name$/, "PERSON_FULL_NAME"],
+  [/^(full|legal|candidate) name$|^name$/, "PERSON_LATIN_FULL_NAME"],
   [/^e[- ]?mail( address)?$/, "CONTACT_EMAIL"],
   [/^(phone|telephone|mobile)( number)?$/, "CONTACT_PHONE"],
   [/^(street )?address( line 1)?$/, "ADDRESS_LINE_1"],
@@ -195,10 +195,10 @@ const EXACT_TEXT_MATCHERS: ReadonlyArray<[RegExp, CanonicalFieldKey]> = [
   [/^(field of study|major)$/, "EDUCATION_FIELD_OF_STUDY"],
   [/^(current|most recent|latest) (company|employer)$/, "EXPERIENCE_COMPANY"],
   [/^(current|most recent|latest) (job )?title$/, "EXPERIENCE_TITLE"],
-  [/^(中文姓名|姓名)$/, "PERSON_FULL_NAME"],
+  [/^(中文姓名|姓名)$/, "PERSON_NATIVE_FULL_NAME"],
   [/^(英文姓名|英文名|拼音姓名)$/, "PERSON_LATIN_FULL_NAME"],
-  [/^姓$/, "PERSON_LAST_NAME"],
-  [/^名$/, "PERSON_FIRST_NAME"],
+  [/^姓$/, "PERSON_NATIVE_FAMILY_NAME"],
+  [/^名$/, "PERSON_NATIVE_GIVEN_NAME"],
   [/^(电子邮箱|邮箱)$/, "CONTACT_EMAIL"],
   [/^(手机号码|手机号|联系电话|手机)$/, "CONTACT_PHONE"],
   [/^(微信号|微信)$/, "CONTACT_WECHAT"],
@@ -238,9 +238,6 @@ function canonicalMatch(
   control: SupportedControl,
   question: string | null,
 ): CanonicalMatch | null {
-  const autocomplete = autocompleteMatch(control);
-  if (autocomplete) return autocomplete;
-
   const inputType =
     control instanceof HTMLInputElement ? control.type.toLowerCase() : "";
   if (inputType === "email") {
@@ -252,6 +249,9 @@ function canonicalMatch(
 
   const exact = exactTextMatch(control, question);
   if (exact) return exact;
+
+  const autocomplete = autocompleteMatch(control);
+  if (autocomplete) return autocomplete;
 
   const hints = hintText(control, question);
   if (inputType === "file") {

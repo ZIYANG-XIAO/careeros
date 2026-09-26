@@ -445,21 +445,30 @@ Experience, and an explicitly selected owned Resume Version.
 
 Deterministic contact mappings use source category `USER_CONTACT_INFO`:
 
-- `PERSON_FIRST_NAME` → `first_name`
-- `PERSON_LAST_NAME` → `last_name`
-- `PERSON_FULL_NAME` → `first_name` + `last_name` when both exist
+- `PERSON_FIRST_NAME` / `PERSON_LAST_NAME` → confirmed Latin-script parts
+- `PERSON_NATIVE_GIVEN_NAME` / `PERSON_NATIVE_FAMILY_NAME` → confirmed
+  native-script parts
+- `PERSON_LATIN_FULL_NAME` → Latin given + family
+- `PERSON_NATIVE_FULL_NAME` → exact native full name, or confirmed native parts
+- `PERSON_FULL_NAME` → confirmed representation selected by explicit
+  Job/Application market and page locale
+- `CONTACT_EMAIL` → confirmed contact email, then authenticated identity email
 - `CONTACT_PHONE` → `phone`
+- `CONTACT_WECHAT` → `wechat_id`
 - `ADDRESS_LINE_1` → `address_line_1`
 - `ADDRESS_LINE_2` → `address_line_2`
 - `ADDRESS_CITY` → `city`
+- `ADDRESS_DISTRICT` → `district`
 - `ADDRESS_REGION` → `region`
 - `ADDRESS_POSTAL_CODE` → `postal_code`
 - `ADDRESS_COUNTRY` → `country_code`
 - `PROFESSIONAL_LINKEDIN_URL` → `linkedin_url`
+- `PROFESSIONAL_GITHUB_URL` → `github_url`
 - `PROFESSIONAL_PORTFOLIO_URL` → `portfolio_url`
 
 Missing preferences, reusable answers, and Application context remain unknown
-until their approved domains exist. Names are not derived from email.
+until their approved domains exist. Names are not derived from email or
+transliterated between scripts.
 
 Policy must distinguish professional truth, preferences, reusable answers,
 application-specific answers, and sensitive answers.

@@ -54,6 +54,8 @@ async def test_create_contact_info() -> None:
             json={
                 "first_name": "Jane",
                 "last_name": "Doe",
+                "given_name_native": "小明",
+                "family_name_native": "王",
                 "full_name_native": "王小明",
                 "contact_email": "jobs@example.com",
                 "phone": "+1 (555) 123-4567",
@@ -66,6 +68,8 @@ async def test_create_contact_info() -> None:
         data = resp.json()
         assert data["first_name"] == "Jane"
         assert data["last_name"] == "Doe"
+        assert data["given_name_native"] == "小明"
+        assert data["family_name_native"] == "王"
         assert data["full_name_native"] == "王小明"
         assert data["contact_email"] == "jobs@example.com"
         assert data["phone"] == "+1 (555) 123-4567"
@@ -79,6 +83,14 @@ async def test_create_contact_info() -> None:
         get_resp = await client.get("/contact-info")
         assert get_resp.status_code == 200
         assert get_resp.json()["first_name"] == "Jane"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_latin_name_fields_reject_chinese_characters() -> None:
+    async with make_integration_client() as client:
+        resp = await client.put("/contact-info", json={"first_name": "小明"})
+        assert resp.status_code == 422
 
 
 @pytest.mark.integration

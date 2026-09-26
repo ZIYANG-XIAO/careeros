@@ -262,12 +262,13 @@ Possible actions:
 
 Examples that should normally be deterministic:
 
-- known first/last name fields from confirmed `UserContactInfo`, where
-  `first_name`/`last_name` are always given name/family name;
+- known Latin-script and native-script given/family name fields from confirmed
+  `UserContactInfo`;
 - a full-name field, deterministically resolved from confirmed
   `UserContactInfo`: the native-script full name for a Chinese-market/locale
-  form, otherwise `"{first_name} {last_name}"`, falling back to the other
-  representation when the preferred one is not confirmed;
+  form, otherwise `"{first_name} {last_name}"`. A missing representation stays
+  unknown rather than being transliterated or silently replaced by the other
+  script;
 - confirmed phone, address, LinkedIn, and portfolio fields from confirmed
   `UserContactInfo`;
 - authenticated identity email;

@@ -22,7 +22,7 @@ the user through the Career Brain.
 M0–M17 and the post-M17 implementation wave are implemented at repository
 level. M16 automated hardening is implemented; representative unpacked-Chrome
 validation remains pending. Current Alembic head:
-`0015_simplify_contact_name`.
+`0017_native_name_parts`.
 Today the repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
@@ -75,10 +75,12 @@ Today the repository supports:
   isolation, on-demand content-script injection, explicit activation, and
   keyboard shortcut support;
 - refactored Jobs page, extension popup, messages, and API client modules; and
-- dual-market contact profile fields (given/family name used consistently as
-  Latin-script first/last name, an optional full name in another script,
-  contact email, WeChat ID, district, GitHub URL) and explicit,
-  user-confirmed contact-info candidates surfaced from resume import.
+- dual-market contact profile fields (confirmed Latin-script and native-script
+  given/family names, an exact native-script full name, contact email, WeChat
+  ID, district, and GitHub URL) and explicit,
+  user-confirmed contact-info candidates surfaced from resume import; and
+- Applications list CSV export, a visual application-stage stepper, and a
+  user-set preferred-skill marker on Career Brain skills.
 
 The following V1 capabilities are planned, not implemented:
 
@@ -226,7 +228,7 @@ docker compose --env-file .env -f infra/compose.yaml up -d postgres
 .venv/bin/alembic -c apps/api/alembic.ini upgrade head
 ```
 
-The current migration head is `0015_simplify_contact_name`.
+The current migration head is `0017_native_name_parts`.
 
 ### Start the API
 

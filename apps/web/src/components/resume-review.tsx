@@ -25,6 +25,8 @@ const contactFields: Array<{
   { field: "first_name", label: "contactInfo.firstName" },
   { field: "last_name", label: "contactInfo.lastName" },
   { field: "preferred_name", label: "contactInfo.preferredName" },
+  { field: "given_name_native", label: "contactInfo.givenNameNative" },
+  { field: "family_name_native", label: "contactInfo.familyNameNative" },
   { field: "full_name_native", label: "contactInfo.fullNameNative" },
   { field: "contact_email", label: "contactInfo.contactEmail" },
   { field: "phone", label: "contactInfo.phone" },

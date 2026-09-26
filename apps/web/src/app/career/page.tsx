@@ -17,6 +17,8 @@ const EMPTY_CONTACT_INFO: ContactInfo = {
   first_name: null,
   last_name: null,
   preferred_name: null,
+  given_name_native: null,
+  family_name_native: null,
   full_name_native: null,
   contact_email: null,
   phone: null,

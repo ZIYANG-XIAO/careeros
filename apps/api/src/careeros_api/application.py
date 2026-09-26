@@ -206,6 +206,7 @@ async def get_application_assistant_context(
         (
             await session.execute(
                 select(Application)
+                .options(selectinload(Application.job))
                 .where(Application.user_id == user.id)
                 .order_by(Application.created_at.desc())
             )
@@ -239,6 +240,7 @@ async def get_application_assistant_context(
                 resume_version_id=application.resume_version_id,
                 status=application.status,
                 origin=application.origin,
+                market=application.job.market if application.job is not None else "UNKNOWN",
                 created_at=application.created_at,
             )
             if application is not None

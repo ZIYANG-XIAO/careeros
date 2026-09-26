@@ -85,10 +85,10 @@ describe("CareerOsApiClient", () => {
           decisions: [
             {
               field_id: "field-1",
-              canonical_key: "CONTACT_EMAIL",
+              canonical_key: "CONTACT_WECHAT",
               question_category: "STANDARD",
-              proposed_answer: "private@example.com",
-              source_category: "IDENTITY",
+              proposed_answer: "wx-career",
+              source_category: "USER_CONTACT_INFO",
               source_reference_id: "00000000-0000-4000-8000-000000000001",
               action: "FILL",
               policy_category: "STANDARD",
@@ -112,12 +112,14 @@ describe("CareerOsApiClient", () => {
     );
     const input = {
       selectedResumeVersionId: null,
+      market: "CHINA" as const,
+      formLocale: "zh-CN",
       fields: [
         {
           fieldId: "field-1",
-          canonicalKey: "CONTACT_EMAIL" as const,
-          question: "Email",
-          controlType: "EMAIL" as const,
+          canonicalKey: "CONTACT_WECHAT" as const,
+          question: "微信号",
+          controlType: "TEXT" as const,
           required: true,
           mappingConfidence: "HIGH" as const,
           options: [],
@@ -129,7 +131,7 @@ describe("CareerOsApiClient", () => {
       decisions: [
         expect.objectContaining({
           fieldId: "field-1",
-          proposedAnswer: "private@example.com",
+          proposedAnswer: "wx-career",
           action: "FILL",
         }),
       ],
@@ -146,12 +148,14 @@ describe("CareerOsApiClient", () => {
         },
         body: JSON.stringify({
           selected_resume_version_id: null,
+          market: "CHINA",
+          form_locale: "zh-CN",
           fields: [
             {
               field_id: "field-1",
-              canonical_key: "CONTACT_EMAIL",
-              question: "Email",
-              control_type: "EMAIL",
+              canonical_key: "CONTACT_WECHAT",
+              question: "微信号",
+              control_type: "TEXT",
               required: true,
               mapping_confidence: "HIGH",
               options: [],
@@ -171,7 +175,12 @@ describe("CareerOsApiClient", () => {
     );
 
     await expect(
-      client.resolveAnswers({ fields: [], selectedResumeVersionId: null }),
+      client.resolveAnswers({
+        fields: [],
+        selectedResumeVersionId: null,
+        market: "UNKNOWN",
+        formLocale: null,
+      }),
     ).resolves.toBeNull();
     expect(request).not.toHaveBeenCalled();
   });
@@ -188,7 +197,12 @@ describe("CareerOsApiClient", () => {
     );
 
     await expect(
-      client.resolveAnswers({ fields: [], selectedResumeVersionId: null }),
+      client.resolveAnswers({
+        fields: [],
+        selectedResumeVersionId: null,
+        market: "UNKNOWN",
+        formLocale: null,
+      }),
     ).rejects.toThrow("invalid answer decision");
   });
 
@@ -238,6 +252,8 @@ describe("CareerOsApiClient", () => {
           },
         ],
         selectedResumeVersionId: null,
+        market: "UNKNOWN",
+        formLocale: null,
       }),
     ).rejects.toThrow("invalid answer decision");
   });
@@ -290,6 +306,7 @@ describe("CareerOsApiClient", () => {
         resumeVersionId,
         status: "PREPARING",
         origin: "CAREEROS_JOB",
+        market: "UNKNOWN",
         createdAt: "2026-09-25T01:00:00Z",
       },
       resumeVersions: [

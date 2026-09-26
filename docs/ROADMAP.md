@@ -592,10 +592,11 @@ changing the V1 spine or marking M16 complete:
   `full_name_native`, `full_name_latin`, `name_order`, `contact_email`,
   `wechat_id`, `district`, and `github_url`;
 - migration `0015_simplify_contact_name` removes `full_name_latin` and
-  `name_order`: `first_name`/`last_name` are always given/family name, and a
-  Latin-script full name is derived rather than stored, which cut the
-  Career Profile name UI from four field groups to two
-  (`first_name`/`last_name`, and an optional `full_name_native`);
+  `name_order`: `first_name`/`last_name` are the confirmed Latin-script
+  given/family name and a Latin-script full name is derived rather than stored;
+- migration `0017_native_name_parts` adds explicit native-script given/family
+  parts. Combined and split Chinese fields therefore use confirmed native
+  values, while North American fields use confirmed Latin-script values;
 - Career Profile contact-info UI updated for the new fields;
 - resume parsing (`resume-parser-v3`) extracts grounded, unconfirmed
   contact-info candidates, surfaced on the resume import for explicit user
@@ -603,6 +604,61 @@ changing the V1 spine or marking M16 complete:
   after, confirming the resume import; and
 - resume upload limit raised to 10 MB (`MAX_RESUME_SIZE_BYTES`) with a
   structured upload error contract (stable `code`/`message`/limit fields).
+
+### Phase J — Application workspace polish
+
+Prompted by a competitive review of simplify.jobs; see the candidate backlog
+below for the parts of that review not yet built.
+
+- Applications list: client-side CSV export (`Export CSV`) of the currently
+  filtered applications, reusing already-loaded data with no new endpoint;
+- Applications list: a visual stage stepper (PREPARING → APPLIED → ASSESSMENT
+  → INTERVIEW → FINAL → OFFER) on each card. REJECTED/WITHDRAWN keep the plain
+  status badge instead of a stepper, since the current data model only stores
+  the latest `status`/`status_updated_at`, not a per-transition history, so a
+  dated timeline like Simplify's cannot be shown honestly; and
+- Career Brain: skills gained a `preferred` flag (heart toggle in Career
+  Profile), a plain user preference marker independent of Career Evidence —
+  toggling it does not append an evidence revision.
+
+### Candidate backlog from the simplify.jobs review (not yet scheduled)
+
+Not approved work; listed so a future session does not re-derive this from
+scratch. Each needs its own scoping/approval pass before implementation:
+
+- **CSV import for the Job Tracker**, round-tripping CareerOS's own Export
+  CSV column format (bulk entry / backup-restore). A true cross-tool importer
+  (e.g. from Simplify's own export) needs that tool's actual export file
+  inspected first — do not guess its column mapping;
+- **Per-application status-transition history** (a table recording each
+  status change with a timestamp), which the current stepper cannot show
+  without one;
+- **A Kanban board view** for the Job Tracker (drag-between-columns), as an
+  alternative to the card grid, for users with large application counts;
+- **Job Preferences data model** (target roles/specializations, city
+  multi-select, ideal company size, industries/skills to include or exclude,
+  minimum salary, security-clearance interest, company block-list) — worth
+  designing and storing now even before any recommendation algorithm consumes
+  it, since M17/Enhance-phase job matching (section 12) will need it;
+- **A reusable, explicitly-confirmed sensitive/demographic answer bank**
+  (ethnicity, disability, LGBTQ+, gender, veteran status, per-country work
+  authorization), mirroring `UserContactInfo`'s confirm-once pattern. This
+  does not conflict with `docs/AI_SPEC.md` section 19 (that section bars *AI
+  inference* of these categories, not explicit user-entered, reusable
+  values) but storing protected-class data at rest is a product/compliance
+  decision, not a pure implementation one — needs explicit sign-off before
+  starting; and
+- **Email digest notification cadence** (daily/weekly/never), which depends on
+  whether outbound email infrastructure exists yet.
+
+Explicitly not recommended, and not on this backlog: a visual resume-builder/
+layout designer, AI resume tailoring, or a resume-quality score — all conflict
+with this README's stated identity ("not merely a resume builder... or
+resume-tailoring tool") and the non-goal list below; a personal analytics
+dashboard (ghost rate, conversion funnels) — an explicit V1 non-goal; and a
+referral-bounty marketplace or paid coaching marketplace — a different
+business line requiring third-party supply and payments, not a product
+feature.
 
 Remaining limitations after this wave:
 

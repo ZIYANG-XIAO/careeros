@@ -187,7 +187,9 @@ async def test_canonical_job_and_exact_resume_are_owned_and_snapshotted(tmp_path
         resume_parser=EmptyResumeParser(),
         resume_storage_dir=str(tmp_path),
     ) as client:
-        job = await client.post("/jobs", json=job_payload())
+        job = await client.post(
+            "/jobs", json={**job_payload(), "market": "CHINA", "country_code": "CN"}
+        )
         assert job.status_code == 201, job.text
         upload = await client.post(
             "/resume-imports",
@@ -225,6 +227,13 @@ async def test_canonical_job_and_exact_resume_are_owned_and_snapshotted(tmp_path
         assert body["role"] == "Backend Engineer"
         assert body["application_url"] == "https://jobs.example.com/backend/apply"
         assert body["resume_version_id"] == resume_version_id
+
+        context = await client.post(
+            "/applications/assistant-context",
+            json={"application_url": "https://jobs.example.com/backend/apply"},
+        )
+        assert context.status_code == 200
+        assert context.json()["application"]["market"] == "CHINA"
 
         engine = create_async_engine(get_test_db_url(), pool_pre_ping=True)
         factory = async_sessionmaker(engine, expire_on_commit=False)
@@ -284,6 +293,7 @@ async def test_assistant_context_is_minimal_exact_and_ambiguity_safe(tmp_path: P
             "resume_version_id": resume_version_id,
             "status": "PREPARING",
             "origin": "EXTERNAL_PAGE",
+            "market": "UNKNOWN",
             "created_at": created.json()["created_at"],
         }
         assert body["resume_versions"] == [

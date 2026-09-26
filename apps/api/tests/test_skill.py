@@ -25,6 +25,43 @@ async def test_create_skill_creates_evidence() -> None:
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_create_skill_defaults_preferred_to_false() -> None:
+    async with make_integration_client() as client:
+        resp = await client.post("/career-brain/skills", json={"name": "Python"})
+        assert resp.status_code == 201
+        assert resp.json()["preferred"] is False
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_create_skill_preferred_true() -> None:
+    async with make_integration_client() as client:
+        resp = await client.post("/career-brain/skills", json={"name": "Python", "preferred": True})
+        assert resp.status_code == 201
+        assert resp.json()["preferred"] is True
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_toggle_skill_preferred_does_not_append_evidence_revision() -> None:
+    async with make_integration_client() as client:
+        create = await client.post("/career-brain/skills", json={"name": "Python"})
+        skill_id = create.json()["id"]
+        assert create.json()["evidence"]["current_revision_number"] == 1
+
+        toggled = await client.patch(
+            f"/career-brain/skills/{skill_id}",
+            json={"name": "Python", "preferred": True},
+        )
+        assert toggled.status_code == 200
+        data = toggled.json()
+        assert data["preferred"] is True
+        assert data["name"] == "Python"
+        assert data["evidence"]["current_revision_number"] == 1
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_list_skills() -> None:
     async with make_integration_client() as client:
         await client.post("/career-brain/skills", json={"name": "Python"})

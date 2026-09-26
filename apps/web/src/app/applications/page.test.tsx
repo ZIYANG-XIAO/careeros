@@ -33,6 +33,12 @@ vi.mock("@/lib/api", async (importOriginal) => {
   };
 });
 
+const mockDownloadCsv = vi.fn();
+
+vi.mock("@/lib/csv", () => ({
+  downloadCsv: (...args: unknown[]) => mockDownloadCsv(...args),
+}));
+
 const { ApiError } = await import("@/lib/api");
 
 const application = {
@@ -65,6 +71,7 @@ describe("ApplicationsPage", () => {
     mockListApplications.mockReset().mockResolvedValue([]);
     mockListResumes.mockReset().mockResolvedValue(resumes);
     mockCreateApplication.mockReset().mockResolvedValue(application);
+    mockDownloadCsv.mockReset();
   });
 
   it("does not render the empty state when the initial load fails", async () => {
@@ -173,5 +180,46 @@ describe("ApplicationsPage", () => {
     expect(screen.getByText("Platform Engineer")).toBeInTheDocument();
     expect(screen.getAllByText("已申请").length).toBeGreaterThan(1);
     expect(screen.getByText(/2026/)).toBeInTheDocument();
+  });
+
+  it("hides the CSV export action when there are no applications", async () => {
+    renderApplicationsPage();
+    await screen.findByText("No applications recorded yet");
+    expect(
+      screen.queryByRole("button", { name: "Export CSV" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("exports the visible applications to CSV", async () => {
+    const user = userEvent.setup();
+    mockListApplications.mockResolvedValue([application]);
+    renderApplicationsPage();
+
+    await screen.findByText("Platform Engineer");
+    await user.click(screen.getByRole("button", { name: "Export CSV" }));
+
+    expect(mockDownloadCsv).toHaveBeenCalledOnce();
+    const [filename, rows] = mockDownloadCsv.mock.calls[0];
+    expect(filename).toBe("careeros-applications.csv");
+    expect(rows[0]).toEqual([
+      "Company",
+      "Role",
+      "Status",
+      "Applied",
+      "Resume",
+      "Source",
+      "Application URL",
+      "Created",
+    ]);
+    expect(rows[1]).toEqual([
+      "Acme",
+      "Platform Engineer",
+      "Applied",
+      expect.stringContaining("2026"),
+      "Backend Resume · Version 3",
+      "CareerOS Job · manual",
+      "https://example.com/apply",
+      expect.stringContaining("2026"),
+    ]);
   });
 });

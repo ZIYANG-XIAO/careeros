@@ -177,10 +177,14 @@ describe("ResumeReview", () => {
     );
 
     expect(
-      screen.getByRole("checkbox", { name: "Use First name" }),
+      screen.getByRole("checkbox", {
+        name: "Use Given name in Latin script",
+      }),
     ).not.toBeChecked();
     expect(
-      screen.getByRole("checkbox", { name: "Use Last name" }),
+      screen.getByRole("checkbox", {
+        name: "Use Family name in Latin script",
+      }),
     ).toBeChecked();
     await user.click(screen.getByRole("checkbox", { name: "Use Phone" }));
     await user.click(

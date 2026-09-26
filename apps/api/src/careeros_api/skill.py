@@ -27,6 +27,7 @@ router = APIRouter(prefix="/career-brain", tags=["skill"])
 
 class CreateSkillRequest(BaseModel):
     name: str
+    preferred: bool = False
 
     @field_validator("name")
     @classmethod
@@ -40,6 +41,7 @@ class CreateSkillRequest(BaseModel):
 
 class UpdateSkillRequest(BaseModel):
     name: str
+    preferred: bool = False
 
     @field_validator("name")
     @classmethod
@@ -61,6 +63,7 @@ class SkillEvidence(BaseModel):
 class SkillResponse(BaseModel):
     id: UUID
     name: str
+    preferred: bool
     evidence: SkillEvidence | None
     created_at: datetime
     updated_at: datetime
@@ -77,7 +80,7 @@ async def create_skill(
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> SkillResponse:
-    skill = Skill(career_brain_id=user.career_brain.id, name=body.name)
+    skill = Skill(career_brain_id=user.career_brain.id, name=body.name, preferred=body.preferred)
     session.add(skill)
     await session.flush()
 
@@ -131,8 +134,10 @@ async def update_skill(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> SkillResponse:
     skill = await _get_owned(session, skill_id, user.career_brain.id)
+    if body.name != skill.name:
+        await update_evidence_content(session, SourceType.SKILL, skill.id, body.name)
     skill.name = body.name
-    await update_evidence_content(session, SourceType.SKILL, skill.id, body.name)
+    skill.preferred = body.preferred
     await session.flush()
     await session.refresh(skill)
 
@@ -191,6 +196,7 @@ def _to_response(skill: Skill, evidence: CareerEvidence | None) -> SkillResponse
     return SkillResponse(
         id=skill.id,
         name=skill.name,
+        preferred=skill.preferred,
         evidence=ev_data,
         created_at=skill.created_at,
         updated_at=skill.updated_at,

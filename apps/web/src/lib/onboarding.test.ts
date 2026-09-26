@@ -57,7 +57,9 @@ describe("onboarding helpers", () => {
     expect(
       hasCareerBrainContent({
         ...emptyBrain,
-        skills: [{ id: "s1", name: "Python", evidence: null }],
+        skills: [
+          { id: "s1", name: "Python", preferred: false, evidence: null },
+        ],
       }),
     ).toBe(true);
     expect(hasMeaningfulProfile([], emptyBrain)).toBe(false);

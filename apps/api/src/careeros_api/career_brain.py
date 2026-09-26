@@ -75,6 +75,7 @@ class ProjectSummary(BaseModel):
 class SkillSummary(BaseModel):
     id: UUID
     name: str
+    preferred: bool
     evidence: DetailEvidence | None
 
 
@@ -229,6 +230,7 @@ async def get_career_brain(
             SkillSummary(
                 id=s.id,
                 name=s.name,
+                preferred=s.preferred,
                 evidence=_ev(SourceType.SKILL, s.id),
             )
             for s in skills

@@ -403,6 +403,7 @@ export function mountAssistant(): AssistantHandle {
 
       const isApplicationPage = response.data.status === "APPLICATION_PAGE";
       let selectedResumeVersionId: string | null = null;
+      let market: "UNKNOWN" | "NORTH_AMERICA" | "CHINA" = "UNKNOWN";
 
       if (isApplicationPage) {
         state.applicationContext = { state: "loading" };
@@ -420,6 +421,7 @@ export function mountAssistant(): AssistantHandle {
             if (shouldShow) {
               const initial = initialApplicationFields(contextResponse.data);
               selectedResumeVersionId = initial.resumeVersionId || null;
+              market = contextResponse.data.application?.market ?? "UNKNOWN";
               state.company = initial.company;
               state.role = initial.role;
               state.resumeVersionId = initial.resumeVersionId;
@@ -488,6 +490,8 @@ export function mountAssistant(): AssistantHandle {
           type: "CAREEROS_RESOLVE_ANSWERS",
           fields,
           selectedResumeVersionId,
+          market,
+          formLocale: response.data.formLocale ?? null,
         });
         if (!isCurrentGeneration(capturedGeneration)) return;
         state.answers = answerResponse.ok
@@ -547,6 +551,11 @@ export function mountAssistant(): AssistantHandle {
         type: "CAREEROS_RESOLVE_ANSWERS",
         fields,
         selectedResumeVersionId: nextResumeVersionId || null,
+        market:
+          state.applicationContext?.state === "ready"
+            ? (state.applicationContext.value.application?.market ?? "UNKNOWN")
+            : "UNKNOWN",
+        formLocale: state.detection.value.formLocale ?? null,
       });
       if (!isCurrentGeneration(capturedGeneration)) return;
       state.answers = response.ok

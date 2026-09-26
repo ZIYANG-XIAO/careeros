@@ -125,6 +125,7 @@ export function usePopupState() {
 
         const isApplicationPage = response.data.status === "APPLICATION_PAGE";
         let selectedResumeVersionId: string | null = null;
+        let market: "UNKNOWN" | "NORTH_AMERICA" | "CHINA" = "UNKNOWN";
 
         if (isApplicationPage) setApplicationContext({ state: "loading" });
         try {
@@ -141,6 +142,7 @@ export function usePopupState() {
             if (shouldShowContext) {
               const initial = initialApplicationFields(contextResponse.data);
               selectedResumeVersionId = initial.resumeVersionId || null;
+              market = contextResponse.data.application?.market ?? "UNKNOWN";
               setCompany(initial.company);
               setRole(initial.role);
               setResumeVersionId(initial.resumeVersionId);
@@ -197,6 +199,8 @@ export function usePopupState() {
             type: "CAREEROS_RESOLVE_ANSWERS",
             fields,
             selectedResumeVersionId,
+            market,
+            formLocale: response.data.formLocale ?? null,
           });
           setAnswers(
             answerResponse.ok
@@ -358,6 +362,11 @@ export function usePopupState() {
         type: "CAREEROS_RESOLVE_ANSWERS",
         fields,
         selectedResumeVersionId: nextResumeVersionId || null,
+        market:
+          applicationContext?.state === "ready"
+            ? (applicationContext.value.application?.market ?? "UNKNOWN")
+            : "UNKNOWN",
+        formLocale: detection.value.formLocale ?? null,
       });
       setAnswers(
         response.ok

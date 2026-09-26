@@ -335,6 +335,8 @@ async def test_person_full_name_uses_confirmed_market_representation(
             "/contact-info",
             json={
                 "full_name_native": "王小明",
+                "given_name_native": "小明",
+                "family_name_native": "王",
                 "first_name": "Xiaoming",
                 "last_name": "Wang",
             },
@@ -358,6 +360,74 @@ async def test_person_full_name_uses_confirmed_market_representation(
 
         assert response.status_code == 200, response.text
         assert response.json()["decisions"][0]["proposed_answer"] == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    ("canonical_key", "expected"),
+    [
+        ("PERSON_NATIVE_GIVEN_NAME", "小明"),
+        ("PERSON_NATIVE_FAMILY_NAME", "王"),
+        ("PERSON_NATIVE_FULL_NAME", "王小明"),
+        ("PERSON_LATIN_FULL_NAME", "Xiaoming Wang"),
+    ],
+)
+async def test_explicit_name_representation_keys_do_not_cross_scripts(
+    canonical_key: str, expected: str
+) -> None:
+    async with make_integration_client() as client:
+        saved = await client.put(
+            "/contact-info",
+            json={
+                "full_name_native": "王小明",
+                "given_name_native": "小明",
+                "family_name_native": "王",
+                "first_name": "Xiaoming",
+                "last_name": "Wang",
+            },
+        )
+        assert saved.status_code == 200
+        response = await client.post(
+            "/answer-engine/resolve",
+            json={"fields": [field("name", canonical_key=canonical_key, question="Name")]},
+        )
+        assert response.status_code == 200
+        assert response.json()["decisions"][0]["proposed_answer"] == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    ("contact_info", "market", "form_locale"),
+    [
+        ({"full_name_native": "王小明"}, "NORTH_AMERICA", "en-US"),
+        ({"first_name": "Xiaoming", "last_name": "Wang"}, "CHINA", "zh-CN"),
+    ],
+)
+async def test_full_name_does_not_cross_scripts_when_market_representation_is_missing(
+    contact_info: dict[str, str], market: str, form_locale: str
+) -> None:
+    async with make_integration_client() as client:
+        assert (await client.put("/contact-info", json=contact_info)).status_code == 200
+        response = await client.post(
+            "/answer-engine/resolve",
+            json={
+                "market": market,
+                "form_locale": form_locale,
+                "fields": [
+                    field(
+                        "full-name",
+                        canonical_key="PERSON_FULL_NAME",
+                        question="Full name",
+                    )
+                ],
+            },
+        )
+        assert response.status_code == 200
+        decision = response.json()["decisions"][0]
+        assert decision["action"] == "ASK"
+        assert decision["proposed_answer"] is None
 
 
 @pytest.mark.asyncio

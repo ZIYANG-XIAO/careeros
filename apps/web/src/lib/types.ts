@@ -51,6 +51,7 @@ export type ProjectSummary = {
 export type SkillSummary = {
   id: string;
   name: string;
+  preferred: boolean;
   evidence: DetailEvidence | null;
 };
 
@@ -67,6 +68,8 @@ export type ContactInfo = {
   first_name: string | null;
   last_name: string | null;
   preferred_name: string | null;
+  given_name_native: string | null;
+  family_name_native: string | null;
   full_name_native: string | null;
   contact_email: string | null;
   phone: string | null;
@@ -148,6 +151,7 @@ export type Project = {
 export type Skill = {
   id: string;
   name: string;
+  preferred: boolean;
   evidence: DetailEvidence | null;
   created_at: string;
   updated_at: string;
@@ -211,10 +215,12 @@ export type UpdateProjectRequest = {
 
 export type CreateSkillRequest = {
   name: string;
+  preferred?: boolean;
 };
 
 export type UpdateSkillRequest = {
   name: string;
+  preferred?: boolean;
 };
 
 // ---------------------------------------------------------------------------

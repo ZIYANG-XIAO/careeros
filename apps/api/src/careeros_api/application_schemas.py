@@ -119,6 +119,7 @@ class ApplicationAssistantMatchResponse(StrictModel):
     resume_version_id: UUID | None
     status: str
     origin: str
+    market: str = Field(pattern="^(UNKNOWN|NORTH_AMERICA|CHINA)$")
     created_at: datetime
 
 

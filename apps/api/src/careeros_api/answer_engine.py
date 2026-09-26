@@ -156,6 +156,8 @@ CONTACT_INFO_KEYS = frozenset(
         CanonicalFieldKey.PERSON_FIRST_NAME,
         CanonicalFieldKey.PERSON_LAST_NAME,
         CanonicalFieldKey.PERSON_FULL_NAME,
+        CanonicalFieldKey.PERSON_NATIVE_GIVEN_NAME,
+        CanonicalFieldKey.PERSON_NATIVE_FAMILY_NAME,
         CanonicalFieldKey.PERSON_NATIVE_FULL_NAME,
         CanonicalFieldKey.PERSON_LATIN_FULL_NAME,
         CanonicalFieldKey.CONTACT_EMAIL,
@@ -177,6 +179,16 @@ CONTACT_INFO_KEYS = frozenset(
 CONTACT_FIELD_MAPPINGS: tuple[tuple[CanonicalFieldKey, str, AnswerSourceCategory], ...] = (
     (CanonicalFieldKey.PERSON_FIRST_NAME, "first_name", AnswerSourceCategory.USER_CONTACT_INFO),
     (CanonicalFieldKey.PERSON_LAST_NAME, "last_name", AnswerSourceCategory.USER_CONTACT_INFO),
+    (
+        CanonicalFieldKey.PERSON_NATIVE_GIVEN_NAME,
+        "given_name_native",
+        AnswerSourceCategory.USER_CONTACT_INFO,
+    ),
+    (
+        CanonicalFieldKey.PERSON_NATIVE_FAMILY_NAME,
+        "family_name_native",
+        AnswerSourceCategory.USER_CONTACT_INFO,
+    ),
     (
         CanonicalFieldKey.PERSON_NATIVE_FULL_NAME,
         "full_name_native",
@@ -359,17 +371,36 @@ async def _load_answer_sources(
                         source_category=AnswerSourceCategory.USER_CONTACT_INFO,
                         source_reference_id=source_reference_id,
                     )
+            if CanonicalFieldKey.PERSON_NATIVE_FULL_NAME in keys:
+                native_name = _native_full_name(contact)
+                if native_name is not None:
+                    sources[CanonicalFieldKey.PERSON_NATIVE_FULL_NAME] = ResolvedAnswer(
+                        value=native_name,
+                        source_category=AnswerSourceCategory.USER_CONTACT_INFO,
+                        source_reference_id=source_reference_id,
+                    )
 
     return sources
 
 
 def _latin_full_name(contact: UserContactInfo) -> str | None:
-    """Given name and family name are always Latin-script and given/family order."""
+    """Build the explicitly confirmed Latin-script name in given/family order."""
     first_name = contact.first_name.strip() if contact.first_name else ""
     last_name = contact.last_name.strip() if contact.last_name else ""
     if not first_name or not last_name:
         return None
     return f"{first_name} {last_name}"
+
+
+def _native_full_name(contact: UserContactInfo) -> str | None:
+    explicit = contact.full_name_native.strip() if contact.full_name_native else ""
+    if explicit:
+        return explicit
+    given = contact.given_name_native.strip() if contact.given_name_native else ""
+    family = contact.family_name_native.strip() if contact.family_name_native else ""
+    if not given or not family:
+        return None
+    return f"{family}{given}"
 
 
 def _market_full_name(
@@ -381,11 +412,11 @@ def _market_full_name(
     chinese_context = market == "CHINA" or bool(
         form_locale and form_locale.casefold().startswith("zh")
     )
-    native = contact.full_name_native.strip() if contact.full_name_native else ""
+    native = _native_full_name(contact)
     latin = _latin_full_name(contact)
     if chinese_context:
-        return native or latin
-    return latin or native or None
+        return native
+    return latin
 
 
 def _sensitive_decision(
@@ -551,18 +582,13 @@ async def resolve_answer_decisions(
             field.mapping_confidence,
         )
     keys = {key for key, _confidence in effective.values() if key is not None}
-    effective_form_locale = request.form_locale
-    if effective_form_locale is None and any(
-        field.question and re.search(r"[\u3400-\u9fff]", field.question) for field in request.fields
-    ):
-        effective_form_locale = "zh-CN"
     sources = await _load_answer_sources(
         session,
         user,
         keys,
         resume_version,
         market=request.market,
-        form_locale=effective_form_locale,
+        form_locale=request.form_locale,
     )
 
     decisions: list[AnswerDecision] = []

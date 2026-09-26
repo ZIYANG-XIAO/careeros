@@ -151,6 +151,7 @@ const applicationStatuses = [
   "WITHDRAWN",
 ] as const;
 const applicationOrigins = ["CAREEROS_JOB", "EXTERNAL_PAGE", "MANUAL"] as const;
+const applicationMarkets = ["UNKNOWN", "NORTH_AMERICA", "CHINA"] as const;
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -196,6 +197,9 @@ function parseApplication(value: unknown): TrackedApplication | null {
     ) ||
     !enumValue(value.status, applicationStatuses) ||
     !enumValue(value.origin, applicationOrigins) ||
+    !(
+      value.market === undefined || enumValue(value.market, applicationMarkets)
+    ) ||
     typeof value.created_at !== "string"
   ) {
     return null;
@@ -208,6 +212,7 @@ function parseApplication(value: unknown): TrackedApplication | null {
     resumeVersionId: value.resume_version_id,
     status: enumValue(value.status, applicationStatuses)!,
     origin: enumValue(value.origin, applicationOrigins)!,
+    market: enumValue(value.market, applicationMarkets) ?? "UNKNOWN",
     createdAt: value.created_at,
   };
 }

@@ -17,6 +17,7 @@ router = APIRouter(tags=["contact-info"])
 
 PHONE_PATTERN = re.compile(r"^[\d\s\-()+]{7,20}$")
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+CJK_PATTERN = re.compile(r"[\u3400-\u9fff]")
 
 
 # ---------------------------------------------------------------------------
@@ -29,6 +30,8 @@ class ContactInfoResponse(BaseModel):
     first_name: str | None
     last_name: str | None
     preferred_name: str | None
+    given_name_native: str | None
+    family_name_native: str | None
     full_name_native: str | None
     contact_email: str | None
     phone: str | None
@@ -52,6 +55,8 @@ class ContactInfoUpsertRequest(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     preferred_name: str | None = None
+    given_name_native: str | None = None
+    family_name_native: str | None = None
     full_name_native: str | None = None
     contact_email: str | None = None
     phone: str | None = None
@@ -71,6 +76,8 @@ class ContactInfoUpsertRequest(BaseModel):
         "first_name",
         "last_name",
         "preferred_name",
+        "given_name_native",
+        "family_name_native",
         "wechat_id",
         "city",
         "district",
@@ -80,6 +87,13 @@ class ContactInfoUpsertRequest(BaseModel):
     def validate_name_length(cls, v: str | None) -> str | None:
         if v is not None and len(v) > 100:
             raise ValueError("must be at most 100 characters")
+        return v
+
+    @field_validator("first_name", "last_name")
+    @classmethod
+    def validate_latin_name_representation(cls, v: str | None) -> str | None:
+        if v is not None and CJK_PATTERN.search(v):
+            raise ValueError("use native-script name fields for Chinese characters")
         return v
 
     @field_validator("full_name_native")
@@ -212,6 +226,8 @@ def _empty_response() -> ContactInfoResponse:
         first_name=None,
         last_name=None,
         preferred_name=None,
+        given_name_native=None,
+        family_name_native=None,
         full_name_native=None,
         contact_email=None,
         phone=None,
@@ -256,6 +272,8 @@ def _to_response(contact: UserContactInfo) -> ContactInfoResponse:
         first_name=contact.first_name,
         last_name=contact.last_name,
         preferred_name=contact.preferred_name,
+        given_name_native=contact.given_name_native,
+        family_name_native=contact.family_name_native,
         full_name_native=contact.full_name_native,
         contact_email=contact.contact_email,
         phone=contact.phone,

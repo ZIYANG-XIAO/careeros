@@ -37,6 +37,8 @@ describe("extension message validation", () => {
         },
       ],
       selectedResumeVersionId: null,
+      market: "CHINA",
+      formLocale: "zh-CN",
     };
     expect(parsePopupRequest(request)).toEqual(request);
     expect(parsePopupRequest({ ...request, token: "steal-me" })).toBeNull();

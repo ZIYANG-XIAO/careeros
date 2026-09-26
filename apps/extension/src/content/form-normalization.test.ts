@@ -80,6 +80,25 @@ describe("provider-neutral form normalization", () => {
     });
   });
 
+  it("uses the label script instead of generic autocomplete for full names", () => {
+    document.body.innerHTML = `
+      <form aria-label="Job application">
+        <label>Full name <input name="name" autocomplete="name" /></label>
+        <label>姓名 <input name="native_name" autocomplete="name" /></label>
+        <button type="submit">Apply</button>
+      </form>
+    `;
+
+    const result = detectApplicationPage(
+      document,
+      "https://jobs.example.com/apply",
+    );
+    expect(result.forms[0].fields.map((field) => field.canonicalKey)).toEqual([
+      "PERSON_LATIN_FULL_NAME",
+      "PERSON_NATIVE_FULL_NAME",
+    ]);
+  });
+
   it("keeps hostile page instructions as untrusted unknown text", () => {
     document.body.innerHTML = `
       <form aria-label="Job application">
@@ -184,8 +203,8 @@ describe("provider-neutral form normalization", () => {
     document.body.innerHTML = `
       <form aria-label="Job application">
         <label>姓名 <input name="candidate_name" /></label>
-        <label>姓 <input name="family_name_cn" /></label>
-        <label>名 <input name="given_name_cn" /></label>
+        <label>姓 <input name="family_name_cn" autocomplete="family-name" /></label>
+        <label>名 <input name="given_name_cn" autocomplete="given-name" /></label>
         <label>手机号码 <input name="mobile_cn" /></label>
         <label>微信号 <input name="wechat" /></label>
         <label>现居城市 <input name="current_city_cn" /></label>
@@ -202,9 +221,9 @@ describe("provider-neutral form normalization", () => {
     );
 
     expect(result.forms[0].fields.map((field) => field.canonicalKey)).toEqual([
-      "PERSON_FULL_NAME",
-      "PERSON_LAST_NAME",
-      "PERSON_FIRST_NAME",
+      "PERSON_NATIVE_FULL_NAME",
+      "PERSON_NATIVE_FAMILY_NAME",
+      "PERSON_NATIVE_GIVEN_NAME",
       "CONTACT_PHONE",
       "CONTACT_WECHAT",
       "ADDRESS_CITY",

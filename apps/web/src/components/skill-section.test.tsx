@@ -10,23 +10,26 @@ vi.mock("@clerk/nextjs", () => ({
 }));
 
 const mockCreateSkill = vi.fn().mockResolvedValue({});
+const mockUpdateSkill = vi.fn().mockResolvedValue({});
 const mockDeleteSkill = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/lib/api", () => ({
   createSkill: (...args: unknown[]) => mockCreateSkill(...args),
-  updateSkill: vi.fn().mockResolvedValue({}),
+  updateSkill: (...args: unknown[]) => mockUpdateSkill(...args),
   deleteSkill: (...args: unknown[]) => mockDeleteSkill(...args),
 }));
 
 const mockSkill: SkillSummary = {
   id: "s1",
   name: "TypeScript",
+  preferred: false,
   evidence: null,
 };
 
 const mockSkill2: SkillSummary = {
   id: "s2",
   name: "React",
+  preferred: false,
   evidence: null,
 };
 
@@ -81,6 +84,37 @@ describe("SkillSection", () => {
     ).toBeInTheDocument();
     // Dialog should remain open
     expect(screen.getByText("Add Skill")).toBeInTheDocument();
+  });
+
+  it("marks a skill as preferred", async () => {
+    const user = userEvent.setup();
+    const onMutate = vi.fn().mockResolvedValue(undefined);
+    render(<SkillSection skills={[mockSkill]} onMutate={onMutate} />);
+
+    await user.click(
+      screen.getByRole("button", { name: "Mark as preferred TypeScript" }),
+    );
+
+    expect(mockUpdateSkill).toHaveBeenCalledWith("token", "s1", {
+      name: "TypeScript",
+      preferred: true,
+    });
+    expect(onMutate).toHaveBeenCalled();
+  });
+
+  it("unmarks a preferred skill", async () => {
+    const user = userEvent.setup();
+    const preferredSkill: SkillSummary = { ...mockSkill, preferred: true };
+    render(<SkillSection skills={[preferredSkill]} onMutate={vi.fn()} />);
+
+    await user.click(
+      screen.getByRole("button", { name: "Unmark as preferred TypeScript" }),
+    );
+
+    expect(mockUpdateSkill).toHaveBeenCalledWith("token", "s1", {
+      name: "TypeScript",
+      preferred: false,
+    });
   });
 
   it("closes dialog on successful create", async () => {

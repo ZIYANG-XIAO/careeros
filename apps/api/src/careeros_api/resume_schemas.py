@@ -64,6 +64,8 @@ class ParsedContactInfo(BaseModel):
     first_name: ParsedContactValue | None = None
     last_name: ParsedContactValue | None = None
     preferred_name: ParsedContactValue | None = None
+    given_name_native: ParsedContactValue | None = None
+    family_name_native: ParsedContactValue | None = None
     full_name_native: ParsedContactValue | None = None
     contact_email: ParsedContactValue | None = None
     phone: ParsedContactValue | None = None

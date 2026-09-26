@@ -18,6 +18,8 @@ type FormState = {
   first_name: string;
   last_name: string;
   preferred_name: string;
+  given_name_native: string;
+  family_name_native: string;
   full_name_native: string;
   contact_email: string;
   phone: string;
@@ -39,6 +41,8 @@ function toFormState(contactInfo: ContactInfo): FormState {
     first_name: contactInfo.first_name ?? "",
     last_name: contactInfo.last_name ?? "",
     preferred_name: contactInfo.preferred_name ?? "",
+    given_name_native: contactInfo.given_name_native ?? "",
+    family_name_native: contactInfo.family_name_native ?? "",
     full_name_native: contactInfo.full_name_native ?? "",
     contact_email: contactInfo.contact_email ?? "",
     phone: contactInfo.phone ?? "",
@@ -61,6 +65,8 @@ function toPayload(form: FormState): Partial<ContactInfo> {
     first_name: form.first_name.trim() || null,
     last_name: form.last_name.trim() || null,
     preferred_name: form.preferred_name.trim() || null,
+    given_name_native: form.given_name_native.trim() || null,
+    family_name_native: form.family_name_native.trim() || null,
     full_name_native: form.full_name_native.trim() || null,
     contact_email: form.contact_email.trim() || null,
     phone: form.phone.trim() || null,
@@ -80,7 +86,7 @@ function toPayload(form: FormState): Partial<ContactInfo> {
 
 function ContactInfoSection({ contactInfo, onSaved }: ContactInfoSectionProps) {
   const { getToken } = useAuth();
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
   const serverForm = toFormState(contactInfo);
   const [localEdits, setLocalEdits] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
@@ -160,16 +166,10 @@ function ContactInfoSection({ contactInfo, onSaved }: ContactInfoSectionProps) {
         aria-busy={saving}
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          {(locale === "zh-CN"
-            ? [
-                ["last_name", "contactInfo.lastName", "family-name"],
-                ["first_name", "contactInfo.firstName", "given-name"],
-              ]
-            : [
-                ["first_name", "contactInfo.firstName", "given-name"],
-                ["last_name", "contactInfo.lastName", "family-name"],
-              ]
-          ).map(([field, label, autoComplete]) => (
+          {[
+            ["first_name", "contactInfo.firstName", "given-name"],
+            ["last_name", "contactInfo.lastName", "family-name"],
+          ].map(([field, label, autoComplete]) => (
             <Input
               key={field}
               label={t(label as Parameters<typeof t>[0])}
@@ -187,6 +187,25 @@ function ContactInfoSection({ contactInfo, onSaved }: ContactInfoSectionProps) {
         <p className="text-sm leading-5 text-slate-500">
           {t("contactInfo.givenFamilyHint")}
         </p>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[
+            ["family_name_native", "contactInfo.familyNameNative"],
+            ["given_name_native", "contactInfo.givenNameNative"],
+          ].map(([field, label]) => (
+            <Input
+              key={field}
+              label={t(label as Parameters<typeof t>[0])}
+              value={form[field as "given_name_native" | "family_name_native"]}
+              onChange={(event) =>
+                updateField(
+                  field as "given_name_native" | "family_name_native",
+                  event.target.value,
+                )
+              }
+            />
+          ))}
+        </div>
 
         <div>
           <Input

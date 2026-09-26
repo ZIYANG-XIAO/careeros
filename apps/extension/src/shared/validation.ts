@@ -90,6 +90,8 @@ const canonicalKeys = new Set<string>([
   "PERSON_FIRST_NAME",
   "PERSON_LAST_NAME",
   "PERSON_FULL_NAME",
+  "PERSON_NATIVE_GIVEN_NAME",
+  "PERSON_NATIVE_FAMILY_NAME",
   "PERSON_NATIVE_FULL_NAME",
   "PERSON_LATIN_FULL_NAME",
   "CONTACT_EMAIL",
@@ -206,7 +208,15 @@ function isAnswerResolutionRequest(
   value: unknown,
 ): value is { type: "CAREEROS_RESOLVE_ANSWERS" } & AnswerResolutionRequestData {
   if (!isRecord(value)) return false;
-  if (!hasExactKeys(value, ["type", "fields", "selectedResumeVersionId"])) {
+  if (
+    !hasExactKeys(value, [
+      "type",
+      "fields",
+      "selectedResumeVersionId",
+      "market",
+      "formLocale",
+    ])
+  ) {
     return false;
   }
   if (
@@ -219,6 +229,11 @@ function isAnswerResolutionRequest(
       value.selectedResumeVersionId === null ||
       (typeof value.selectedResumeVersionId === "string" &&
         uuidPattern.test(value.selectedResumeVersionId))
+    ) ||
+    !["UNKNOWN", "NORTH_AMERICA", "CHINA"].includes(String(value.market)) ||
+    !(
+      value.formLocale === null ||
+      (typeof value.formLocale === "string" && value.formLocale.length <= 35)
     )
   ) {
     return false;

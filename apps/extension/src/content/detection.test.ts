@@ -58,6 +58,7 @@ describe("application page detection", () => {
     expect(detectApplicationPage(document, "chrome://extensions")).toEqual({
       status: "UNSUPPORTED_PAGE",
       adapter: null,
+      formLocale: null,
       reasons: ["CareerOS only inspects normal web pages."],
       forms: [],
     });

@@ -4,11 +4,13 @@ import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { type FormEvent, useCallback, useMemo, useRef, useState } from "react";
 
+import { ApplicationStepper } from "@/components/application-stepper";
 import { LoadErrorBanner } from "@/components/load-error-banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { createApplication, listApplications, listResumes } from "@/lib/api";
+import { downloadCsv } from "@/lib/csv";
 import {
   applicationStatusLabel,
   formatLocaleDate,
@@ -109,6 +111,32 @@ export default function ApplicationsPage() {
     () => new Map(resumeVersions.map((version) => [version.id, version.label])),
     [resumeVersions],
   );
+
+  function handleExportCsv() {
+    const header = [
+      t("jobs.company"),
+      t("applications.role"),
+      t("applications.status"),
+      t("applications.applied"),
+      t("applications.resume"),
+      t("applications.sourceLabel"),
+      t("applications.export.applicationUrl"),
+      t("applications.export.createdAt"),
+    ];
+    const rows = applications.map((application) => [
+      application.company,
+      application.role,
+      applicationStatusLabel(application.status, t),
+      formatLocaleDate(locale, application.applied_at) ?? "",
+      application.resume_version_id
+        ? (resumeLabels.get(application.resume_version_id) ?? "")
+        : "",
+      `${sourceLabel(application, t)} · ${application.source}`,
+      application.application_url ?? "",
+      formatLocaleDate(locale, application.created_at) ?? "",
+    ]);
+    downloadCsv("careeros-applications.csv", [header, ...rows]);
+  }
 
   async function recordApplied(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -223,14 +251,25 @@ export default function ApplicationsPage() {
           >
             {t("applications.history")}
           </h2>
-          <p className="text-sm text-slate-500">
-            {applications.length}{" "}
-            {locale === "zh-CN"
-              ? t("applications.applications")
-              : applications.length === 1
-                ? t("applications.application")
-                : t("applications.applications")}
-          </p>
+          <div className="flex items-baseline gap-4">
+            <p className="text-sm text-slate-500">
+              {applications.length}{" "}
+              {locale === "zh-CN"
+                ? t("applications.applications")
+                : applications.length === 1
+                  ? t("applications.application")
+                  : t("applications.applications")}
+            </p>
+            {applications.length > 0 && (
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="text-sm font-semibold text-blue-700 hover:underline"
+              >
+                {t("applications.exportCsv")}
+              </button>
+            )}
+          </div>
         </div>
         {refreshError && (
           <LoadErrorBanner
@@ -305,6 +344,7 @@ export default function ApplicationsPage() {
                     </dd>
                   </div>
                 </dl>
+                <ApplicationStepper status={application.status} />
                 <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
                   {sourceLabel(application, t)} · {application.source}
                 </p>

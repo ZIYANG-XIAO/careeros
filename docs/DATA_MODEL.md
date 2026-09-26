@@ -14,8 +14,11 @@ tables. Migration `0012_user_contact_info` adds `UserContactInfo`. Migration
 `0013_uci_answer_source` adds the `USER_CONTACT_INFO` answer
 source category. Migration `0014_dual_market_profile` adds dual-market name and
 contact fields to `UserContactInfo`. Migration `0015_simplify_contact_name`
-removes the separate Latin-script full name and name-order fields in favor of
-treating `first_name`/`last_name` as always given/family name.
+removes the duplicate Latin-script full name and generic name-order fields;
+`first_name`/`last_name` become the confirmed Latin-script given/family parts. Migration
+`0016_skill_preferred` adds a `preferred` flag to `skills`. Migration
+`0017_native_name_parts` adds explicit native-script given and family names so
+split Chinese and Latin-script fields never share an ambiguous representation.
 
 The model supports:
 
@@ -101,7 +104,7 @@ The current migrations define:
 - `application_operations`
 - `user_contact_info`
 
-Current Alembic head: `0015_simplify_contact_name`.
+Current Alembic head: `0017_native_name_parts`.
 
 M12 adds a transient Answer Engine decision contract and no tables. Decisions
 reference owned canonical sources but are not persisted as Application or
@@ -129,10 +132,12 @@ native-script full name, contact email, WeChat ID, district, and GitHub URL,
 and resume import may surface unconfirmed contact-info candidates that only
 become part of `UserContactInfo` when the user explicitly confirms them.
 Migration `0015_simplify_contact_name` removes the separate Latin-script full
-name and name-order fields: `first_name`/`last_name` are always the given
-name and family name respectively, regardless of script or cultural
-convention, and the Latin-script full name is derived from them rather than
-stored.
+name and name-order fields: `first_name`/`last_name` hold the Latin-script
+given and family name, and the full Latin-script name is derived rather than
+stored. Migration `0016_skill_preferred` adds a `preferred` boolean to
+`Skill`, a plain user-set preference marker independent of Career Evidence;
+toggling it does not append an evidence revision. Migration
+`0017_native_name_parts` adds the explicit native-script given/family parts.
 
 ### Planned, not implemented
 
@@ -161,9 +166,11 @@ from Career Evidence and Career Brain professional facts. One record per user.
 
 Implemented fields:
 
-- `first_name`, `last_name` — always the given name and family name
-  respectively, regardless of script or cultural convention;
+- `first_name`, `last_name` — the confirmed Latin-script given name and family
+  name respectively;
 - `preferred_name`;
+- `given_name_native`, `family_name_native` — explicitly confirmed
+  native-script parts for split native-script form fields;
 - `full_name_native` — an optional full name in another script, kept exactly
   as the user writes it (own order, no first/last split), for forms that
   want a single native-script name field;
@@ -175,9 +182,11 @@ Implemented fields:
 - `confirmed_at`; and
 - `created_at`, `updated_at`.
 
-There is no stored Latin-script full name or name-order field: since
-`first_name`/`last_name` are unambiguous, a Latin-script full name is derived
-as `"{first_name} {last_name}"` when needed (see `docs/AI_SPEC.md` section 15).
+There is no duplicate stored Latin-script full name or generic name-order
+field. A Latin-script full name is derived as `"{first_name} {last_name}"`.
+For Chinese-market fields, the exact `full_name_native` is preferred; when it
+is absent but both confirmed native parts exist, family precedes given without
+an inserted space. CareerOS does not transliterate names.
 
 Contact info is explicitly confirmed on save. The Answer Engine uses confirmed
 contact info for deterministic name, phone, address, and link mappings.
