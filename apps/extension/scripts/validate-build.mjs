@@ -59,14 +59,13 @@ if (/\.files\b|innerHTML|outerHTML/.test(contentScript)) {
     "M13 content execution must not read selected files or raw page HTML.",
   );
 }
-if (/Authorization|Bearer|CAREEROS_RESOLVE_ANSWERS/.test(contentScript)) {
+if (
+  !/attachShadow|data-careeros-assistant|CAREEROS_ACTIVATE_ASSISTANT/.test(
+    contentScript,
+  )
+) {
   throw new Error(
-    "M13 content execution must not resolve answers or receive API credentials.",
-  );
-}
-if (/CAREEROS_(?:PREPARE|RECORD)_APPLICATION/.test(contentScript)) {
-  throw new Error(
-    "M15 Application Memory operations must remain in the privileged background.",
+    "Phase B in-page assistant must mount in an isolated Shadow DOM after explicit activation.",
   );
 }
 if (
@@ -104,6 +103,12 @@ if (/extracted_text|structured_content/.test(backgroundScript + popupScript)) {
   );
 }
 
+if (!manifest.commands?.["activate-assistant"]) {
+  throw new Error(
+    "Phase B must expose a keyboard shortcut for explicit assistant activation.",
+  );
+}
+
 console.log(
-  `Validated M16 permissions, minimized context, execution/Application Memory boundaries, and CRX ID ${extensionId}.`,
+  `Validated M16 permissions, Phase B assistant activation, minimized context, execution boundaries, and CRX ID ${extensionId}.`,
 );

@@ -1,7 +1,7 @@
 # CareerOS M12 Answer Engine Contract
 
 > Status: Implemented foundation
-> Last Updated: 2026-09-25
+> Last Updated: 2026-09-26
 
 ## 1. Purpose and boundary
 
@@ -47,16 +47,35 @@ page-supplied identifiers never authorize resource access.
 M12 retrieves only sources that exist in the current canonical model:
 
 - authenticated identity email;
+- confirmed `UserContactInfo` when `confirmed_at` is set;
 - education fields when exactly one Education record makes the choice
   unambiguous;
 - company and title when exactly one Experience is explicitly current; and
 - the filename/reference for an explicitly selected, owned Resume Version.
 
-Names, phone, address, professional links, cover letters, preferences, reusable
-answers, and Application context remain unknown until their approved canonical
-source exists. The engine does not derive names from email, select among
-ambiguous records, treat a project URL as a portfolio, or generate a cover
-letter.
+### Deterministic contact-info mappings
+
+When `UserContactInfo` is confirmed, these canonical keys map directly:
+
+| Canonical key | Source field | Source category |
+|---|---|---|
+| `PERSON_FIRST_NAME` | `first_name` | `USER_CONTACT_INFO` |
+| `PERSON_LAST_NAME` | `last_name` | `USER_CONTACT_INFO` |
+| `PERSON_FULL_NAME` | `first_name` + `last_name` | `USER_CONTACT_INFO` |
+| `CONTACT_PHONE` | `phone` | `USER_CONTACT_INFO` |
+| `ADDRESS_LINE_1` | `address_line_1` | `USER_CONTACT_INFO` |
+| `ADDRESS_LINE_2` | `address_line_2` | `USER_CONTACT_INFO` |
+| `ADDRESS_CITY` | `city` | `USER_CONTACT_INFO` |
+| `ADDRESS_REGION` | `region` | `USER_CONTACT_INFO` |
+| `ADDRESS_POSTAL_CODE` | `postal_code` | `USER_CONTACT_INFO` |
+| `ADDRESS_COUNTRY` | `country_code` | `USER_CONTACT_INFO` |
+| `PROFESSIONAL_LINKEDIN_URL` | `linkedin_url` | `USER_CONTACT_INFO` |
+| `PROFESSIONAL_PORTFOLIO_URL` | `portfolio_url` | `USER_CONTACT_INFO` |
+
+The engine does not derive names from email, select among ambiguous records,
+treat a project URL as a portfolio, or generate a cover letter. Unconfirmed
+contact info, preferences, reusable answers, and Application context remain
+unknown until their approved domains exist.
 
 ## 4. Action and review policy
 
@@ -101,16 +120,16 @@ may report `ELIGIBLE_WITH_EXPLICIT_CONSENT`, but `save_intent_required` remains
 true. This is a proposal for a future user action, not permission to save.
 
 Sensitive/consequential answers are `PROHIBITED`. Known Career Brain, identity,
-and Resume sources are `NOT_APPLICABLE` because they remain canonical domain
-data rather than duplicate reusable-answer records.
+contact-info, and Resume sources are `NOT_APPLICABLE` because they remain
+canonical domain data rather than duplicate reusable-answer records.
 
 ## 8. Extension boundary
 
 Only the privileged background service worker calls the Answer Engine with a
-short-lived authenticated token. The popup receives decisions and renders
-aggregate ready/input/unresolved counts without displaying answer values. The
-content script and external page receive no token, Career Brain data, or answer
-decision in M12.
+short-lived authenticated token. The popup and in-page assistant receive
+decisions and render aggregate ready/input/unresolved counts without displaying
+answer values before user-triggered execution. The content script and external
+page receive no token, Career Brain data, or answer decision in M12.
 
 M13 implements user-triggered page execution and visible per-field review state
 without weakening these decisions. Resume/file upload remains manual, and final

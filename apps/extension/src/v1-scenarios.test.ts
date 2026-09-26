@@ -165,8 +165,8 @@ describe("V1 cross-surface scenarios", () => {
       resumeVersions: [{ id: resumeVersionId, label: "Base · Version 1" }],
     } satisfies ApplicationPageContext;
     expect(initialApplicationFields(context)).toEqual({
-      company: "jobs.ashbyhq.com",
-      role: "Engineer application",
+      company: "",
+      role: "Engineer",
       resumeVersionId: "",
     });
 

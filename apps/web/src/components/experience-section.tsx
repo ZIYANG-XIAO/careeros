@@ -19,6 +19,7 @@ import {
   updateExperience,
   updateExperienceDetail,
 } from "@/lib/api";
+import { formatCareerDateRange, useI18n } from "@/lib/i18n";
 import type { DetailSummary, ExperienceSummary } from "@/lib/types";
 
 type ExperienceSectionProps = {
@@ -28,6 +29,7 @@ type ExperienceSectionProps = {
 
 function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
   const { getToken } = useAuth();
+  const { t } = useI18n();
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState<ExperienceSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ExperienceSummary | null>(
@@ -49,7 +51,7 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
       await onMutate();
       setShowCreate(false);
     } catch {
-      setMutationError("Failed to add experience. Please try again.");
+      setMutationError(t("experience.error.add"));
     } finally {
       setLoading(false);
     }
@@ -66,7 +68,7 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
       await onMutate();
       setEditTarget(null);
     } catch {
-      setMutationError("Failed to update experience. Please try again.");
+      setMutationError(t("experience.error.update"));
     } finally {
       setLoading(false);
     }
@@ -83,7 +85,7 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
       await onMutate();
       setDeleteTarget(null);
     } catch {
-      setMutationError("Failed to delete experience. Please try again.");
+      setMutationError(t("experience.error.delete"));
     } finally {
       setLoading(false);
     }
@@ -100,7 +102,7 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
       await onMutate();
       setAddDetailTo(null);
     } catch {
-      setMutationError("Failed to add detail. Please try again.");
+      setMutationError(t("detail.error.add"));
     } finally {
       setLoading(false);
     }
@@ -117,7 +119,7 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
       await onMutate();
       setEditDetail(null);
     } catch {
-      setMutationError("Failed to update detail. Please try again.");
+      setMutationError(t("detail.error.update"));
     } finally {
       setLoading(false);
     }
@@ -134,7 +136,7 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
       await onMutate();
       setDeleteDetail(null);
     } catch {
-      setMutationError("Failed to delete detail. Please try again.");
+      setMutationError(t("detail.error.delete"));
     } finally {
       setLoading(false);
     }
@@ -153,21 +155,21 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
             id="experience-heading"
             className="text-lg font-semibold text-slate-900"
           >
-            Experience
+            {t("career.sections.experience")}
           </h2>
           <p className="mt-1 text-sm leading-5 text-slate-500">
-            Roles and meaningful work that show what you have done.
+            {t("career.sections.experienceDescription")}
           </p>
         </div>
         <Button variant="secondary" onClick={() => setShowCreate(true)}>
-          Add experience
+          {t("experience.addButton")}
         </Button>
       </div>
 
       {experiences.length === 0 ? (
         <EmptyState
-          title="No experience yet"
-          description="Add a role, internship, or other professional experience."
+          title={t("experience.empty.title")}
+          description={t("experience.empty.description")}
         />
       ) : (
         <ul className="mt-4 space-y-3">
@@ -187,27 +189,25 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
                   <p className="mt-0.5 truncate text-sm text-slate-400">
                     {[
                       exp.location,
-                      formatDateRange(
-                        exp.start_date,
-                        exp.end_date,
-                        exp.is_current,
-                      ),
+                      formatCareerDateRange(exp.start_date, exp.end_date, t, {
+                        isCurrent: exp.is_current,
+                      }),
                     ]
                       .filter(Boolean)
                       .join(" | ")}
                   </p>
                 </div>
                 <DropdownMenu
-                  label={`Actions for ${exp.title} at ${exp.company}`}
+                  label={`${t("common.actionsFor")} ${exp.title} ${t("experience.actionsAt")} ${exp.company}`}
                 >
                   <DropdownItem onClick={() => setEditTarget(exp)}>
-                    Edit
+                    {t("common.edit")}
                   </DropdownItem>
                   <DropdownItem
                     onClick={() => setDeleteTarget(exp)}
                     variant="danger"
                   >
-                    Delete
+                    {t("common.delete")}
                   </DropdownItem>
                 </DropdownMenu>
               </div>
@@ -215,7 +215,7 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
               {exp.details.length > 0 && (
                 <div className="mt-4 rounded-lg border border-slate-200 bg-white px-3 py-3">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    Experience details
+                    {t("experience.detailsHeading")}
                   </p>
                   <ul className="space-y-2">
                     {exp.details.map((d) => (
@@ -232,17 +232,17 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
                             type="button"
                             onClick={() => setEditDetail(d)}
                             className="rounded px-1 py-0.5 text-xs text-slate-400 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                            aria-label={`Edit detail: ${d.content.slice(0, 30)}`}
+                            aria-label={`${t("common.edit")}: ${d.content.slice(0, 30)}`}
                           >
-                            Edit
+                            {t("common.edit")}
                           </button>
                           <button
                             type="button"
                             onClick={() => setDeleteDetail(d)}
                             className="rounded px-1 py-0.5 text-xs text-red-400 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                            aria-label={`Delete detail: ${d.content.slice(0, 30)}`}
+                            aria-label={`${t("common.delete")}: ${d.content.slice(0, 30)}`}
                           >
-                            Delete
+                            {t("common.delete")}
                           </button>
                         </span>
                       </li>
@@ -256,7 +256,7 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
                 onClick={() => setAddDetailTo(exp.id)}
                 className="mt-3 rounded text-xs font-medium text-blue-700 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               >
-                + Add experience detail
+                {t("experience.addDetail")}
               </button>
             </li>
           ))}
@@ -269,7 +269,7 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
           setShowCreate(false);
           clearError();
         }}
-        title="Add Experience"
+        title={t("experience.dialog.add")}
       >
         <ExperienceForm
           onSubmit={handleCreate}
@@ -288,7 +288,7 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
           setEditTarget(null);
           clearError();
         }}
-        title="Edit Experience"
+        title={t("experience.dialog.edit")}
       >
         {editTarget && (
           <ExperienceForm
@@ -310,7 +310,7 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
           setAddDetailTo(null);
           clearError();
         }}
-        title="Add Detail"
+        title={t("detail.dialog.add")}
       >
         <DetailForm
           onSubmit={handleAddDetail}
@@ -329,7 +329,7 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
           setEditDetail(null);
           clearError();
         }}
-        title="Edit Detail"
+        title={t("detail.dialog.edit")}
       >
         {editDetail && (
           <DetailForm
@@ -353,8 +353,8 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
         }}
         onConfirm={handleDelete}
         loading={loading}
-        entityName="Experience"
-        description="Are you sure you want to delete this experience? All associated details will also be removed. This action cannot be undone."
+        entityName={t("experience.entityName")}
+        description={t("experience.deleteConfirm")}
         error={mutationError}
       />
 
@@ -366,21 +366,12 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
         }}
         onConfirm={handleDeleteDetail}
         loading={loading}
-        entityName="Detail"
+        entityName={t("detail.entityName")}
+        description={t("detail.deleteConfirm")}
         error={mutationError}
       />
     </section>
   );
-}
-
-function formatDateRange(
-  start: string | null,
-  end: string | null,
-  isCurrent: boolean,
-): string | null {
-  if (!start && !end && !isCurrent) return null;
-  const endLabel = isCurrent ? "Present" : (end ?? "?");
-  return `${start ?? "?"} — ${endLabel}`;
 }
 
 export { ExperienceSection };

@@ -19,9 +19,11 @@ the user through the Career Brain.
 
 ## Current implementation
 
-M0–M15 and the automated M16 hardening slice are implemented at repository
-level. Representative unpacked-Chrome validation remains pending. Today the
-repository supports:
+M0–M17 and the post-M17 implementation wave are implemented at repository
+level. M16 automated hardening is implemented; representative unpacked-Chrome
+validation remains pending. Current Alembic head:
+`0013_uci_answer_source`.
+Today the repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
 - Clerk authentication and server-side user ownership;
@@ -57,12 +59,28 @@ repository supports:
   recording after the user submits, without automatic final submission;
 - data-minimized assistant context lookup that never sends full resume content
   to the extension; and
-- retry-safe Preparing recovery across an external post-submit redirect.
+- retry-safe Preparing recovery across an external post-submit redirect;
+- mutually exclusive loading/error/empty states and consistent API error
+  representation across Web surfaces;
+- user-owned personal/contact information with Career Profile UI and Answer
+  Engine integration;
+- resume-first onboarding at `/welcome`, an improved landing page, and an
+  extension setup guide at `/setup`;
+- a `/readiness` endpoint and local JWKS preflight diagnostic
+  (`scripts/preflight.py` checks Clerk JWKS reachability only);
+- partial English/Simplified Chinese localization for Applications, Resumes,
+  Career Profile, and Job detail;
+- an in-page Application Assistant — a controlled UI panel for detection,
+  answers, form filling, and Application Memory — with open Shadow DOM style
+  isolation, on-demand content-script injection, explicit activation, and
+  keyboard shortcut support; and
+- refactored Jobs page, extension popup, messages, and API client modules.
 
 The following V1 capabilities are planned, not implemented:
 
 - production job acquisition and real external source adapters;
 - automatic resume/file upload and broader custom-widget execution;
+- complete localization of every Web surface and the extension; and
 - representative unpacked-Chrome validation across both required application
   paths.
 
@@ -98,9 +116,14 @@ The implemented extension is a first-class application entry point
 whether a job was found inside CareerOS or elsewhere. It securely shares the
 Web session, detects likely application pages, converts supported forms into a
 provider-neutral model, and requests policy-controlled answer decisions without
-requiring a CareerOS Job. After explicit user action it fills only approved blank
-native controls and marks review/input/unresolved states on the page. Existing
-answers remain untouched and final submission remains the user's action.
+requiring a CareerOS Job. Users explicitly activate an in-page assistant
+(popup action or `Command/Ctrl+Shift+K`) on the active tab; the assistant is a
+controlled UI panel injected on demand via `activeTab` + `scripting`, uses open
+Shadow DOM for style isolation only, and does not request `<all_urls>` host
+access. After
+explicit user action it fills only approved blank native controls and marks
+review/input/unresolved states on the page. Existing answers remain untouched
+and final submission remains the user's action.
 
 ### Remember
 
@@ -148,6 +171,7 @@ The `docs/` directory is the product and engineering source of truth:
 - `docs/APPLICATION_INTEGRATION.md` — M15 Web/extension integration contract
 - `docs/VALIDATION_M15.md` — M15 automated results and deferred browser gate
 - `docs/VALIDATION_M16.md` — M16 hardening results and remaining browser gate
+- `docs/JOB_SOURCE_DECISION.md` — approved process for the next job-data source
 
 ## Repository structure
 
@@ -197,7 +221,7 @@ docker compose --env-file .env -f infra/compose.yaml up -d postgres
 .venv/bin/alembic -c apps/api/alembic.ini upgrade head
 ```
 
-The current migration head is `0010_m15_application_submission`.
+The current migration head is `0013_uci_answer_source`.
 
 ### Start the API
 
@@ -207,14 +231,17 @@ The current migration head is `0010_m15_application_submission`.
 
 Health check: `http://localhost:8000/health`.
 
+Readiness check: `http://localhost:8000/readiness` reports database connectivity
+and Clerk JWKS reachability (`ok` or `degraded`).
+
 ### Start the Web application
 
 ```bash
 npm run web:dev
 ```
 
-Open `http://localhost:3000`. Implemented routes include `/jobs`,
-`/applications`, `/career`, and `/resumes`.
+Open `http://localhost:3000`. Implemented routes include `/`, `/welcome`,
+`/setup`, `/jobs`, `/applications`, `/career`, and `/resumes`.
 
 ### Build the browser extension
 
@@ -255,9 +282,26 @@ For a local detection fixture:
 npm --workspace @careeros/extension run fixture
 ```
 
-Then open `http://localhost:4173/application-page.html` and open the extension.
-The fixture contains no real applicant data. M13 can fill approved blank fields
-only after explicit user action and never submits the form.
+Then open `http://localhost:4173/application-page.html` and activate the
+in-page assistant (popup action or `Command/Ctrl+Shift+K`). The fixture contains
+no real applicant data. M13 can fill approved blank fields only after explicit
+user action and never submits the form.
+
+### Developer workflow helpers
+
+Check local setup, migration head, and extension build:
+
+```bash
+./scripts/dev-check.sh
+```
+
+Verify that Python can reach Clerk JWKS (common macOS TLS issue):
+
+```bash
+.venv/bin/python scripts/preflight.py
+```
+
+See `/setup` in the Web app for the full extension installation guide.
 
 ### Verification
 
@@ -275,6 +319,8 @@ npm run extension:build
 .venv/bin/ruff format --check apps/api
 .venv/bin/mypy apps/api/src
 .venv/bin/pytest apps/api/tests
+./scripts/dev-check.sh
+.venv/bin/python scripts/preflight.py
 git diff --check
 ```
 

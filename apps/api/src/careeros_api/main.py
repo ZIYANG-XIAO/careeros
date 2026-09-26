@@ -5,6 +5,7 @@ from careeros_api.answer_engine import router as answer_engine_router
 from careeros_api.application import router as application_router
 from careeros_api.career_brain import router as career_brain_router
 from careeros_api.config import Settings, get_settings
+from careeros_api.contact_info import router as contact_info_router
 from careeros_api.education import router as education_router
 from careeros_api.experience import router as experience_router
 from careeros_api.health import router as health_router
@@ -23,11 +24,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         CORSMiddleware,
         allow_origins=[str(application_settings.web_origin).rstrip("/")],
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Accept", "Authorization", "Content-Type"],
     )
     application.include_router(health_router)
     application.include_router(user_router)
+    application.include_router(contact_info_router)
     application.include_router(career_brain_router)
     application.include_router(education_router)
     application.include_router(experience_router)

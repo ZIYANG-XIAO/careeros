@@ -1,7 +1,7 @@
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
-from conftest import make_test_settings
+from conftest import make_integration_client, make_test_settings
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
@@ -18,6 +18,26 @@ from careeros_api.answer_engine_schemas import (
     SemanticFieldInput,
 )
 from careeros_api.main import create_app
+
+
+def field(
+    field_id: str,
+    *,
+    canonical_key: str | None,
+    question: str,
+    control_type: str = "TEXT",
+    required: bool = True,
+    mapping_confidence: str = "HIGH",
+) -> dict[str, object]:
+    return {
+        "field_id": field_id,
+        "canonical_key": canonical_key,
+        "question": question,
+        "control_type": control_type,
+        "required": required,
+        "mapping_confidence": mapping_confidence,
+        "options": [],
+    }
 
 
 def test_answer_engine_rejects_unauthenticated_requests() -> None:
@@ -123,3 +143,188 @@ def test_semantic_classifier_cannot_infer_file_controls() -> None:
     )
     with pytest.raises(ValueError, match="cannot classify file controls"):
         validate_semantic_classifications(result, fields)
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_contact_info_first_name_fills_person_first_name() -> None:
+    user_id = UUID("20000000-0000-4000-8000-000000000001")
+    async with make_integration_client(user_id=user_id) as client:
+        contact = await client.put(
+            "/contact-info",
+            json={"first_name": "Jane"},
+        )
+        assert contact.status_code == 200
+        contact_id = contact.json()["id"]
+
+        response = await client.post(
+            "/answer-engine/resolve",
+            json={
+                "fields": [
+                    field(
+                        "first-name",
+                        canonical_key="PERSON_FIRST_NAME",
+                        question="First name",
+                    )
+                ]
+            },
+        )
+
+        assert response.status_code == 200, response.text
+        decision = response.json()["decisions"][0]
+        assert decision["action"] == "FILL"
+        assert decision["proposed_answer"] == "Jane"
+        assert decision["source_category"] == "USER_CONTACT_INFO"
+        assert decision["source_reference_id"] == contact_id
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_missing_contact_info_asks_for_name_fields() -> None:
+    async with make_integration_client() as client:
+        response = await client.post(
+            "/answer-engine/resolve",
+            json={
+                "fields": [
+                    field(
+                        "first-name",
+                        canonical_key="PERSON_FIRST_NAME",
+                        question="First name",
+                    ),
+                    field(
+                        "last-name",
+                        canonical_key="PERSON_LAST_NAME",
+                        question="Last name",
+                        required=False,
+                    ),
+                ]
+            },
+        )
+
+        assert response.status_code == 200, response.text
+        decisions = {item["field_id"]: item for item in response.json()["decisions"]}
+        assert decisions["first-name"]["action"] == "ASK"
+        assert decisions["first-name"]["proposed_answer"] is None
+        assert decisions["last-name"]["action"] == "UNKNOWN"
+        assert decisions["last-name"]["proposed_answer"] is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    ("canonical_key", "payload_field", "payload_value", "expected_answer", "source_category"),
+    [
+        ("PERSON_LAST_NAME", "last_name", "Doe", "Doe", "USER_CONTACT_INFO"),
+        ("CONTACT_PHONE", "phone", "+1 (555) 123-4567", "+1 (555) 123-4567", "USER_CONTACT_INFO"),
+        ("ADDRESS_LINE_1", "address_line_1", "123 Main St", "123 Main St", "USER_CONTACT_INFO"),
+        ("ADDRESS_LINE_2", "address_line_2", "Apt 4", "Apt 4", "USER_CONTACT_INFO"),
+        ("ADDRESS_CITY", "city", "Boston", "Boston", "USER_CONTACT_INFO"),
+        ("ADDRESS_REGION", "region", "MA", "MA", "USER_CONTACT_INFO"),
+        ("ADDRESS_POSTAL_CODE", "postal_code", "02108", "02108", "USER_CONTACT_INFO"),
+        ("ADDRESS_COUNTRY", "country_code", "us", "US", "USER_CONTACT_INFO"),
+        (
+            "PROFESSIONAL_LINKEDIN_URL",
+            "linkedin_url",
+            "https://linkedin.com/in/janedoe",
+            "https://linkedin.com/in/janedoe",
+            "USER_CONTACT_INFO",
+        ),
+        (
+            "PROFESSIONAL_PORTFOLIO_URL",
+            "portfolio_url",
+            "https://janedoe.dev",
+            "https://janedoe.dev/",
+            "USER_CONTACT_INFO",
+        ),
+    ],
+)
+async def test_contact_info_field_mappings(
+    canonical_key: str,
+    payload_field: str,
+    payload_value: str,
+    expected_answer: str,
+    source_category: str,
+) -> None:
+    async with make_integration_client() as client:
+        saved = await client.put("/contact-info", json={payload_field: payload_value})
+        assert saved.status_code == 200
+
+        response = await client.post(
+            "/answer-engine/resolve",
+            json={
+                "fields": [
+                    field(
+                        "mapped-field",
+                        canonical_key=canonical_key,
+                        question=f"Field for {canonical_key}",
+                    )
+                ]
+            },
+        )
+
+        assert response.status_code == 200, response.text
+        decision = response.json()["decisions"][0]
+        assert decision["action"] == "FILL"
+        assert decision["proposed_answer"] == expected_answer
+        assert decision["source_category"] == source_category
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_person_full_name_combines_first_and_last() -> None:
+    async with make_integration_client() as client:
+        saved = await client.put(
+            "/contact-info",
+            json={"first_name": "Jane", "last_name": "Doe"},
+        )
+        assert saved.status_code == 200
+
+        response = await client.post(
+            "/answer-engine/resolve",
+            json={
+                "fields": [
+                    field(
+                        "full-name",
+                        canonical_key="PERSON_FULL_NAME",
+                        question="Full name",
+                    )
+                ]
+            },
+        )
+
+        assert response.status_code == 200, response.text
+        decision = response.json()["decisions"][0]
+        assert decision["action"] == "FILL"
+        assert decision["proposed_answer"] == "Jane Doe"
+        assert decision["source_category"] == "USER_CONTACT_INFO"
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_sensitive_policies_override_contact_info_name() -> None:
+    async with make_integration_client() as client:
+        saved = await client.put(
+            "/contact-info",
+            json={"first_name": "Jane", "last_name": "Doe"},
+        )
+        assert saved.status_code == 200
+
+        response = await client.post(
+            "/answer-engine/resolve",
+            json={
+                "fields": [
+                    field(
+                        "demographic-name",
+                        canonical_key="PERSON_FIRST_NAME",
+                        question="What is your ethnicity?",
+                    )
+                ]
+            },
+        )
+
+        assert response.status_code == 200, response.text
+        decision = response.json()["decisions"][0]
+        assert decision["action"] == "ASK"
+        assert decision["proposed_answer"] is None
+        assert decision["question_category"] == "DEMOGRAPHIC"
+        assert decision["policy_category"] == "SENSITIVE"

@@ -19,12 +19,18 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-vi.mock("@/lib/api", () => ({
-  listJobs: (...args: unknown[]) => mockListJobs(...args),
-  createJob: (...args: unknown[]) => mockCreateJob(...args),
-  saveJob: (...args: unknown[]) => mockSaveJob(...args),
-  unsaveJob: (...args: unknown[]) => mockUnsaveJob(...args),
-}));
+vi.mock("@/lib/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api")>();
+  return {
+    ...actual,
+    listJobs: (...args: unknown[]) => mockListJobs(...args),
+    createJob: (...args: unknown[]) => mockCreateJob(...args),
+    saveJob: (...args: unknown[]) => mockSaveJob(...args),
+    unsaveJob: (...args: unknown[]) => mockUnsaveJob(...args),
+  };
+});
+
+const { ApiError } = await import("@/lib/api");
 
 const job = {
   id: "job-1",
@@ -74,6 +80,14 @@ describe("JobsPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("loads directly without onboarding interception for new users", async () => {
+    render(<JobsPage />);
+    expect(
+      await screen.findByRole("heading", { name: "Jobs" }),
+    ).toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
   it("shows loading and recoverable list errors", async () => {
     let rejectList: (reason?: unknown) => void = () => undefined;
     mockListJobs.mockReturnValue(
@@ -83,10 +97,49 @@ describe("JobsPage", () => {
     );
     render(<JobsPage />);
     expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument();
-    rejectList(new Error("network unavailable"));
+    rejectList(new ApiError("Network request failed", 0, "network"));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "could not load your jobs",
+      "could not reach CareerOS",
     );
+    expect(
+      screen.queryByText("Your Jobs workspace is ready"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Try again" }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not render the empty state when the initial load fails", async () => {
+    mockListJobs.mockRejectedValue(
+      new ApiError("Service unavailable", 503, "unavailable"),
+    );
+    render(<JobsPage />);
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "temporarily unavailable",
+    );
+    expect(
+      screen.queryByText("Your Jobs workspace is ready"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("preserves job data when a refresh fails", async () => {
+    const user = userEvent.setup();
+    mockListJobs
+      .mockResolvedValueOnce([job])
+      .mockRejectedValueOnce(
+        new ApiError("Service unavailable", 503, "unavailable"),
+      );
+    render(<JobsPage />);
+    expect(await screen.findByText("Platform Engineer")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Saved jobs" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "temporarily unavailable",
+    );
+    expect(screen.getByText("Platform Engineer")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Your Jobs workspace is ready"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders job cards with direct safe apply and detail actions", async () => {

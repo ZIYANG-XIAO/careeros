@@ -2,7 +2,17 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { LocaleProvider } from "@/lib/i18n";
+
 import ResumesPage from "./page";
+
+function renderResumesPage(locale: "en" | "zh-CN" = "en") {
+  return render(
+    <LocaleProvider initialLocale={locale}>
+      <ResumesPage />
+    </LocaleProvider>,
+  );
+}
 
 const mockListResumes = vi.fn();
 const mockUploadResume = vi.fn();
@@ -19,12 +29,19 @@ vi.mock("@clerk/nextjs", () => ({
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
-vi.mock("@/lib/api", () => ({
-  listResumes: (...args: unknown[]) => mockListResumes(...args),
-  uploadResume: (...args: unknown[]) => mockUploadResume(...args),
-}));
+vi.mock("@/lib/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api")>();
+  return {
+    ...actual,
+    listResumes: (...args: unknown[]) => mockListResumes(...args),
+    uploadResume: (...args: unknown[]) => mockUploadResume(...args),
+  };
+});
+
+const { ApiError } = await import("@/lib/api");
 
 describe("ResumesPage", () => {
   beforeEach(() => {
@@ -35,8 +52,22 @@ describe("ResumesPage", () => {
     mockListResumes.mockResolvedValue([]);
   });
 
+  it("does not render the empty state when the initial load fails", async () => {
+    mockListResumes.mockRejectedValue(
+      new ApiError("Service unavailable", 503, "unavailable"),
+    );
+    renderResumesPage();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "temporarily unavailable",
+    );
+    expect(screen.queryByText("No resumes yet")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Try again" }),
+    ).toBeInTheDocument();
+  });
+
   it("shows the empty resume library after loading", async () => {
-    render(<ResumesPage />);
+    renderResumesPage();
     expect(await screen.findByText("No resumes yet")).toBeInTheDocument();
     expect(mockListResumes).toHaveBeenCalledWith("token");
   });
@@ -58,10 +89,35 @@ describe("ResumesPage", () => {
         ],
       },
     ]);
-    render(<ResumesPage />);
+    renderResumesPage();
     expect(await screen.findByText("Engineering Resume")).toBeInTheDocument();
     expect(screen.getByText("Base resume")).toBeInTheDocument();
     expect(screen.getByText(/Version 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Sep/i)).toBeInTheDocument();
+  });
+
+  it("renders zh-CN resume library chrome and locale-aware dates", async () => {
+    mockListResumes.mockResolvedValue([
+      {
+        id: "resume-1",
+        name: "Engineering Resume",
+        is_primary: true,
+        created_at: "2026-09-20T00:00:00Z",
+        updated_at: "2026-09-20T00:00:00Z",
+        versions: [
+          {
+            id: "version-1",
+            version_number: 1,
+            created_at: "2026-09-20T00:00:00Z",
+          },
+        ],
+      },
+    ]);
+    renderResumesPage("zh-CN");
+    expect(await screen.findByText("你的简历")).toBeInTheDocument();
+    expect(screen.getByText("Engineering Resume")).toBeInTheDocument();
+    expect(screen.getByText("基础简历")).toBeInTheDocument();
+    expect(screen.getByText(/2026/)).toBeInTheDocument();
   });
 
   it("shows extraction progress and navigates to review", async () => {
@@ -72,7 +128,7 @@ describe("ResumesPage", () => {
         resolveUpload = resolve;
       }),
     );
-    render(<ResumesPage />);
+    renderResumesPage();
     await screen.findByText("No resumes yet");
 
     const file = new File(["resume"], "resume.pdf", {
@@ -91,7 +147,7 @@ describe("ResumesPage", () => {
   it("shows a useful failure when extraction or parsing fails", async () => {
     const user = userEvent.setup();
     mockUploadResume.mockRejectedValue(new Error("bad document"));
-    render(<ResumesPage />);
+    renderResumesPage();
     await screen.findByText("No resumes yet");
 
     const file = new File(["broken"], "resume.pdf", {

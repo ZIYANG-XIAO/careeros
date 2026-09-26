@@ -65,11 +65,9 @@ describe("ProjectSection", () => {
 
   it("detail edit/delete buttons have accessible labels", () => {
     render(<ProjectSection projects={[mockProject]} onMutate={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /^Edit:/ })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Edit detail:/ }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Delete detail:/ }),
+      screen.getByRole("button", { name: /^Delete:/ }),
     ).toBeInTheDocument();
   });
 

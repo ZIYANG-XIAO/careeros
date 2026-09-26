@@ -16,12 +16,14 @@ export function fillCopy(result: FillExecutionResult): {
   const unresolved = result.fields.length - filled - kept - review;
   const details = [
     filled > 0 ? `${filled} filled` : null,
-    kept > 0 ? `${kept} existing kept` : null,
+    kept > 0
+      ? `${kept} existing value${kept === 1 ? "" : "s"} untouched`
+      : null,
     review > 0 ? `${review} need your review` : null,
     unresolved > 0 ? `${unresolved} unresolved` : null,
   ].filter(Boolean);
   return {
     title: "Review the application page",
-    body: `${details.join(" · ") || "No fields changed"}. CareerOS did not submit anything.`,
+    body: `${details.join(" · ") || "No fields changed"}. CareerOS never submits the form.`,
   };
 }

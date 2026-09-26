@@ -2,14 +2,17 @@
 
 > Version: 0.2
 > Status: Approved logical model; implementation status called out explicitly
-> Last Updated: 2026-09-25
+> Last Updated: 2026-09-26
 
 ## 1. Purpose
 
 This document defines CareerOS domain concepts for the re-baselined V1. It
-separates the implemented M0–M15 product state plus M16 automated hardening from
-planned V1 formation concepts. M14 adds durable Application Memory and M15 adds
-retry-safe submission recording. M16 adds no tables.
+separates the implemented M0–M17 product state, M16 automated hardening, and
+the post-M17 wave from planned V1 formation concepts. M14 adds durable
+Application Memory and M15 adds retry-safe submission recording. M16 adds no
+tables. Migration `0012_user_contact_info` adds `UserContactInfo`. Migration
+`0013_uci_answer_source` adds the `USER_CONTACT_INFO` answer
+source category.
 
 The model supports:
 
@@ -42,6 +45,7 @@ It preserves two foundational rules:
 
 ```text
 User
+├── UserContactInfo (confirmed personal/contact fields)
 ├── Career Brain
 │   ├── Education
 │   ├── Experience → Experience Detail
@@ -57,9 +61,9 @@ User
     └── status and timestamps
 ```
 
-Identity, Career Brain, Career Evidence, Resume, Job, and Application are core
-domains. Job Discovery, Autofill, Answer Engine, Job Intelligence, and other
-workflows are services that consume them.
+Identity, UserContactInfo, Career Brain, Career Evidence, Resume, Job, and
+Application are core domains. Job Discovery, Autofill, Answer Engine, Job
+Intelligence, and other workflows are services that consume them.
 
 ## 4. Implementation status
 
@@ -92,8 +96,9 @@ The current migrations define:
 - `applications`
 - `application_answers`
 - `application_operations`
+- `user_contact_info`
 
-Current Alembic head: `0010_m15_application_submission`.
+Current Alembic head: `0013_uci_answer_source`.
 
 M12 adds a transient Answer Engine decision contract and no tables. Decisions
 reference owned canonical sources but are not persisted as Application or
@@ -113,6 +118,10 @@ M16 adds a data-minimized assistant-context API over the same canonical tables.
 It returns only one unambiguous owned Application candidate and Resume Version
 identifiers/labels; it does not return extracted resume text or raw form data.
 
+M17 adds canonical market/country/workplace/employment metadata on Jobs. The
+post-M17 wave adds `UserContactInfo` for confirmed personal/contact fields used
+by Career Profile and the Answer Engine. It does not create Career Evidence.
+
 ### Planned, not implemented
 
 - Reusable Answer;
@@ -128,24 +137,44 @@ This document proposes those boundaries but does not claim their schema exists.
 `User` represents the internal account owner and maps an authentication-provider
 identity to CareerOS resources.
 
-All private Career Brain, evidence, resume, job, analysis, application, answer,
-and file resources belong to a user context. Ownership is enforced server-side,
-including nested identifiers and identifiers returned by AI.
+All private Career Brain, contact info, evidence, resume, job, analysis,
+application, answer, and file resources belong to a user context. Ownership is
+enforced server-side, including nested identifiers and identifiers returned by
+AI.
 
-## 6. Career Brain
+## 6. UserContactInfo — implemented
+
+`UserContactInfo` stores user-provided personal and contact fields separately
+from Career Evidence and Career Brain professional facts. One record per user.
+
+Implemented fields:
+
+- `first_name`, `last_name`, `preferred_name`;
+- `phone`;
+- `address_line_1`, `address_line_2`, `city`, `region`, `postal_code`,
+  `country_code`;
+- `linkedin_url`, `portfolio_url`;
+- `confirmed_at`; and
+- `created_at`, `updated_at`.
+
+Contact info is explicitly confirmed on save. The Answer Engine uses confirmed
+contact info for deterministic name, phone, address, and link mappings. Contact
+info is not inferred from resumes, email, or indirect signals.
+
+## 7. Career Brain
 
 `CareerBrain` is the aggregate root for canonical professional truth. It is one
 per user in the current implementation.
 
 Implemented child entities include Education, Experience, Experience Detail,
-Project, Project Detail, and Skill. Future approved fields may include personal
-information, certifications, achievements, metrics, professional links,
-application information, and preferences.
+Project, Project Detail, and Skill. Personal/contact fields belong in
+`UserContactInfo`, not Career Brain. Future approved fields may include
+certifications, achievements, metrics, application information, and preferences.
 
 Career Brain data can originate from resume import or direct user actions, but
 AI extraction remains a draft until confirmed according to product rules.
 
-## 7. Career Evidence
+## 8. Career Evidence
 
 `CareerEvidence` gives relevant professional facts stable identity.
 `CareerEvidenceRevision` stores immutable content revisions, origin,
@@ -160,7 +189,7 @@ historical records reference the exact revision used.
 An evidence reference must be validated for existence, ownership, confirmation
 eligibility, and context before use.
 
-## 8. Resume
+## 9. Resume
 
 `Resume` is a logical user-owned asset. `ResumeAsset` preserves the uploaded file
 metadata and storage reference. `ResumeVersion` is an immutable or historically
@@ -175,7 +204,7 @@ Career Brain and Resume remain separate:
 - Career Brain represents confirmed professional truth.
 - Resume Version represents what the user chose to present at a point in time.
 
-## 9. Resume import
+## 10. Resume import
 
 `ResumeImport` tracks the draft/confirmation workflow for a Resume Version.
 `ResumeDraftItem` stores extracted review items and links them to evidence.
@@ -183,7 +212,7 @@ Career Brain and Resume remain separate:
 Draft items are not authoritative merely because a parser produced them. User
 edits and confirmation determine their downstream eligibility.
 
-## 10. Canonical Job
+## 11. Canonical Job
 
 `Job` represents an opportunity independent of how it was acquired.
 
@@ -204,7 +233,7 @@ The logical Job should remain capable of representing:
 
 Source-specific payloads must not become the canonical model.
 
-### 10.1 Implemented job-source boundary
+### 11.1 Implemented job-source boundary
 
 Conceptually:
 
@@ -226,7 +255,7 @@ also preserve `UNKNOWN`. Provider payloads are not stored as canonical Job truth
 Do not add a large generic ingestion schema before actual source requirements are
 known.
 
-### 10.2 Deduplication and freshness
+### 11.2 Deduplication and freshness
 
 Implemented deduplication prefers source key plus external source ID, then
 canonical URL. It avoids obvious retry duplicates without claiming perfect
@@ -236,7 +265,7 @@ instead of creating another canonical Job.
 Freshness should indicate what CareerOS knows about when a source was observed or
 whether a job appears available. Unknown freshness must remain unknown.
 
-## 11. Job snapshots and requirements
+## 12. Job snapshots and requirements
 
 `JobSnapshot` immutably preserves the raw and normalized job description, parser
 metadata, content hash, and version. `JobRequirement` stores structured,
@@ -246,7 +275,7 @@ and position.
 Existing manually captured Jobs and snapshots remain valid when future source
 boundaries are introduced.
 
-## 12. Job Intelligence
+## 13. Job Intelligence
 
 `JobAnalysis` records the exact Job Snapshot, Career Brain, Resume Version,
 matcher version/model, recommendation, and summary used at analysis time.
@@ -265,7 +294,7 @@ not rewrite historical analysis.
 
 Job Intelligence is implemented optional enhancement functionality.
 
-## 13. Saved Job and discovery state — implemented
+## 14. Saved Job and discovery state — implemented
 
 `SavedJob` is a durable user-owned interest marker with `user_id`, `job_id`, and
 `created_at`. The `(user_id, job_id)` pair is unique, making save retries
@@ -274,7 +303,7 @@ idempotent. Both identifiers are protected by cascading foreign keys.
 Saving means “I am interested in this opportunity.” It does not necessarily
 mean the user analyzed or applied. Save and unsave never create an Application.
 
-## 14. Application — implemented core domain
+## 15. Application — implemented core domain
 
 Application is a durable user-owned entity representing work toward or
 completion of an application.
@@ -299,7 +328,7 @@ An external application is recordable even if the user never discovered or
 saved a Job in CareerOS. M14 either links an existing owned canonical Job or
 stores standalone external context; it does not create a Job as a prerequisite.
 
-### 14.1 Status
+### 15.1 Status
 
 V1 API and database status values:
 
@@ -315,7 +344,7 @@ V1 API and database status values:
 The implemented schema stores current status and timestamps while preserving a
 path to future status history.
 
-### 14.2 Historical snapshot rule
+### 15.2 Historical snapshot rule
 
 An Application preserves what was used at the time: exact Resume Version,
 relevant answers, captured job/application context, status, and timestamps.
@@ -325,22 +354,29 @@ Future strategy, tailored resumes, recruiter interactions, interviews,
 analytics, and outcomes may reference Application. They are not required in the
 initial Application schema.
 
-## 15. Information and answer boundaries
+## 16. Information and answer boundaries
 
 CareerOS must not collapse all user information into Career Evidence.
 
-### 15.1 Professional truth
+### 16.1 Professional truth
 
 Confirmed facts about education, employment, projects, skills, achievements,
 metrics, and related professional history. These belong in Career Brain and may
 produce Career Evidence.
 
-### 15.2 Application preferences
+### 16.2 Confirmed personal/contact information — implemented
+
+User-provided name, phone, address, and professional link fields stored in
+`UserContactInfo`. These are not Career Evidence and are not inferred from
+resume content. Confirmed contact info may be used deterministically by the
+Answer Engine with source category `USER_CONTACT_INFO`.
+
+### 16.3 Application preferences
 
 User choices such as target locations, work arrangement, relocation preference,
 or search-specific preferences. They are not proof of professional capability.
 
-### 15.3 Reusable confirmed answer — planned
+### 16.4 Reusable confirmed answer — planned
 
 A user-approved answer intended for reuse across equivalent application
 questions when policy allows.
@@ -357,7 +393,7 @@ Conceptual fields may include:
 The initial Answer Engine milestone must determine whether fixed structured
 fields, reusable records, or both best fit approved questions.
 
-### 15.4 Application-specific answer — implemented narrow history
+### 16.5 Application-specific answer — implemented narrow history
 
 M14 stores ordered, immutable, user-confirmed standard answers with question
 text/key, answer text, source category, policy category, sensitivity, position,
@@ -366,13 +402,13 @@ prohibited pending an approved retention policy.
 
 Application-specific answers do not automatically become reusable.
 
-### 15.5 Sensitive answer
+### 16.6 Sensitive answer
 
 A sensitive or consequential answer requires explicit user origin, restricted
 use, and approved policy. It must never be inferred from Career Evidence or
 indirect traits.
 
-## 16. Answer provenance
+## 17. Answer provenance
 
 An Answer Engine decision should be able to identify:
 
@@ -388,7 +424,7 @@ An Answer Engine decision should be able to identify:
 Not every transient decision must become a permanent table. Persist only what is
 required for the approved user experience, auditability, and Application Memory.
 
-## 17. Product service relationships
+## 18. Product service relationships
 
 ```text
 Career Brain ─┬─ Job Intelligence
@@ -410,7 +446,7 @@ Application ── future strategy, interviews, outcomes, analytics, learning
 Services share domain references rather than copying whole alternate user or job
 profiles.
 
-## 18. Deletion and correction
+## 19. Deletion and correction
 
 Corrections affect future reasoning. Historical artifacts may preserve what was
 used at the time where product, legal, and retention policy allows.
@@ -419,7 +455,7 @@ The system must distinguish current truth from historical application context.
 Exact retention and deletion policy requires an explicit product/legal decision;
 the architecture must not guess.
 
-## 19. Implementation guidance
+## 20. Implementation guidance
 
 Prefer:
 
@@ -440,7 +476,7 @@ Avoid:
 - speculative event stores, graph databases, or generic plugin tables; and
 - a schema for every imagined future service.
 
-## 20. Review questions
+## 21. Review questions
 
 Before implementing a new schema, verify:
 

@@ -4,6 +4,7 @@ import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
 import type { ExperienceSummary } from "@/lib/types";
 
 type ExperienceFormData = {
@@ -30,6 +31,7 @@ function ExperienceForm({
   loading,
   error,
 }: ExperienceFormProps) {
+  const { t } = useI18n();
   const [company, setCompany] = useState(initial?.company ?? "");
   const [title, setTitle] = useState(initial?.title ?? "");
   const [location, setLocation] = useState(initial?.location ?? "");
@@ -55,42 +57,42 @@ function ExperienceForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
-        label="Company"
+        label={t("experience.form.company")}
         value={company}
         onChange={(e) => setCompany(e.target.value)}
         required
         maxLength={500}
-        placeholder="Acme Corp"
+        placeholder={t("experience.form.companyPlaceholder")}
       />
       <Input
-        label="Title"
+        label={t("experience.form.title")}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         required
         maxLength={500}
-        placeholder="Software Engineer"
+        placeholder={t("experience.form.titlePlaceholder")}
       />
       <Input
-        label="Location"
+        label={t("common.form.location")}
         value={location}
         onChange={(e) => setLocation(e.target.value)}
         maxLength={500}
-        placeholder="San Francisco, CA"
+        placeholder={t("experience.form.locationPlaceholder")}
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
-          label="Start Date"
+          label={t("common.form.startDate")}
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
           maxLength={10}
-          placeholder="2022-01"
+          placeholder={t("experience.form.startDatePlaceholder")}
         />
         <Input
-          label="End Date"
+          label={t("common.form.endDate")}
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
           maxLength={10}
-          placeholder="2024-06"
+          placeholder={t("experience.form.endDatePlaceholder")}
           disabled={isCurrent}
         />
       </div>
@@ -104,7 +106,7 @@ function ExperienceForm({
           }}
           className="rounded border-slate-300"
         />
-        Currently working here
+        {t("experience.form.currentlyWorking")}
       </label>
       {error && (
         <p className="text-sm text-red-600" role="alert">
@@ -118,10 +120,10 @@ function ExperienceForm({
           onClick={onCancel}
           disabled={loading}
         >
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button type="submit" loading={loading}>
-          {initial ? "Save" : "Add"}
+          {initial ? t("common.save") : t("common.add")}
         </Button>
       </div>
     </form>

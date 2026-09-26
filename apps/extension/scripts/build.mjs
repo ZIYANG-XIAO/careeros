@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { context } from "esbuild";
 import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -65,6 +66,26 @@ if (!config.publishableKey || !config.frontendApi) {
   );
 }
 
+async function resolveBuildVersion() {
+  try {
+    const hash = execSync("git rev-parse --short HEAD", {
+      cwd: repositoryRoot,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+    if (hash) return hash;
+  } catch {
+    // Fall back to the package version when git is unavailable.
+  }
+  const packageJson = JSON.parse(
+    await readFile(path.join(extensionRoot, "package.json"), "utf8"),
+  );
+  return packageJson.version ?? "dev";
+}
+
+const buildVersion = await resolveBuildVersion();
+
 function hostPermission(value) {
   const url = new URL(value);
   return `${url.protocol}//${url.host}/*`;
@@ -92,6 +113,15 @@ const manifest = {
     service_worker: "background.js",
     type: "module",
   },
+  commands: {
+    "activate-assistant": {
+      suggested_key: {
+        default: "Ctrl+Shift+K",
+        mac: "Command+Shift+K",
+      },
+      description: "Open the CareerOS in-page assistant on the active tab",
+    },
+  },
 };
 
 manifest.key = config.crxPublicKey;
@@ -115,6 +145,7 @@ await Promise.all([
 const define = {
   __CAREEROS_API_URL__: JSON.stringify(config.apiUrl.replace(/\/$/, "")),
   __CAREEROS_WEB_URL__: JSON.stringify(config.webUrl.replace(/\/$/, "")),
+  __CAREEROS_BUILD_VERSION__: JSON.stringify(buildVersion),
   __CLERK_PUBLISHABLE_KEY__: JSON.stringify(config.publishableKey),
   __CLERK_SYNC_HOST__: JSON.stringify(config.syncHost.replace(/\/$/, "")),
 };

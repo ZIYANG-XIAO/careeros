@@ -2,7 +2,17 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { LocaleProvider } from "@/lib/i18n";
+
 import ApplicationDetailPage from "./page";
+
+function renderApplicationDetail(locale: "en" | "zh-CN" = "en") {
+  return render(
+    <LocaleProvider initialLocale={locale}>
+      <ApplicationDetailPage />
+    </LocaleProvider>,
+  );
+}
 
 const mockGetApplication = vi.fn();
 const mockListResumes = vi.fn();
@@ -69,7 +79,7 @@ describe("ApplicationDetailPage", () => {
   });
 
   it("shows durable context, exact resume, and confirmed answers", async () => {
-    render(<ApplicationDetailPage />);
+    renderApplicationDetail();
 
     expect(await screen.findByText("Platform Engineer")).toBeInTheDocument();
     expect(screen.getByText("Base Resume · Version 2")).toBeInTheDocument();
@@ -84,7 +94,7 @@ describe("ApplicationDetailPage", () => {
 
   it("updates status and keeps retry-safe API input", async () => {
     const user = userEvent.setup();
-    render(<ApplicationDetailPage />);
+    renderApplicationDetail();
     await screen.findByText("Platform Engineer");
 
     await user.selectOptions(
@@ -107,9 +117,16 @@ describe("ApplicationDetailPage", () => {
 
   it("shows ownership-safe loading errors", async () => {
     mockGetApplication.mockRejectedValue(new Error("404"));
-    render(<ApplicationDetailPage />);
+    renderApplicationDetail();
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "do not have access",
     );
+  });
+
+  it("renders zh-CN detail chrome", async () => {
+    renderApplicationDetail("zh-CN");
+    expect(await screen.findByText("Platform Engineer")).toBeInTheDocument();
+    expect(screen.getByText("来自外部申请页")).toBeInTheDocument();
+    expect(screen.getByText("更新状态")).toBeInTheDocument();
   });
 });

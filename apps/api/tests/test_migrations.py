@@ -79,6 +79,7 @@ async def test_clean_migration_creates_expected_schema() -> None:
                 )
                 assert "users" in table_names
                 assert "career_brains" in table_names
+                assert "user_contact_info" in table_names
 
                 # --- users columns ---
                 user_cols = await conn.run_sync(
@@ -105,6 +106,40 @@ async def test_clean_migration_creates_expected_schema() -> None:
                 )
                 for col in ("id", "user_id", "created_at", "updated_at"):
                     assert col in brain_cols, f"Missing career_brains column: {col}"
+
+                # --- user_contact_info columns ---
+                contact_cols = await conn.run_sync(
+                    lambda sync_conn: {
+                        c["name"]: c for c in inspect(sync_conn).get_columns("user_contact_info")
+                    }
+                )
+                for col in (
+                    "id",
+                    "user_id",
+                    "first_name",
+                    "last_name",
+                    "preferred_name",
+                    "phone",
+                    "address_line_1",
+                    "address_line_2",
+                    "city",
+                    "region",
+                    "postal_code",
+                    "country_code",
+                    "linkedin_url",
+                    "portfolio_url",
+                    "confirmed_at",
+                    "created_at",
+                    "updated_at",
+                ):
+                    assert col in contact_cols, f"Missing user_contact_info column: {col}"
+
+                contact_uniques = await conn.run_sync(
+                    lambda sync_conn: inspect(sync_conn).get_unique_constraints("user_contact_info")
+                )
+                assert any(
+                    set(constraint["column_names"]) == {"user_id"} for constraint in contact_uniques
+                ), "Missing unique constraint on user_contact_info.user_id"
 
                 # --- unique constraint on (auth_provider, auth_subject) ---
                 user_uniques = await conn.run_sync(

@@ -4,16 +4,29 @@ export function answerCopy(resolution: AnswerResolution): {
   title: string;
   body: string;
 } {
-  const ready = resolution.decisions.filter((decision) =>
-    ["FILL", "SUGGEST"].includes(decision.action),
+  const approved = resolution.decisions.filter(
+    (decision) => decision.action === "FILL",
   ).length;
-  const needsInput = resolution.decisions.filter((decision) =>
-    ["ASK", "CONFIRM"].includes(decision.action),
+  const needsInput = resolution.decisions.filter(
+    (decision) => decision.action === "ASK",
   ).length;
-  const unresolved = resolution.decisions.length - ready - needsInput;
+  const needsConfirm = resolution.decisions.filter(
+    (decision) => decision.action === "CONFIRM",
+  ).length;
+  const needsReview = resolution.decisions.filter(
+    (decision) => decision.action === "SUGGEST",
+  ).length;
+  const unresolved =
+    resolution.decisions.length -
+    approved -
+    needsInput -
+    needsConfirm -
+    needsReview;
   const details = [
-    ready > 0 ? `${ready} ready` : null,
-    needsInput > 0 ? `${needsInput} need your input` : null,
+    approved > 0 ? `${approved} approved for fill` : null,
+    needsInput > 0 ? `${needsInput} need input` : null,
+    needsConfirm > 0 ? `${needsConfirm} need confirmation` : null,
+    needsReview > 0 ? `${needsReview} need review` : null,
     unresolved > 0 ? `${unresolved} unresolved` : null,
   ].filter(Boolean);
   return {

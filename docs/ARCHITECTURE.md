@@ -2,7 +2,7 @@
 
 > Version: 0.3
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-25
+> Last Updated: 2026-09-26
 
 ## 1. Purpose
 
@@ -14,9 +14,9 @@ KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
                        ENHANCE (optional)
 ```
 
-It preserves working M0–M15 behavior and the implemented M16 automated
-hardening while defining minimal extension points for Jobs discovery. The M16
-representative browser gate remains pending.
+It preserves working M0–M17 behavior, the implemented M16 automated hardening,
+and the post-M17 wave while defining minimal extension points for Jobs
+discovery. The M16 representative browser gate remains pending.
 
 The architectural principle is:
 
@@ -64,15 +64,28 @@ Implemented domains and workflows:
 - Applications Web workflows plus background-only extension matching and
   explicit submission recording; and
 - data-minimized assistant context lookup plus Preparing recovery after an
-  external redirect.
+  external redirect;
+- an in-page Application Assistant — a controlled UI panel for detection,
+  Answer Engine answers, form filling, and Application Memory — with open
+  Shadow DOM style isolation, explicit activation, and page lifecycle handling;
+- user-owned `UserContactInfo` with Career Profile UI and Answer Engine
+  integration;
+- resume-first onboarding at `/welcome`, landing improvements, and `/setup`;
+- a `/readiness` endpoint and local JWKS preflight diagnostic
+  (`scripts/preflight.py` checks Clerk JWKS reachability only);
+- partial English/Simplified Chinese localization for Applications, Resumes,
+  Career Profile, and Job detail; and
+- refactored Jobs page, extension popup, messages, and API client modules.
 
-Current Alembic head: `0010_m15_application_submission`.
+Current Alembic head: `0013_uci_answer_source`.
 
 Not implemented today:
 
 - production job-source ingestion;
 - automatic resume/file upload and broader custom-widget execution;
-- Application Strategy/resume tailoring.
+- Application Strategy/resume tailoring;
+- complete localization of every Web surface and the extension; and
+- representative unpacked-Chrome validation of both required V1 scenarios.
 
 ## 3. Architecture principles
 
@@ -139,6 +152,7 @@ integration are implemented.
 ### Core domains
 
 - Identity
+- UserContactInfo
 - Career Brain
 - Career Evidence
 - Resume
@@ -178,8 +192,9 @@ Directories are introduced only when their approved milestone begins.
 
 Stack: Next.js, TypeScript, React, Tailwind CSS.
 
-Current routes cover system status, Career Profile, Resumes, manually captured
-Jobs/Job Intelligence, and Applications list/detail/status/manual recovery.
+Current routes cover landing, `/welcome` onboarding, `/setup` extension guide,
+Career Profile, Resumes, manually captured Jobs/Job Intelligence, and
+Applications list/detail/status/manual recovery.
 
 Implemented primary navigation:
 
@@ -198,6 +213,11 @@ trust or debugging.
 ## 8. Backend application
 
 Stack: FastAPI, Python, Pydantic, SQLAlchemy, Alembic.
+
+System endpoints:
+
+- `GET /health` — liveness with required database connectivity;
+- `GET /readiness` — database and Clerk JWKS reachability (`ok` or `degraded`).
 
 The API owns:
 
@@ -305,11 +325,14 @@ Intelligence is optional and does not gate Apply or extension assistance.
 
 Approved stack direction: React, TypeScript, Chrome Manifest V3.
 
-Implemented M10–M13 components:
+Implemented M10–M13 components plus the post-M17 in-page assistant:
 
 - background service worker;
-- content scripts;
-- compact popup and/or side panel;
+- content scripts injected on demand via `activeTab`, `scripting`, and
+  `chrome.scripting.executeScript` (not declared in manifest `content_scripts`);
+- in-page Application Assistant mounted in an open Shadow DOM host after
+  explicit activation;
+- compact popup;
 - authenticated API client;
 - application-page detector;
 - supported/unsupported popup state;
@@ -327,8 +350,22 @@ custom-widget support when validated.
 
 M10/M11 inspection reads only narrowly scoped active-tab structure. M12 requests
 canonical answers and policy decisions from the backend. M13 changes supported
-blank controls only after explicit user action. The extension does not store a
-duplicate Career Brain or become an independent backend.
+blank controls only after explicit user action. The in-page assistant reuses the
+same privileged background boundary; it does not receive credentials or raw
+Career Brain content. The extension does not store a duplicate Career Brain or
+become an independent backend.
+
+### In-page assistant
+
+The assistant is a controlled UI panel, not a general-purpose conversational AI
+agent. It is not injected on every page load. The user activates it on the
+active tab through the popup action or the `activate-assistant` command
+(`Command/Ctrl+Shift+K`), which sends a `CAREEROS_ACTIVATE_ASSISTANT` message.
+Activation injects `content.js` via `chrome.scripting.executeScript` if needed,
+mounts an open Shadow DOM host (style isolation only, not a security boundary),
+and exposes the same detection, answer, fill, and Application Memory flows as
+the popup. Page navigation clears stale form state. Permissions are `activeTab`,
+`cookies`, `scripting`, and `storage` — not `<all_urls>`.
 
 ### Trust boundary
 
@@ -402,10 +439,27 @@ Normalized field/question
 → Fill / Suggest / Ask / Confirm / Unknown
 ```
 
-Current sources are authenticated identity email, one unambiguous Education, one
-explicit current Experience, and an explicitly selected owned Resume Version.
-Missing profile fields, preferences, reusable answers, and Application context
-remain unknown until their approved domains exist.
+Current sources are authenticated identity email, confirmed `UserContactInfo`
+(when `confirmed_at` is set), one unambiguous Education, one explicit current
+Experience, and an explicitly selected owned Resume Version.
+
+Deterministic contact mappings use source category `USER_CONTACT_INFO`:
+
+- `PERSON_FIRST_NAME` → `first_name`
+- `PERSON_LAST_NAME` → `last_name`
+- `PERSON_FULL_NAME` → `first_name` + `last_name` when both exist
+- `CONTACT_PHONE` → `phone`
+- `ADDRESS_LINE_1` → `address_line_1`
+- `ADDRESS_LINE_2` → `address_line_2`
+- `ADDRESS_CITY` → `city`
+- `ADDRESS_REGION` → `region`
+- `ADDRESS_POSTAL_CODE` → `postal_code`
+- `ADDRESS_COUNTRY` → `country_code`
+- `PROFESSIONAL_LINKEDIN_URL` → `linkedin_url`
+- `PROFESSIONAL_PORTFOLIO_URL` → `portfolio_url`
+
+Missing preferences, reusable answers, and Application context remain unknown
+until their approved domains exist. Names are not derived from email.
 
 Policy must distinguish professional truth, preferences, reusable answers,
 application-specific answers, and sensitive answers.

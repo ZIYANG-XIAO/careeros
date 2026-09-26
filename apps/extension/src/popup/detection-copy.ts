@@ -13,14 +13,16 @@ export function detectionCopy(detection: PageDetection): {
     if (recognized === 0) {
       return {
         title: "Application form needs manual review",
-        body: `${fields.length} fields were found, but none can be identified reliably yet. Autofill is not enabled.`,
+        body: `${fields.length} fields were found, but none can be identified reliably yet. Nothing changes until you act.`,
       };
     }
     return {
       title: "Application form inspected",
-      body: `${recognized} ${recognized === 1 ? "field" : "fields"} recognized${
+      body: `Form inspection succeeded. ${recognized} ${
+        recognized === 1 ? "field" : "fields"
+      } recognized${
         needsReview > 0 ? ` · ${needsReview} need manual review` : ""
-      }. Autofill is not enabled yet.`,
+      }. Nothing changes until you act.`,
     };
   }
   if (detection.status === "UNSUPPORTED_PAGE") {

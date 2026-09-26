@@ -6,15 +6,26 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ResumeReview } from "@/components/resume-review";
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { getResumeImport } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import type { ResumeImport } from "@/lib/types";
 
 export default function ResumeImportPage() {
   const { id } = useParams<{ id: string }>();
   const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { t } = useI18n();
   const [resumeImport, setResumeImport] = useState<ResumeImport | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fetchKey, setFetchKey] = useState(0);
+  const [prevFetchKey, setPrevFetchKey] = useState(0);
+
+  if (fetchKey !== prevFetchKey) {
+    setPrevFetchKey(fetchKey);
+    setError(null);
+    setResumeImport(null);
+  }
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
@@ -26,23 +37,43 @@ export default function ResumeImportPage() {
         const result = await getResumeImport(token, id);
         if (!cancelled) setResumeImport(result);
       } catch {
-        if (!cancelled) setError("This resume import could not be loaded.");
+        if (!cancelled) setError(t("resumes.import.loadError"));
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [getToken, id, isLoaded, isSignedIn]);
+  }, [getToken, id, isLoaded, isSignedIn, t, fetchKey]);
 
   if (!isLoaded || (isSignedIn && !resumeImport && !error)) return <Spinner />;
   if (!isSignedIn)
     return (
-      <p className="text-sm text-slate-600">Sign in to review this import.</p>
+      <p className="text-sm text-slate-600">
+        {t("resumes.import.signInRequired")}
+      </p>
     );
   if (error || !resumeImport) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
-        {error}
+      <div className="mx-auto max-w-4xl space-y-4">
+        <div
+          className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"
+          role="alert"
+        >
+          <p>{error ?? t("resumes.import.loadError")}</p>
+          <Button
+            variant="secondary"
+            className="mt-3"
+            onClick={() => setFetchKey((k) => k + 1)}
+          >
+            {t("errors.retry")}
+          </Button>
+        </div>
+        <Link
+          href="/resumes"
+          className="inline-flex text-sm font-medium text-blue-700 hover:text-blue-800"
+        >
+          ← {t("resumes.import.backToLibrary")}
+        </Link>
       </div>
     );
   }
@@ -54,17 +85,17 @@ export default function ResumeImportPage() {
           href="/resumes"
           className="text-sm font-medium text-blue-700 hover:text-blue-900"
         >
-          ← Resume library
+          {t("resumes.import.backToLibrary")}
         </Link>
         <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
-          Review extraction
+          {t("resumes.import.eyebrow")}
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
-          What CareerOS found in {resumeImport.resume_name}
+          {t("resumes.import.titlePrefix")}
+          {resumeImport.resume_name}
         </h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Correct or remove anything that is not accurate. Resume content
-          remains unconfirmed until you approve it.
+          {t("resumes.import.description")}
         </p>
       </header>
       <ResumeReview initialImport={resumeImport} />

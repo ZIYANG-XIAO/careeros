@@ -2,7 +2,7 @@
 
 > Version: 0.2
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-25
+> Last Updated: 2026-09-26
 
 ## 1. Purpose and authority
 
@@ -527,12 +527,76 @@ Chinese opportunities without coupling interface language to recruiting market.
 
 Production acquisition remains a separate track. Salary, sponsorship, education,
 experience-level, company-type, and funding filters remain deferred until real
-source requirements and trustworthy normalized fields exist. Application,
-Resume, Profile, Job detail, and extension page-specific copy is not yet
-localized; the shared shell and Jobs surface establish the first localization
-slice.
+source requirements and trustworthy normalized fields exist.
 
-## 11. Optional intelligence expansion after formation
+## 11. Post-M17 wave — implementation complete
+
+After M17, a focused product-formation wave delivered the following without
+changing the V1 spine or marking M16 complete:
+
+### Phase A — UX reliability
+
+- mutually exclusive loading, error, and empty states across Web data surfaces;
+- consistent API error representation and user-facing retry behavior.
+
+### Phase B — In-page Application Assistant
+
+- floating in-page assistant — controlled UI panel, not a conversational AI
+  agent — with open Shadow DOM style isolation only;
+- explicit activation via popup action or `Command/Ctrl+Shift+K`
+  (`CAREEROS_ACTIVATE_ASSISTANT` message);
+- `activeTab` + on-demand content-script injection via
+  `chrome.scripting.executeScript` (no manifest `content_scripts`, no
+  `<all_urls>`);
+- page lifecycle handling that clears stale form state on navigation.
+
+### Phase C — UserContactInfo
+
+- `UserContactInfo` model, migrations `0012_user_contact_info` and
+  `0013_uci_answer_source`, and API;
+- Career Profile contact-info UI;
+- Answer Engine deterministic mappings for name, phone, address, LinkedIn, and
+  portfolio when contact info is confirmed.
+
+### Phase D — Onboarding and landing
+
+- resume-first onboarding at `/welcome`;
+- improved landing page and onboarding step tracking.
+
+### Phase E — Developer and extension visibility
+
+- extension build/version visibility;
+- Web setup guide at `/setup`;
+- `scripts/dev-check.sh` local environment check.
+
+### Phase F — Operational diagnostics
+
+- `/readiness` endpoint for database and Clerk JWKS status;
+- `scripts/preflight.py` Clerk JWKS reachability and TLS verification
+  diagnostic (does not check API reachability).
+
+### Phase G — Localization expansion
+
+- partial English/Simplified Chinese localization for Applications, Resumes,
+  Career Profile, and Job detail (Career Profile section components remain
+  hardcoded English).
+
+### Phase H — Maintainability refactor
+
+- Jobs page, extension popup, shared messages, and API client split into smaller
+  modules without changing approved product behavior.
+
+Remaining limitations after this wave:
+
+- no production job acquisition;
+- no automatic resume/file upload or broader custom-widget execution;
+- incomplete localization of remaining Web surfaces and the extension; and
+- M16 representative unpacked-Chrome validation still pending.
+
+See `docs/JOB_SOURCE_DECISION.md` for the next approved job-data source decision
+process.
+
+## 12. Optional intelligence expansion after formation
 
 After V1 formation and validation, CareerOS may resume deeper optional Enhance
 work in separately approved milestones:
@@ -547,7 +611,7 @@ work in separately approved milestones:
 These features attach to existing Job, Resume, Career Evidence, and Application
 domains. They must not become mandatory for every application.
 
-## 12. Deferred/non-goal list
+## 13. Deferred/non-goal list
 
 Do not make these blockers for V1 formation:
 
@@ -558,12 +622,12 @@ Do not make these blockers for V1 formation:
 - cover letters and interview preparation;
 - sophisticated recommendations or outcome learning;
 - advanced analytics;
-- complete page-by-page localization beyond the shell and Jobs foundation;
+- complete localization of remaining Web surfaces and the extension;
 - career planning or autonomous agents; and
 - microservices, Kafka, Kubernetes, Neo4j, standalone vector database, or generic
   plugin/event infrastructure.
 
-## 13. Prioritization rules
+## 14. Prioritization rules
 
 When choosing between feature breadth and Golden Path reliability, choose
 reliability.
@@ -578,7 +642,7 @@ When choosing between new intelligence and evidence/answer safety, choose safety
 When choosing between sophisticated infrastructure and a clear modular boundary,
 choose the clear boundary.
 
-## 14. Commit and milestone review
+## 15. Commit and milestone review
 
 Before a milestone:
 
@@ -598,15 +662,19 @@ After a milestone:
 5. create a focused commit; and
 6. stop before expanding scope.
 
-## 15. Immediate next step
+## 16. Immediate next step
 
-M17 implementation and automated validation are complete. M16 automated
-hardening is also complete, but at the user's direction its unpacked-extension
-Chrome setup and representative browser validation remain deferred. The next
-required V1 gate is still:
+M17 and the post-M17 wave are implemented and automated validation passes at
+repository level. M16 automated hardening is also complete, but its
+unpacked-extension Chrome setup and representative browser validation remain
+deferred. The next required V1 gate is still:
 
 > Run both M16 representative scenarios in unpacked Chrome
 
+Before production job acquisition, complete an approved one-source-at-a-time
+review using `docs/JOB_SOURCE_DECISION.md`.
+
 Do not mark M16 or V1 complete, and do not begin Application Strategy, resume
-tailoring, or automatic final submission, until that gate is explicitly resumed
-and passed.
+tailoring, production job ingestion, or automatic final submission, until the
+M16 browser gate is explicitly resumed and passed and any chosen job source is
+approved separately.

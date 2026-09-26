@@ -2,7 +2,7 @@
 
 > Version: 0.2
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-25
+> Last Updated: 2026-09-26
 
 ## 1. Experience model
 
@@ -44,6 +44,15 @@ the user asks CareerOS to fill an independently found application, the extension
 first attempts to preserve reviewed Preparing context so it can recover after a
 post-submit redirect.
 
+Users explicitly activate an in-page Application Assistant on the active tab
+via the popup action or `Command/Ctrl+Shift+K`. The assistant is a controlled
+UI panel for detection, answers, form filling, and Application Memory — not a
+conversational AI agent. It renders inside an open Shadow DOM host (style
+isolation only), is injected on demand via `activeTab` + `scripting` (not
+manifest-declared `content_scripts`), uses `activeTab` permission (not
+`<all_urls>`), and clears stale form state on page navigation. The compact popup
+remains available for quick status and activation.
+
 It is not a second full CareerOS application.
 
 ## 3. Current implementation boundary
@@ -71,22 +80,31 @@ Implemented Web flows today:
   after user submission;
 - confirmation-page recovery from one recent reviewed Preparing Application;
   and
-- Job Intelligence creation and review.
+- Job Intelligence creation and review;
+- resume-first onboarding at `/welcome` with step guidance;
+- personal/contact information editing in Career Profile;
+- extension setup guidance at `/setup`;
+- partial English/Simplified Chinese localization for Applications, Resumes,
+  Career Profile, and Job detail; and
+- mutually exclusive loading/error/empty states across Web data surfaces.
 
-Production job-source discovery, automatic file upload, and representative
-unpacked-Chrome validation remain planned. Final submission remains
-user-controlled.
+Production job-source discovery, automatic file upload, complete localization of
+every surface, and representative unpacked-Chrome validation remain planned.
+Final submission remains user-controlled.
 
 ## 4. First-time onboarding — Know Me
 
 ```text
 Landing
 → Sign up
+→ /welcome onboarding
 → Upload resume
 → Parsing state
 → Career Brain draft
 → Review and correct
 → Confirm
+→ Contact info (optional but encouraged)
+→ Extension setup guidance
 → Product entry
 ```
 
@@ -95,7 +113,8 @@ Landing
 The landing experience communicates that CareerOS helps users find, apply to,
 and remember opportunities using one shared understanding of their career.
 
-Primary action: Get Started. Returning users can sign in.
+Primary action: Get Started. Returning users can sign in. Signed-in users with
+incomplete onboarding may be routed to `/welcome`.
 
 ### 4.2 Resume upload
 
@@ -121,7 +140,24 @@ and skills. They can correct, remove, or confirm extracted items.
 The UI should distinguish draft/extracted information from confirmed
 information without exposing persistence jargon.
 
-### 4.5 Profile enrichment
+### 4.5 Contact information
+
+After resume confirmation, the user may add or confirm personal and contact
+fields such as name, phone, address, LinkedIn, and portfolio URL. These values
+live in `UserContactInfo`, separate from Career Evidence. They are user-provided,
+explicitly confirmed, and become eligible for deterministic Answer Engine use.
+They are not inferred from the resume or email.
+
+The `/welcome` onboarding surface tracks contact-info completion as an optional
+step. Users can also manage contact info from Career Profile at any time.
+
+### 4.6 Extension setup
+
+The `/welcome` flow and `/setup` guide explain how to build, load, and authenticate
+the unpacked extension, including Clerk Native API and allowed-origin requirements.
+Extension setup is guidance only; it does not block Web product entry.
+
+### 4.7 Profile enrichment
 
 After the initial profile is useful, the user may add omitted professional facts
 or evidence. Enrichment is available but should not block entry into Jobs or
@@ -210,10 +246,11 @@ context must remain uncertain and reviewable.
 M10 implements authentication and initial page detection; M11 implements
 read-only form normalization; M12 implements answer decisions and aggregate
 preview; M13 implements explicit approved-field execution and visible review
-states:
+states; the post-M17 wave adds an in-page assistant:
 
 ```text
 Application Page
+→ User activates in-page assistant
 → Detect form
 → Normalize fields/questions
 → Resolve answers
@@ -222,6 +259,10 @@ Application Page
 → User review
 → User submit
 ```
+
+Activation requires explicit user action on the active tab (popup action or
+`Command/Ctrl+Shift+K`). The assistant does not mount automatically on every
+page load and does not request `<all_urls>` host permission.
 
 ### 8.1 Detection states
 
@@ -276,8 +317,9 @@ Possible actions:
 
 ### 9.1 Known deterministic field
 
-Example: a first-name field maps to confirmed profile data. It can be filled
-without AI interpretation.
+Example: a first-name field maps to confirmed `UserContactInfo.first_name` when
+contact info has been explicitly confirmed. Email maps to authenticated identity.
+It can be filled without AI interpretation.
 
 ### 9.2 Unknown-answer flow
 

@@ -190,6 +190,7 @@ class ApplicationAnswerSource(enum.StrEnum):
     CAREER_BRAIN = "CAREER_BRAIN"
     RESUME_VERSION = "RESUME_VERSION"
     USER_PROVIDED = "USER_PROVIDED"
+    USER_CONTACT_INFO = "USER_CONTACT_INFO"
 
 
 # ---------------------------------------------------------------------------
@@ -220,8 +221,41 @@ class User(Base):
     applications: Mapped[list["Application"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    contact_info: Mapped["UserContactInfo | None"] = relationship(
+        back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
 
     __table_args__ = (sa.UniqueConstraint("auth_provider", "auth_subject"),)
+
+
+class UserContactInfo(Base):
+    __tablename__ = "user_contact_info"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("users.id", ondelete="CASCADE"), unique=True
+    )
+    first_name: Mapped[str | None] = mapped_column(sa.String(100))
+    last_name: Mapped[str | None] = mapped_column(sa.String(100))
+    preferred_name: Mapped[str | None] = mapped_column(sa.String(100))
+    phone: Mapped[str | None] = mapped_column(sa.String(20))
+    address_line_1: Mapped[str | None] = mapped_column(sa.String(255))
+    address_line_2: Mapped[str | None] = mapped_column(sa.String(255))
+    city: Mapped[str | None] = mapped_column(sa.String(100))
+    region: Mapped[str | None] = mapped_column(sa.String(100))
+    postal_code: Mapped[str | None] = mapped_column(sa.String(20))
+    country_code: Mapped[str | None] = mapped_column(sa.String(2))
+    linkedin_url: Mapped[str | None] = mapped_column(sa.String(2000))
+    portfolio_url: Mapped[str | None] = mapped_column(sa.String(2000))
+    confirmed_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+    user: Mapped["User"] = relationship(back_populates="contact_info")
 
 
 class CareerBrain(Base):
@@ -945,7 +979,9 @@ class ApplicationAnswer(Base):
     __table_args__ = (
         sa.UniqueConstraint("application_id", "position"),
         sa.CheckConstraint(
-            "source_category IN ('IDENTITY', 'CAREER_BRAIN', 'RESUME_VERSION', 'USER_PROVIDED')",
+            "source_category IN ("
+            "'IDENTITY', 'CAREER_BRAIN', 'RESUME_VERSION', "
+            "'USER_PROVIDED', 'USER_CONTACT_INFO')",
             name="ck_application_answers_source",
         ),
         sa.CheckConstraint("policy_category = 'STANDARD'", name="ck_application_answers_policy"),

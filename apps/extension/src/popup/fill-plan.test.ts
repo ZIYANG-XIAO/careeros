@@ -113,6 +113,65 @@ describe("buildFillPlan", () => {
     expect(approvedFillCount(null)).toBe(0);
   });
 
+  it("executes a PERSON_FIRST_NAME FILL decision from contact info", () => {
+    const nameDetection: PageDetection = {
+      status: "APPLICATION_PAGE",
+      adapter: "generic",
+      reasons: [],
+      forms: [
+        {
+          id: "form-0",
+          adapter: "generic",
+          support: "PARTIALLY_SUPPORTED",
+          fields: [
+            {
+              id: "first-name",
+              controlType: "TEXT",
+              question: "First name",
+              required: true,
+              canonicalKey: "PERSON_FIRST_NAME",
+              support: "SUPPORTED",
+              confidence: "HIGH",
+              options: [],
+            },
+          ],
+        },
+      ],
+    };
+    const resolution: AnswerResolution = {
+      decisions: [
+        {
+          fieldId: "first-name",
+          canonicalKey: "PERSON_FIRST_NAME",
+          questionCategory: "STANDARD",
+          proposedAnswer: "Jane",
+          sourceCategory: "IDENTITY",
+          sourceReferenceId: "00000000-0000-4000-8000-000000000099",
+          action: "FILL",
+          policyCategory: "STANDARD",
+          confidence: "HIGH",
+          sensitivity: "NONE",
+          reviewState: "NOT_REQUIRED",
+          reusePolicy: "NOT_APPLICABLE",
+          saveIntentRequired: false,
+        },
+      ],
+      selectedResumeVersionId: null,
+      semanticClassifierUsed: false,
+    };
+
+    expect(buildFillPlan(resolution, nameDetection)).toEqual([
+      {
+        fieldId: "first-name",
+        canonicalKey: "PERSON_FIRST_NAME",
+        controlType: "TEXT",
+        action: "FILL",
+        proposedAnswer: "Jane",
+      },
+    ]);
+    expect(approvedFillCount(buildFillPlan(resolution, nameDetection))).toBe(1);
+  });
+
   it("does not execute a decision whose canonical key changed", () => {
     const resolution: AnswerResolution = {
       decisions: [

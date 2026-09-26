@@ -36,7 +36,14 @@ from careeros_api.answer_engine_schemas import (
 )
 from careeros_api.auth import get_current_user
 from careeros_api.db import get_db_session
-from careeros_api.models import Education, Experience, Resume, ResumeVersion, User
+from careeros_api.models import (
+    Education,
+    Experience,
+    Resume,
+    ResumeVersion,
+    User,
+    UserContactInfo,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +134,49 @@ EXPERIENCE_KEYS = frozenset(
         CanonicalFieldKey.EXPERIENCE_COMPANY,
         CanonicalFieldKey.EXPERIENCE_TITLE,
     }
+)
+
+CONTACT_INFO_KEYS = frozenset(
+    {
+        CanonicalFieldKey.PERSON_FIRST_NAME,
+        CanonicalFieldKey.PERSON_LAST_NAME,
+        CanonicalFieldKey.PERSON_FULL_NAME,
+        CanonicalFieldKey.CONTACT_PHONE,
+        CanonicalFieldKey.ADDRESS_LINE_1,
+        CanonicalFieldKey.ADDRESS_LINE_2,
+        CanonicalFieldKey.ADDRESS_CITY,
+        CanonicalFieldKey.ADDRESS_REGION,
+        CanonicalFieldKey.ADDRESS_POSTAL_CODE,
+        CanonicalFieldKey.ADDRESS_COUNTRY,
+        CanonicalFieldKey.PROFESSIONAL_LINKEDIN_URL,
+        CanonicalFieldKey.PROFESSIONAL_PORTFOLIO_URL,
+    }
+)
+
+CONTACT_FIELD_MAPPINGS: tuple[tuple[CanonicalFieldKey, str, AnswerSourceCategory], ...] = (
+    (CanonicalFieldKey.PERSON_FIRST_NAME, "first_name", AnswerSourceCategory.USER_CONTACT_INFO),
+    (CanonicalFieldKey.PERSON_LAST_NAME, "last_name", AnswerSourceCategory.USER_CONTACT_INFO),
+    (CanonicalFieldKey.CONTACT_PHONE, "phone", AnswerSourceCategory.USER_CONTACT_INFO),
+    (CanonicalFieldKey.ADDRESS_LINE_1, "address_line_1", AnswerSourceCategory.USER_CONTACT_INFO),
+    (CanonicalFieldKey.ADDRESS_LINE_2, "address_line_2", AnswerSourceCategory.USER_CONTACT_INFO),
+    (CanonicalFieldKey.ADDRESS_CITY, "city", AnswerSourceCategory.USER_CONTACT_INFO),
+    (CanonicalFieldKey.ADDRESS_REGION, "region", AnswerSourceCategory.USER_CONTACT_INFO),
+    (
+        CanonicalFieldKey.ADDRESS_POSTAL_CODE,
+        "postal_code",
+        AnswerSourceCategory.USER_CONTACT_INFO,
+    ),
+    (CanonicalFieldKey.ADDRESS_COUNTRY, "country_code", AnswerSourceCategory.USER_CONTACT_INFO),
+    (
+        CanonicalFieldKey.PROFESSIONAL_LINKEDIN_URL,
+        "linkedin_url",
+        AnswerSourceCategory.USER_CONTACT_INFO,
+    ),
+    (
+        CanonicalFieldKey.PROFESSIONAL_PORTFOLIO_URL,
+        "portfolio_url",
+        AnswerSourceCategory.USER_CONTACT_INFO,
+    ),
 )
 
 
@@ -239,6 +289,33 @@ async def _load_answer_sources(
             source_category=AnswerSourceCategory.RESUME_VERSION,
             source_reference_id=resume_version.id,
         )
+
+    if keys & CONTACT_INFO_KEYS:
+        contact = await session.scalar(
+            select(UserContactInfo).where(UserContactInfo.user_id == user.id)
+        )
+        if contact is not None and contact.confirmed_at is not None:
+            source_reference_id = contact.id
+            for canonical_key, attr, category in CONTACT_FIELD_MAPPINGS:
+                if canonical_key not in keys:
+                    continue
+                raw_value = getattr(contact, attr)
+                if raw_value and str(raw_value).strip():
+                    sources[canonical_key] = ResolvedAnswer(
+                        value=str(raw_value).strip(),
+                        source_category=category,
+                        source_reference_id=source_reference_id,
+                    )
+            if CanonicalFieldKey.PERSON_FULL_NAME in keys:
+                first_name = contact.first_name
+                last_name = contact.last_name
+                if first_name and first_name.strip() and last_name and last_name.strip():
+                    sources[CanonicalFieldKey.PERSON_FULL_NAME] = ResolvedAnswer(
+                        value=f"{first_name.strip()} {last_name.strip()}",
+                        source_category=AnswerSourceCategory.USER_CONTACT_INFO,
+                        source_reference_id=source_reference_id,
+                    )
+
     return sources
 
 

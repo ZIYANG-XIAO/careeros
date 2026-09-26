@@ -85,11 +85,9 @@ describe("ExperienceSection", () => {
     render(
       <ExperienceSection experiences={[mockExperience]} onMutate={vi.fn()} />,
     );
+    expect(screen.getByRole("button", { name: /^Edit:/ })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Edit detail:/ }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Delete detail:/ }),
+      screen.getByRole("button", { name: /^Delete:/ }),
     ).toBeInTheDocument();
   });
 

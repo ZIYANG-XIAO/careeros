@@ -2,7 +2,17 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { LocaleProvider } from "@/lib/i18n";
+
 import ApplicationsPage from "./page";
+
+function renderApplicationsPage(locale: "en" | "zh-CN" = "en") {
+  return render(
+    <LocaleProvider initialLocale={locale}>
+      <ApplicationsPage />
+    </LocaleProvider>,
+  );
+}
 
 const mockListApplications = vi.fn();
 const mockListResumes = vi.fn();
@@ -13,11 +23,17 @@ vi.mock("@clerk/nextjs", () => ({
   useAuth: () => ({ isLoaded: true, isSignedIn: true, getToken: mockGetToken }),
 }));
 
-vi.mock("@/lib/api", () => ({
-  listApplications: (...args: unknown[]) => mockListApplications(...args),
-  listResumes: (...args: unknown[]) => mockListResumes(...args),
-  createApplication: (...args: unknown[]) => mockCreateApplication(...args),
-}));
+vi.mock("@/lib/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api")>();
+  return {
+    ...actual,
+    listApplications: (...args: unknown[]) => mockListApplications(...args),
+    listResumes: (...args: unknown[]) => mockListResumes(...args),
+    createApplication: (...args: unknown[]) => mockCreateApplication(...args),
+  };
+});
+
+const { ApiError } = await import("@/lib/api");
 
 const application = {
   id: "application-1",
@@ -51,8 +67,24 @@ describe("ApplicationsPage", () => {
     mockCreateApplication.mockReset().mockResolvedValue(application);
   });
 
+  it("does not render the empty state when the initial load fails", async () => {
+    mockListApplications.mockRejectedValue(
+      new ApiError("Service unavailable", 503, "unavailable"),
+    );
+    renderApplicationsPage();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "temporarily unavailable",
+    );
+    expect(
+      screen.queryByText("No applications recorded yet"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Try again" }),
+    ).toBeInTheDocument();
+  });
+
   it("shows real empty and manual recovery states", async () => {
-    render(<ApplicationsPage />);
+    renderApplicationsPage();
     expect(
       await screen.findByText("No applications recorded yet"),
     ).toBeInTheDocument();
@@ -67,10 +99,11 @@ describe("ApplicationsPage", () => {
 
   it("shows source, status, applied date, and exact resume", async () => {
     mockListApplications.mockResolvedValue([application]);
-    render(<ApplicationsPage />);
+    renderApplicationsPage();
 
     expect(await screen.findByText("Platform Engineer")).toBeInTheDocument();
     expect(screen.getAllByText("Applied").length).toBeGreaterThan(1);
+    expect(screen.getByText(/Sep/i)).toBeInTheDocument();
     expect(
       screen.getAllByText("Backend Resume · Version 3").length,
     ).toBeGreaterThan(1);
@@ -82,7 +115,7 @@ describe("ApplicationsPage", () => {
 
   it("filters applications by status", async () => {
     const user = userEvent.setup();
-    render(<ApplicationsPage />);
+    renderApplicationsPage();
     await screen.findByText("No applications recorded yet");
 
     await user.selectOptions(screen.getByLabelText("Status"), "INTERVIEW");
@@ -96,13 +129,13 @@ describe("ApplicationsPage", () => {
 
   it("records a manual applied fallback with the selected resume", async () => {
     const user = userEvent.setup();
-    render(<ApplicationsPage />);
+    renderApplicationsPage();
     await screen.findByText("No applications recorded yet");
 
     await user.type(screen.getByLabelText("Company"), "Outside Corp");
     await user.type(screen.getByLabelText("Role"), "Backend Engineer");
     await user.type(
-      screen.getByLabelText("Application URL"),
+      screen.getByLabelText(/Application URL/i),
       "https://outside.example/apply",
     );
     await user.selectOptions(
@@ -130,5 +163,15 @@ describe("ApplicationsPage", () => {
     expect(
       await screen.findByRole("link", { name: /Application recorded/i }),
     ).toHaveAttribute("href", "/applications/application-1");
+  });
+
+  it("renders zh-CN chrome and locale-aware dates", async () => {
+    mockListApplications.mockResolvedValue([application]);
+    renderApplicationsPage("zh-CN");
+
+    expect(await screen.findByText("申请记录")).toBeInTheDocument();
+    expect(screen.getByText("Platform Engineer")).toBeInTheDocument();
+    expect(screen.getAllByText("已申请").length).toBeGreaterThan(1);
+    expect(screen.getByText(/2026/)).toBeInTheDocument();
   });
 });

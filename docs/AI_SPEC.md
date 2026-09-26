@@ -2,7 +2,7 @@
 
 > Version: 0.2
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-25
+> Last Updated: 2026-09-26
 
 ## 1. Purpose
 
@@ -262,8 +262,10 @@ Possible actions:
 
 Examples that should normally be deterministic:
 
-- known first/last name fields;
-- confirmed email or phone retrieval;
+- known first/last/full name fields from confirmed `UserContactInfo`;
+- confirmed phone, address, LinkedIn, and portfolio fields from confirmed
+  `UserContactInfo`;
+- authenticated identity email;
 - canonical question lookup;
 - selected Resume Version lookup;
 - authorization and ownership;
@@ -277,7 +279,9 @@ must not be the first layer for every field.
 
 Potential sources, in policy-controlled order, include:
 
-- confirmed Career Brain/profile information;
+- confirmed Career Brain information;
+- confirmed `UserContactInfo` personal/contact fields;
+- authenticated identity email;
 - explicit application preferences;
 - reusable user-confirmed answers;
 - deterministic values derived from confirmed data;
@@ -294,6 +298,13 @@ freshness, and user intent still apply.
 ### Professional truth
 
 Confirmed facts about the user's career. It may be eligible Career Evidence.
+
+### Confirmed personal/contact information
+
+User-provided name, phone, address, and professional link fields stored in
+`UserContactInfo`. These are not Career Evidence and are not inferred from
+resumes or email. The Answer Engine may use confirmed contact info
+deterministically with source category `USER_CONTACT_INFO`.
 
 ### Application preference
 
@@ -427,9 +438,9 @@ Test:
 - metric, skill, seniority, ownership, and production-claim hallucination; and
 - recommendation stability and usefulness.
 
-### Planned Answer Engine evaluation
+### Answer Engine evaluation
 
-Before autofill is trusted, test:
+Test:
 
 - deterministic field mapping;
 - semantic classification accuracy;

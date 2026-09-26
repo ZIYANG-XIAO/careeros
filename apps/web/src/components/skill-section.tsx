@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { createSkill, deleteSkill, updateSkill } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import type { SkillSummary } from "@/lib/types";
 
 type SkillSectionProps = {
@@ -18,6 +19,7 @@ type SkillSectionProps = {
 
 function SkillSection({ skills, onMutate }: SkillSectionProps) {
   const { getToken } = useAuth();
+  const { t } = useI18n();
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState<SkillSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SkillSummary | null>(null);
@@ -34,7 +36,7 @@ function SkillSection({ skills, onMutate }: SkillSectionProps) {
       await onMutate();
       setShowCreate(false);
     } catch {
-      setMutationError("Failed to add skill. Please try again.");
+      setMutationError(t("skill.error.add"));
     } finally {
       setLoading(false);
     }
@@ -51,7 +53,7 @@ function SkillSection({ skills, onMutate }: SkillSectionProps) {
       await onMutate();
       setEditTarget(null);
     } catch {
-      setMutationError("Failed to update skill. Please try again.");
+      setMutationError(t("skill.error.update"));
     } finally {
       setLoading(false);
     }
@@ -68,7 +70,7 @@ function SkillSection({ skills, onMutate }: SkillSectionProps) {
       await onMutate();
       setDeleteTarget(null);
     } catch {
-      setMutationError("Failed to delete skill. Please try again.");
+      setMutationError(t("skill.error.delete"));
     } finally {
       setLoading(false);
     }
@@ -98,22 +100,21 @@ function SkillSection({ skills, onMutate }: SkillSectionProps) {
             id="skills-heading"
             className="text-lg font-semibold text-slate-900"
           >
-            Skills
+            {t("career.sections.skills")}
           </h2>
           <p className="mt-1 text-sm leading-5 text-slate-500">
-            Tools, technologies, and methods you can support with real
-            experience.
+            {t("career.sections.skillsDescription")}
           </p>
         </div>
         <Button variant="secondary" onClick={() => setShowCreate(true)}>
-          Add skill
+          {t("skill.addButton")}
         </Button>
       </div>
 
       {skills.length === 0 ? (
         <EmptyState
-          title="No skills yet"
-          description="Add skills that reflect work you have actually done."
+          title={t("skill.empty.title")}
+          description={t("skill.empty.description")}
         />
       ) : (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -127,7 +128,7 @@ function SkillSection({ skills, onMutate }: SkillSectionProps) {
                 type="button"
                 onClick={() => setEditTarget(skill)}
                 className="rounded text-slate-400 opacity-100 transition-opacity hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 sm:opacity-0 sm:transition-opacity sm:focus-within:opacity-100 sm:group-hover/skill:opacity-100"
-                aria-label={`Edit ${skill.name}`}
+                aria-label={`${t("common.edit")} ${skill.name}`}
               >
                 <svg
                   className="h-3.5 w-3.5"
@@ -148,7 +149,7 @@ function SkillSection({ skills, onMutate }: SkillSectionProps) {
                 type="button"
                 onClick={() => setDeleteTarget(skill)}
                 className="rounded text-slate-400 opacity-100 transition-opacity hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:opacity-0 sm:transition-opacity sm:focus-within:opacity-100 sm:group-hover/skill:opacity-100"
-                aria-label={`Delete ${skill.name}`}
+                aria-label={`${t("common.delete")} ${skill.name}`}
               >
                 <svg
                   className="h-3.5 w-3.5"
@@ -170,7 +171,11 @@ function SkillSection({ skills, onMutate }: SkillSectionProps) {
         </div>
       )}
 
-      <Dialog open={showCreate} onClose={closeCreate} title="Add Skill">
+      <Dialog
+        open={showCreate}
+        onClose={closeCreate}
+        title={t("skill.dialog.add")}
+      >
         <SkillForm
           onSubmit={handleCreate}
           onCancel={closeCreate}
@@ -179,7 +184,11 @@ function SkillSection({ skills, onMutate }: SkillSectionProps) {
         />
       </Dialog>
 
-      <Dialog open={!!editTarget} onClose={closeEdit} title="Edit Skill">
+      <Dialog
+        open={!!editTarget}
+        onClose={closeEdit}
+        title={t("skill.dialog.edit")}
+      >
         {editTarget && (
           <SkillForm
             initial={editTarget.name}
@@ -196,7 +205,8 @@ function SkillSection({ skills, onMutate }: SkillSectionProps) {
         onClose={closeDelete}
         onConfirm={handleDelete}
         loading={loading}
-        entityName="Skill"
+        entityName={t("skill.entityName")}
+        description={t("skill.deleteConfirm")}
         error={mutationError}
       />
     </section>

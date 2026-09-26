@@ -2,7 +2,7 @@
 
 > Version: 0.3
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-25
+> Last Updated: 2026-09-26
 
 ## 1. Product vision
 
@@ -79,6 +79,11 @@ One Career Brain may support many resumes and resume versions.
 
 Career Brain can grow through resume imports, direct edits, confirmed answers
 that genuinely represent professional truth, and future approved interactions.
+
+Confirmed personal and contact information — name, phone, address, LinkedIn,
+portfolio, and related fields — lives in `UserContactInfo`, separate from
+Career Evidence. It is user-provided, explicitly confirmed, and eligible for
+deterministic Answer Engine use. It is not inferred from resumes or email.
 
 AI-extracted information is a draft, not authoritative truth. User confirmation
 and correction are authoritative.
@@ -200,6 +205,7 @@ services.
 ### Core domains
 
 - Identity
+- UserContactInfo
 - Career Brain
 - Career Evidence
 - Resume
@@ -228,6 +234,8 @@ incompatible representations of the user.
 Not every answer is professional evidence. CareerOS must distinguish:
 
 - professional truth — facts about the user's career;
+- confirmed personal/contact information — user-provided contact fields stored
+  separately from Career Evidence;
 - application preferences — user choices that may change by search or context;
 - reusable confirmed answers — answers the user explicitly chooses to reuse;
 - application-specific answers — what was used for one application; and
@@ -326,7 +334,8 @@ depends on it.
 
 ## 14. Current implementation boundary
 
-Implemented through M15 plus M16 automated hardening:
+Implemented through M17 plus the post-M17 wave (M16 automated hardening included;
+representative browser gate still pending):
 
 - project foundation;
 - Career Brain/Profile;
@@ -340,12 +349,17 @@ Implemented through M15 plus M16 automated hardening:
   freshness/availability state;
 - the secure Manifest V3 extension foundation, authenticated API boundary,
   active-tab application-page detection, and honest unsupported states; and
+- an in-page Application Assistant — a controlled UI panel for detection,
+  Answer Engine answers, form filling, and Application Memory — with open
+  Shadow DOM style isolation, on-demand content-script injection, explicit
+  activation, keyboard shortcut, and page lifecycle handling without
+  `<all_urls>` access;
 - provider-neutral read-only form normalization with generic and initial ATS
   adapter boundaries, canonical keys, and explicit support/confidence states;
   and
 - the authenticated Answer Engine foundation with owned source retrieval,
   deterministic sensitive policy, bounded semantic classification, explicit
-  decision/review states; and
+  decision/review states, and confirmed contact-info mappings; and
 - user-triggered execution for approved blank native controls with exact target
   revalidation, non-overwrite behavior, visible field states, initial ATS
   fixture coverage, and no final submission; and
@@ -353,15 +367,27 @@ Implemented through M15 plus M16 automated hardening:
   context snapshots, exact Resume Version association, immutable approved
   answers, lifecycle status, ownership, and idempotency; and
 - Applications list/detail/status/manual recovery plus CareerOS Job handoff and
-  explicit extension recording after user submission.
+  explicit extension recording after user submission;
 - data-minimized Application Assistant context, concurrent retry coverage,
   post-redirect Preparing recovery, and automated contracts for both required
-  V1 paths.
+  V1 paths;
+- mutually exclusive loading/error/empty states and consistent API error
+  representation;
+- user-owned `UserContactInfo` with Career Profile UI and Answer Engine
+  integration for name, phone, address, and professional links;
+- resume-first onboarding at `/welcome`, an improved landing page, and an
+  extension setup guide at `/setup`;
+- a `/readiness` endpoint and local JWKS preflight diagnostic
+  (`scripts/preflight.py` checks Clerk JWKS reachability only);
+- partial English/Simplified Chinese localization for Applications, Resumes,
+  Career Profile, and Job detail; and
+- refactored Jobs page, extension popup, messages, and API client modules.
 
 Planned during V1 formation:
 
 - automatic resume/file upload and broader custom-widget execution;
-- representative unpacked-Chrome validation of both end-to-end paths.
+- representative unpacked-Chrome validation of both end-to-end paths; and
+- complete localization of remaining Web surfaces and the extension.
 
 Deferred until after formation unless explicitly reprioritized:
 
@@ -369,7 +395,7 @@ Deferred until after formation unless explicitly reprioritized:
 - Application Strategy and resume tailoring;
 - cover letters and interview preparation;
 - sophisticated recommendations and outcome learning;
-- career planning, localization, personalization, and autonomous agents.
+- career planning, personalization, and autonomous agents.
 
 ## 15. North star
 

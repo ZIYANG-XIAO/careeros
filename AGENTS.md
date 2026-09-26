@@ -22,9 +22,11 @@ another document is not authorization to implement it.
 
 ## 2. Current baseline
 
-M0–M15 are implemented. M16 automated hardening is implemented, while its
-representative unpacked-Chrome validation gate remains pending. The repository
-currently contains:
+M0–M17 and the post-M17 implementation wave are implemented. M16 automated
+hardening is implemented, while its representative unpacked-Chrome validation
+gate remains pending. Current Alembic head:
+`0013_uci_answer_source`. The
+repository currently contains:
 
 - the Web, API, and PostgreSQL foundation;
 - authenticated user ownership and Career Brain/Profile editing;
@@ -37,6 +39,13 @@ currently contains:
 - a Manifest V3 extension foundation with secure Clerk session sync,
   background-only API credentials, active-tab application-page detection, and
   explicit supported/unsupported UI;
+- an in-page Application Assistant — a controlled UI panel for detection, Answer
+  Engine answers, form filling, and Application Memory (not a conversational
+  AI agent) — mounted in an open Shadow DOM host for style isolation only,
+  explicit user activation (popup action or `Command/Ctrl+Shift+K`), on-demand
+  content-script injection via `activeTab` + `chrome.scripting.executeScript`
+  (not manifest-declared `content_scripts`), page lifecycle handling, and no
+  `<all_urls>` host permission;
 - read-only provider-neutral form normalization with generic, Greenhouse,
   Lever, and Ashby adapter boundaries and explicit support/confidence states;
 - a reusable backend Answer Engine foundation with deterministic safety policy,
@@ -52,13 +61,30 @@ currently contains:
   CareerOS Job handoff and explicit extension-side submission recording; and
 - data-minimized Application Assistant context lookup, concurrent idempotency
   hardening, automated two-path contracts, and post-redirect recovery through a
-  reviewed recent Preparing Application.
+  reviewed recent Preparing Application; and
+- mutually exclusive loading/error/empty states and consistent API error
+  representation across Web surfaces;
+- user-owned `UserContactInfo` with confirmed personal/contact fields, Career
+  Profile UI, and Answer Engine integration for name, phone, address, and link
+  fields;
+- resume-first onboarding at `/welcome`, an improved landing page, and an
+  extension setup guide at `/setup`;
+- a `/readiness` endpoint and local JWKS preflight diagnostic script
+  (`scripts/preflight.py` checks Clerk JWKS reachability and TLS verification
+  for that fetch only);
+- partial English/Simplified Chinese localization for Applications, Resumes,
+  Career Profile, and Job detail (Career Profile section components such as
+  education, experience, project, and skill forms remain hardcoded English);
+  and
+- refactored Jobs page, extension popup, messages, and API client modules.
 
 Not currently implemented:
 
 - a production job-discovery feed or real external source adapter;
 - automatic resume/file upload and broader custom-widget execution;
-- Application Strategy or resume tailoring.
+- Application Strategy or resume tailoring;
+- complete localization of every Web surface and the extension; and
+- representative unpacked-Chrome validation of both required V1 scenarios.
 
 Do not describe planned behavior as if it exists. Do not blindly continue the
 old assumption that Application Intelligence and resume tailoring are the next
@@ -95,6 +121,7 @@ after product formation unless the roadmap is explicitly changed.
 Relatively stable core domains are:
 
 - Identity
+- UserContactInfo
 - Career Brain
 - Career Evidence
 - Resume
@@ -173,6 +200,8 @@ Do not collapse all answers into Career Evidence. Preserve the conceptual
 boundaries among:
 
 - professional truth;
+- confirmed personal/contact information (`UserContactInfo`, distinct from
+  Career Evidence);
 - application preferences;
 - reusable confirmed answers;
 - application-specific answers; and

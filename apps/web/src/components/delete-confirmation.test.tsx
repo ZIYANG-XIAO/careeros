@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DeleteConfirmation } from "./delete-confirmation";
 
 describe("DeleteConfirmation", () => {
-  it("renders default confirmation message", () => {
+  it("renders confirmation description when provided", () => {
     render(
       <DeleteConfirmation
         open={true}
@@ -13,10 +13,11 @@ describe("DeleteConfirmation", () => {
         onConfirm={vi.fn()}
         loading={false}
         entityName="Education"
+        description="Are you sure you want to delete this education entry? This action cannot be undone."
       />,
     );
     expect(
-      screen.getByText(/Are you sure you want to delete this education/i),
+      screen.getByText(/Are you sure you want to delete this education entry/i),
     ).toBeInTheDocument();
   });
 
@@ -46,6 +47,7 @@ describe("DeleteConfirmation", () => {
         onConfirm={onConfirm}
         loading={false}
         entityName="Education"
+        description="Are you sure you want to delete this education entry? This action cannot be undone."
       />,
     );
     await user.click(screen.getByRole("button", { name: "Delete" }));
@@ -62,6 +64,7 @@ describe("DeleteConfirmation", () => {
         onConfirm={vi.fn()}
         loading={false}
         entityName="Skill"
+        description="Are you sure you want to delete this skill? This action cannot be undone."
       />,
     );
     await user.click(screen.getByRole("button", { name: "Cancel" }));
@@ -76,6 +79,7 @@ describe("DeleteConfirmation", () => {
         onConfirm={vi.fn()}
         loading={true}
         entityName="Experience"
+        description="Are you sure you want to delete this experience? This action cannot be undone."
       />,
     );
     expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
@@ -90,6 +94,7 @@ describe("DeleteConfirmation", () => {
         onConfirm={vi.fn()}
         loading={false}
         entityName="Education"
+        description="Are you sure you want to delete this education entry? This action cannot be undone."
       />,
     );
     expect(screen.queryByText(/Are you sure/)).not.toBeInTheDocument();
@@ -103,6 +108,7 @@ describe("DeleteConfirmation", () => {
         onConfirm={vi.fn()}
         loading={false}
         entityName="Skill"
+        description="Are you sure you want to delete this skill? This action cannot be undone."
         error="Failed to delete skill"
       />,
     );

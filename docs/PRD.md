@@ -2,7 +2,7 @@
 
 > Version: 0.2
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-25
+> Last Updated: 2026-09-26
 
 ## 1. Purpose
 
@@ -23,7 +23,7 @@ directly to application assistance.
 
 ## 2. Current and planned scope
 
-### Implemented now — M0–M15, M16 automated hardening, and M17 foundation
+### Implemented now — M0–M17 and the post-M17 wave
 
 - authenticated Web/API/PostgreSQL foundation;
 - Career Brain/Profile management and user ownership;
@@ -40,12 +40,18 @@ directly to application assistance.
 - a secure Manifest V3 extension foundation with Clerk session sync,
   authenticated API access, active-tab application-page detection, and explicit
   unsupported behavior; and
+- an in-page Application Assistant — a controlled UI panel for detection,
+  Answer Engine answers, form filling, and Application Memory — with open
+  Shadow DOM style isolation, on-demand content-script injection, explicit
+  activation, keyboard shortcut, and page lifecycle handling without
+  `<all_urls>` access;
 - read-only provider-neutral form normalization, deterministic canonical keys,
   explicit support/confidence states, and isolated generic, Greenhouse, Lever,
   and Ashby adapter boundaries; and
 - a reusable authenticated Answer Engine foundation with deterministic safety
   classification, owned source retrieval, optional bounded semantic
-  classification, and explicit answer/review/reuse decisions; and
+  classification, explicit answer/review/reuse decisions, and confirmed
+  contact-info mappings; and
 - explicit user-triggered form execution for approved blank native controls,
   exact field revalidation, non-overwrite behavior, visible review states, and
   generic/Greenhouse/Lever/Ashby fixture coverage; and
@@ -53,17 +59,29 @@ directly to application assistance.
   exact Resume Version association, immutable approved standard answers,
   lifecycle status/timestamps, and retry-safe create/update operations; and
 - Applications Web list/detail/status/manual recovery plus CareerOS Job handoff
-  and user-confirmed extension recording after submission.
+  and user-confirmed extension recording after submission;
 - data-minimized Application Assistant context lookup, concurrent idempotency
-  hardening, post-redirect Preparing recovery, and automated two-path contracts.
-- browser-persisted English/Simplified Chinese product-shell and Jobs language,
-  independent North America/China market selection, canonical market/country/
-  workplace/employment metadata, and server-owned filtering/sorting.
+  hardening, post-redirect Preparing recovery, and automated two-path contracts;
+- browser-persisted English/Simplified Chinese locale, independent North
+  America/China market selection, canonical market/country/workplace/employment
+  metadata, and server-owned filtering/sorting;
+- partial English/Simplified Chinese localization for Applications, Resumes,
+  Career Profile, and Job detail;
+- mutually exclusive loading/error/empty states and consistent API error
+  representation;
+- user-owned personal/contact information with Career Profile UI and Answer
+  Engine integration;
+- resume-first onboarding at `/welcome`, an improved landing page, and an
+  extension setup guide at `/setup`;
+- a `/readiness` endpoint and local JWKS preflight diagnostic
+  (`scripts/preflight.py` checks Clerk JWKS reachability only); and
+- refactored Jobs page, extension popup, messages, and API client modules.
 
 ### Planned V1 formation
 
 - automatic resume/file upload and broader custom-widget execution;
-- representative unpacked-Chrome validation across both required scenarios.
+- representative unpacked-Chrome validation across both required scenarios; and
+- complete localization of remaining Web surfaces and the extension.
 
 ### Deferred enhancements
 
@@ -73,8 +91,7 @@ directly to application assistance.
 - application Q&A generation beyond approved Answer Engine behavior;
 - interview preparation;
 - sophisticated recommendations and outcome learning; and
-- complete page-by-page localization, personalization, career planning, and
-  autonomous agents.
+- personalization, career planning, and autonomous agents.
 
 Existing Job Intelligence remains implemented optional functionality.
 
@@ -115,7 +132,6 @@ Resume.
 
 It should support professional information such as:
 
-- personal and professional contact information;
 - education;
 - experience and meaningful details;
 - projects and meaningful details;
@@ -128,7 +144,30 @@ Users must be able to view, add, edit, remove, and confirm supported information
 Confirmed information persists and becomes eligible for approved downstream
 services.
 
-### 4.3 Provenance and evidence
+### 4.3 Personal and contact information
+
+CareerOS stores confirmed personal and contact fields in `UserContactInfo`,
+separate from Career Evidence and Career Brain professional facts.
+
+Implemented fields include:
+
+- first name, last name, and preferred name;
+- phone;
+- address line 1, address line 2, city, region, postal code, and country code;
+- LinkedIn URL; and
+- portfolio URL.
+
+Requirements:
+
+- values are user-provided and explicitly confirmed; they are not inferred from
+  resumes, email, or indirect signals;
+- confirmed contact info is eligible for deterministic Answer Engine mapping;
+- contact info remains distinct from application preferences, reusable answers,
+  application-specific answers, and sensitive answers; and
+- users can view and edit contact info from Career Profile and the onboarding
+  flow at `/welcome`.
+
+### 4.4 Provenance and evidence
 
 CareerOS must distinguish AI-extracted, user-added, user-edited, and confirmed
 information. `CareerEvidence` maintains stable identity and
@@ -137,7 +176,7 @@ information. `CareerEvidence` maintains stable identity and
 Professional claims must not be fabricated. User corrections override AI
 interpretation.
 
-### 4.4 Resume library
+### 4.5 Resume library
 
 A user may have multiple resumes and immutable versions. The product must
 preserve originals and historical Resume Versions. An Application must
@@ -267,7 +306,8 @@ Field/question
 Possible answer sources include:
 
 - Career Brain;
-- confirmed profile data;
+- confirmed `UserContactInfo`;
+- authenticated identity email;
 - application preferences;
 - reusable confirmed answers;
 - the selected Resume Version; and
@@ -466,7 +506,7 @@ either flow but is not required.
 - cover letters or a full interview platform;
 - email/calendar synchronization;
 - advanced analytics, outcome learning, or predictive personalization;
-- localization engines, career planning, or autonomous agents; and
+- career planning or autonomous agents; and
 - speculative distributed infrastructure.
 
 ## 13. V1 success standard

@@ -63,6 +63,22 @@ export type CareerBrain = {
   skills: SkillSummary[];
 };
 
+export type ContactInfo = {
+  first_name: string | null;
+  last_name: string | null;
+  preferred_name: string | null;
+  phone: string | null;
+  address_line_1: string | null;
+  address_line_2: string | null;
+  city: string | null;
+  region: string | null;
+  postal_code: string | null;
+  country_code: string | null;
+  linkedin_url: string | null;
+  portfolio_url: string | null;
+  confirmed_at: string | null;
+};
+
 // ---------------------------------------------------------------------------
 // CRUD endpoint response types (full entity shapes with timestamps).
 // ---------------------------------------------------------------------------
@@ -436,7 +452,11 @@ export type CreateApplicationRequest = {
     question_text: string;
     answer_text: string;
     source_category:
-      "IDENTITY" | "CAREER_BRAIN" | "RESUME_VERSION" | "USER_PROVIDED";
+      | "IDENTITY"
+      | "CAREER_BRAIN"
+      | "USER_CONTACT_INFO"
+      | "RESUME_VERSION"
+      | "USER_PROVIDED";
     policy_category: "STANDARD";
     sensitivity: "NONE";
     user_confirmed: true;

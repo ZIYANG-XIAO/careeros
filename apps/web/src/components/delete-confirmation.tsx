@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { useI18n } from "@/lib/i18n";
 
 type DeleteConfirmationProps = {
   open: boolean;
@@ -22,12 +23,15 @@ function DeleteConfirmation({
   description,
   error,
 }: DeleteConfirmationProps) {
+  const { t } = useI18n();
+
   return (
-    <Dialog open={open} onClose={onClose} title={`Delete ${entityName}`}>
-      <p className="text-sm text-slate-600">
-        {description ??
-          `Are you sure you want to delete this ${entityName.toLowerCase()}? This action cannot be undone.`}
-      </p>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={`${t("delete.titlePrefix")} ${entityName}`}
+    >
+      <p className="text-sm text-slate-600">{description}</p>
       {error && (
         <p className="mt-3 text-sm text-red-600" role="alert">
           {error}
@@ -35,10 +39,10 @@ function DeleteConfirmation({
       )}
       <div className="mt-6 flex justify-end gap-3">
         <Button variant="secondary" onClick={onClose} disabled={loading}>
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button variant="danger" onClick={onConfirm} loading={loading}>
-          Delete
+          {t("common.delete")}
         </Button>
       </div>
     </Dialog>

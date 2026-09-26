@@ -3,6 +3,7 @@ function Spinner() {
     <div
       className="flex items-center justify-center py-12"
       role="status"
+      // Not localized: presentational server component; callers may pass a labeled wrapper if needed.
       aria-label="Loading"
     >
       <svg

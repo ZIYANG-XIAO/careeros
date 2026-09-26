@@ -17,6 +17,7 @@ import {
   unsaveJob,
 } from "@/lib/api";
 import { safeExternalUrl } from "@/lib/external-url";
+import { formatResumeVersionLabel, useI18n, type MessageKey } from "@/lib/i18n";
 import { jobSourceSummary } from "@/lib/job-source";
 import type {
   Application,
@@ -26,49 +27,42 @@ import type {
   ResumeSummary,
 } from "@/lib/types";
 
-const groups = [
-  {
-    key: "STRONG_EVIDENCE",
-    title: "Strong Evidence",
-    description:
-      "Clear Career Brain evidence is already communicated by this resume.",
-    style: "border-emerald-200 bg-emerald-50/40",
-    badge: "bg-emerald-100 text-emerald-800",
-  },
-  {
-    key: "HIDDEN_EVIDENCE",
-    title: "Hidden Evidence",
-    description:
-      "Strong evidence exists, but this resume does not communicate it well enough.",
-    style: "border-blue-200 bg-blue-50/40",
-    badge: "bg-blue-100 text-blue-800",
-  },
-  {
-    key: "WEAK_EVIDENCE",
-    title: "Weak Evidence",
-    description:
-      "Related evidence exists, but it does not fully support the requirement.",
-    style: "border-amber-200 bg-amber-50/40",
-    badge: "bg-amber-100 text-amber-900",
-  },
-  {
-    key: "GENUINE_GAP",
-    title: "Genuine Gaps",
-    description:
-      "CareerOS found no sufficient confirmed evidence for this requirement.",
-    style: "border-rose-200 bg-rose-50/40",
-    badge: "bg-rose-100 text-rose-800",
-  },
-] as const;
-
-const recommendationLabels = {
-  STRONG_APPLY: "Strong Apply",
-  APPLY: "Apply",
-  STRETCH: "Stretch",
-  LOW_PRIORITY: "Low Priority",
-} as const;
+function evidenceGroups(t: (key: MessageKey) => string) {
+  return [
+    {
+      key: "STRONG_EVIDENCE" as const,
+      title: t("jobs.detail.strongEvidence"),
+      description: t("jobs.detail.strongEvidenceDescription"),
+      style: "border-emerald-200 bg-emerald-50/40",
+      badge: "bg-emerald-100 text-emerald-800",
+    },
+    {
+      key: "HIDDEN_EVIDENCE" as const,
+      title: t("jobs.detail.hiddenEvidence"),
+      description: t("jobs.detail.hiddenEvidenceDescription"),
+      style: "border-blue-200 bg-blue-50/40",
+      badge: "bg-blue-100 text-blue-800",
+    },
+    {
+      key: "WEAK_EVIDENCE" as const,
+      title: t("jobs.detail.weakEvidence"),
+      description: t("jobs.detail.weakEvidenceDescription"),
+      style: "border-amber-200 bg-amber-50/40",
+      badge: "bg-amber-100 text-amber-900",
+    },
+    {
+      key: "GENUINE_GAP" as const,
+      title: t("jobs.detail.genuineGaps"),
+      description: t("jobs.detail.genuineGapsDescription"),
+      style: "border-rose-200 bg-rose-50/40",
+      badge: "bg-rose-100 text-rose-800",
+    },
+  ];
+}
 
 function MatchCard({ match }: { match: RequirementAnalysis }) {
+  const { t } = useI18n();
+
   return (
     <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -82,7 +76,8 @@ function MatchCard({ match }: { match: RequirementAnalysis }) {
           </h3>
         </div>
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-          Resume: {match.resume_representation.toLowerCase()}
+          {t("jobs.detail.resumeRepresentation")}{" "}
+          {match.resume_representation.toLowerCase()}
         </span>
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-700">
@@ -91,7 +86,7 @@ function MatchCard({ match }: { match: RequirementAnalysis }) {
       {match.evidence_references.length > 0 && (
         <div className="mt-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Career Brain evidence
+            {t("jobs.detail.careerBrainEvidence")}
           </p>
           <ul className="mt-2 space-y-2">
             {match.evidence_references.map((reference) => (
@@ -110,7 +105,7 @@ function MatchCard({ match }: { match: RequirementAnalysis }) {
       )}
       {match.resume_source_text && (
         <div className="mt-3 rounded-lg border-l-2 border-slate-300 bg-slate-50 p-3 text-sm italic text-slate-600">
-          Resume excerpt: “{match.resume_source_text}”
+          {t("jobs.detail.resumeExcerpt")} “{match.resume_source_text}”
         </div>
       )}
     </article>
@@ -120,6 +115,8 @@ function MatchCard({ match }: { match: RequirementAnalysis }) {
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { locale, t } = useI18n();
+  const groups = useMemo(() => evidenceGroups(t), [t]);
   const [job, setJob] = useState<Job | null>(null);
   const [resumes, setResumes] = useState<ResumeSummary[]>([]);
   const [analysis, setAnalysis] = useState<JobAnalysis | null>(null);
@@ -133,7 +130,15 @@ export default function JobDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [fetchKey, setFetchKey] = useState(0);
+  const [prevFetchKey, setPrevFetchKey] = useState(0);
   const applicationKey = useRef<string | null>(null);
+
+  if (fetchKey !== prevFetchKey) {
+    setPrevFetchKey(fetchKey);
+    setError(null);
+    setLoading(true);
+  }
 
   const versions = useMemo(
     () =>
@@ -166,9 +171,7 @@ export default function JobDetailPage() {
         setSelectedVersion(defaultVersion);
       } catch {
         if (!cancelled) {
-          setError(
-            "This job could not be loaded or you do not have access to it.",
-          );
+          setError(t("jobs.detail.loadError"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -177,7 +180,7 @@ export default function JobDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [getToken, id, isLoaded, isSignedIn]);
+  }, [getToken, id, isLoaded, isSignedIn, t, fetchKey]);
 
   async function analyze() {
     if (!selectedVersion) return;
@@ -188,9 +191,7 @@ export default function JobDetailPage() {
       if (!token) throw new Error("Missing authentication token");
       setAnalysis(await createJobAnalysis(token, id, selectedVersion));
     } catch {
-      setAnalysisError(
-        "Job Intelligence could not complete this analysis. Your job and resume are unchanged.",
-      );
+      setAnalysisError(t("jobs.detail.analysisError"));
     } finally {
       setAnalyzing(false);
     }
@@ -210,7 +211,7 @@ export default function JobDetailPage() {
       }
       setActionError(null);
     } catch {
-      setActionError("We could not update this saved job. Please try again.");
+      setActionError(t("jobs.saveError"));
     } finally {
       setSaving(false);
     }
@@ -234,9 +235,7 @@ export default function JobDetailPage() {
       });
       setTrackedApplication(created);
     } catch {
-      setActionError(
-        "The application page is still available, but CareerOS could not start tracking it. Open the page directly and use Mark as applied afterward.",
-      );
+      setActionError(t("jobs.detail.trackError"));
     } finally {
       setStartingApplication(false);
     }
@@ -244,20 +243,41 @@ export default function JobDetailPage() {
 
   if (!isLoaded || (loading && isSignedIn)) return <Spinner />;
   if (!isSignedIn)
-    return <p className="text-sm text-slate-600">Sign in to view this job.</p>;
+    return (
+      <p className="text-sm text-slate-600">
+        {t("jobs.detail.signInRequired")}
+      </p>
+    );
   if (error || !job) {
     return (
-      <div
-        className="mx-auto max-w-3xl rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"
-        role="alert"
-      >
-        {error ?? "Job not found."}
+      <div className="mx-auto max-w-3xl space-y-4">
+        <div
+          className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"
+          role="alert"
+        >
+          <p>{error ?? t("jobs.detail.notFound")}</p>
+          <Button
+            variant="secondary"
+            className="mt-3"
+            onClick={() => setFetchKey((k) => k + 1)}
+          >
+            {t("errors.retry")}
+          </Button>
+        </div>
+        <Link
+          href="/jobs"
+          className="inline-flex text-sm font-medium text-blue-700 hover:text-blue-800"
+        >
+          {t("jobs.detail.backToAll")}
+        </Link>
       </div>
     );
   }
 
   const applicationUrl = safeExternalUrl(job.application_url);
   const sourceUrl = safeExternalUrl(job.source_url ?? job.canonical_url);
+  const recommendationKey =
+    `jobs.detail.recommendation.${analysis?.overall_recommendation ?? "APPLY"}` as MessageKey;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -266,7 +286,7 @@ export default function JobDetailPage() {
           href="/jobs"
           className="text-sm font-medium text-blue-700 hover:text-blue-900"
         >
-          ← All jobs
+          {t("jobs.detail.backToAll")}
         </Link>
         <div className="mt-5 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
@@ -280,12 +300,12 @@ export default function JobDetailPage() {
               <p className="mt-2 text-sm text-slate-500">{job.location}</p>
             )}
             <p className="mt-4 text-xs text-slate-400">
-              {jobSourceSummary(job)}
+              {jobSourceSummary(job, locale)}
             </p>
           </div>
           <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:max-w-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Next step
+              {t("jobs.detail.nextStep")}
             </p>
             {applicationUrl ? (
               <>
@@ -295,7 +315,7 @@ export default function JobDetailPage() {
                       htmlFor="application-resume-version"
                       className="text-sm font-medium text-slate-700"
                     >
-                      Resume for this application
+                      {t("jobs.detail.resumeForApplication")}
                     </label>
                     <select
                       id="application-resume-version"
@@ -308,7 +328,11 @@ export default function JobDetailPage() {
                     >
                       {versions.map(({ resume, version }) => (
                         <option key={version.id} value={version.id}>
-                          {resume.name} · Version {version.version_number}
+                          {formatResumeVersionLabel(
+                            resume.name,
+                            version.version_number,
+                            t,
+                          )}
                         </option>
                       ))}
                     </select>
@@ -320,12 +344,12 @@ export default function JobDetailPage() {
                     onClick={() => void startApplication()}
                     loading={startingApplication}
                   >
-                    Start and track application
+                    {t("jobs.detail.startAndTrack")}
                   </Button>
                 ) : (
                   <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                     <p className="text-sm font-medium text-emerald-900">
-                      Application preparation is saved.
+                      {t("jobs.detail.preparationSaved")}
                     </p>
                     <a
                       href={applicationUrl}
@@ -333,21 +357,20 @@ export default function JobDetailPage() {
                       rel="noopener noreferrer"
                       className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800"
                     >
-                      Continue on company site ↗
+                      {t("jobs.detail.continueOnSite")}
                     </a>
                     <Link
                       href={`/applications/${trackedApplication.id}`}
                       className="mt-3 block text-center text-sm font-medium text-emerald-900 underline"
                     >
-                      View tracked application
+                      {t("jobs.detail.viewTrackedApplication")}
                     </Link>
                   </div>
                 )}
               </>
             ) : (
               <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-600">
-                No application link is available for this job. Use the source
-                link or locate the company&apos;s application page manually.
+                {t("jobs.detail.noApplicationLink")}
               </div>
             )}
             <Button
@@ -357,10 +380,10 @@ export default function JobDetailPage() {
               disabled={saving}
             >
               {saving
-                ? "Updating…"
+                ? t("jobs.detail.updating")
                 : job.is_saved
-                  ? "Saved · Remove"
-                  : "Save job"}
+                  ? t("jobs.detail.savedRemove")
+                  : t("jobs.detail.saveJob")}
             </Button>
             {sourceUrl && (
               <a
@@ -369,7 +392,7 @@ export default function JobDetailPage() {
                 rel="noopener noreferrer"
                 className="mt-3 block text-center text-sm font-medium text-slate-600 hover:text-slate-950 hover:underline"
               >
-                View original source ↗
+                {t("jobs.detail.viewOriginalSource")}
               </a>
             )}
           </div>
@@ -387,7 +410,7 @@ export default function JobDetailPage() {
                 rel="noopener noreferrer"
                 className="mt-2 block font-semibold underline"
               >
-                Open application without tracking ↗
+                {t("jobs.detail.openWithoutTracking")}
               </a>
             )}
           </div>
@@ -397,7 +420,7 @@ export default function JobDetailPage() {
       <section className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-950">
-            Grounded requirements
+            {t("jobs.detail.groundedRequirements")}
           </h2>
           <ul className="mt-4 space-y-3">
             {job.latest_snapshot.requirements.map((requirement) => (
@@ -417,7 +440,8 @@ export default function JobDetailPage() {
                   {requirement.description}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  Source: “{requirement.source_text}”
+                  {t("jobs.detail.requirementSource")} “
+                  {requirement.source_text}”
                 </p>
               </li>
             ))}
@@ -425,7 +449,7 @@ export default function JobDetailPage() {
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-950">
-            Original job description
+            {t("jobs.detail.originalDescription")}
           </h2>
           <p className="mt-4 max-h-96 overflow-y-auto whitespace-pre-wrap text-sm leading-6 text-slate-600">
             {job.latest_snapshot.raw_description}
@@ -437,15 +461,13 @@ export default function JobDetailPage() {
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">
-              Optional enhancement
+              {t("jobs.detail.optionalEnhancement")}
             </p>
             <h2 className="mt-2 text-xl font-semibold text-slate-950">
-              Job Intelligence
+              {t("jobs.detail.jobIntelligence")}
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Compare this role with confirmed Career Brain evidence when you
-              want deeper preparation. You can apply without running an
-              analysis.
+              {t("jobs.detail.intelligenceIntro")}
             </p>
           </div>
           <div className="w-full rounded-xl bg-white p-4 shadow-sm lg:max-w-md">
@@ -453,7 +475,7 @@ export default function JobDetailPage() {
               className="text-sm font-medium text-slate-800"
               htmlFor="resume-version"
             >
-              Resume for analysis
+              {t("jobs.detail.resumeForAnalysis")}
             </label>
             {versions.length === 0 ? (
               <p className="mt-2 text-sm text-slate-600">
@@ -461,9 +483,9 @@ export default function JobDetailPage() {
                   href="/resumes"
                   className="font-medium text-blue-700 underline"
                 >
-                  Upload and confirm a resume
+                  {t("jobs.detail.uploadResumeFirst")}
                 </Link>{" "}
-                before running Job Intelligence.
+                {t("jobs.detail.beforeIntelligence")}
               </p>
             ) : (
               <>
@@ -475,7 +497,11 @@ export default function JobDetailPage() {
                 >
                   {versions.map(({ resume, version }) => (
                     <option key={version.id} value={version.id}>
-                      {resume.name} · Version {version.version_number}
+                      {formatResumeVersionLabel(
+                        resume.name,
+                        version.version_number,
+                        t,
+                      )}
                     </option>
                   ))}
                 </select>
@@ -486,10 +512,10 @@ export default function JobDetailPage() {
                   disabled={analyzing}
                 >
                   {analyzing
-                    ? "Analyzing evidence…"
+                    ? t("jobs.detail.analyzing")
                     : analysis
-                      ? "Run new analysis"
-                      : "Analyze this job"}
+                      ? t("jobs.detail.runNewAnalysis")
+                      : t("jobs.detail.analyzeJob")}
                 </Button>
               </>
             )}
@@ -508,40 +534,39 @@ export default function JobDetailPage() {
       {!analysis ? (
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
           <h2 className="font-semibold text-slate-950">
-            No Job Intelligence analysis yet
+            {t("jobs.detail.noAnalysisYet")}
           </h2>
           <p className="mt-2 text-sm text-slate-500">
-            Analysis is optional. Choose a resume above if you want to compare
-            these requirements with confirmed Career Brain evidence.
+            {t("jobs.detail.noAnalysisHint")}
           </p>
         </section>
       ) : (
         <>
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
-              Explainable recommendation
+              {t("jobs.detail.explainableRecommendation")}
             </p>
             <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
               <h2 className="text-2xl font-semibold text-slate-950">
-                {recommendationLabels[analysis.overall_recommendation]}
+                {t(recommendationKey)}
               </h2>
               <p className="text-xs text-slate-500">
-                {analysis.resume_name} · Version{" "}
-                {analysis.resume_version_number} · Analysis{" "}
-                {analysis.analysis_version}
+                {analysis.resume_name} · {t("common.version")}{" "}
+                {analysis.resume_version_number} ·{" "}
+                {t("jobs.detail.analysisVersion")} {analysis.analysis_version}
               </p>
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-600">
               {analysis.summary}
             </p>
             <p className="mt-2 text-xs text-slate-500">
-              This is evidence alignment, not an interview or offer probability.
+              {t("jobs.detail.evidenceAlignmentNote")}
             </p>
           </section>
 
           <section
             className="grid gap-5 xl:grid-cols-2"
-            aria-label="Job Intelligence categories"
+            aria-label={t("jobs.detail.intelligenceCategories")}
           >
             {groups.map((group) => {
               const matches = analysis.matches.filter(
@@ -568,7 +593,7 @@ export default function JobDetailPage() {
                   <div className="mt-4 space-y-3">
                     {matches.length === 0 ? (
                       <p className="rounded-xl border border-dashed border-slate-300 bg-white/70 p-4 text-sm text-slate-500">
-                        No requirements in this category.
+                        {t("jobs.detail.noRequirementsInCategory")}
                       </p>
                     ) : (
                       matches.map((match) => (

@@ -3,6 +3,7 @@ import type {
   ApplicationStatus,
   ApplicationSummary,
   CareerBrain,
+  ContactInfo,
   CreateApplicationRequest,
   CreateEducationRequest,
   CreateExperienceRequest,
@@ -38,6 +39,78 @@ export type UserResponse = {
   created_at: string;
 };
 
+export type ApiErrorCategory =
+  | "unauthenticated"
+  | "forbidden"
+  | "not_found"
+  | "conflict"
+  | "validation"
+  | "rate_limit"
+  | "server"
+  | "unavailable"
+  | "network"
+  | "unknown";
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly category: ApiErrorCategory,
+    public readonly detail?: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+function categoryFromStatus(status: number): ApiErrorCategory {
+  if (status === 401) return "unauthenticated";
+  if (status === 403) return "forbidden";
+  if (status === 404) return "not_found";
+  if (status === 409) return "conflict";
+  if (status === 422) return "validation";
+  if (status === 429) return "rate_limit";
+  if (status === 503) return "unavailable";
+  if (status >= 500 && status <= 599) return "server";
+  return "unknown";
+}
+
+function formatErrorDetail(raw: unknown): string | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (typeof raw === "string") return raw;
+  if (Array.isArray(raw)) {
+    return (raw as Array<{ msg?: string }>)
+      .map((entry) => entry.msg ?? JSON.stringify(entry))
+      .join("; ");
+  }
+  return JSON.stringify(raw);
+}
+
+async function throwApiError(response: Response): Promise<never> {
+  const text = await response.text().catch(() => "");
+  let detail: string | undefined;
+  try {
+    const parsed = JSON.parse(text) as {
+      detail?: unknown;
+      message?: unknown;
+    };
+    const rawDetail = parsed.detail ?? parsed.message;
+    detail =
+      rawDetail !== undefined
+        ? formatErrorDetail(rawDetail)
+        : text || undefined;
+  } catch {
+    detail = text || undefined;
+  }
+  const category = categoryFromStatus(response.status);
+  throw new ApiError(
+    detail || `Request failed with status ${response.status}`,
+    response.status,
+    category,
+    detail,
+  );
+}
+
 function apiBaseUrl(): string {
   const value = process.env.NEXT_PUBLIC_API_URL;
 
@@ -57,10 +130,15 @@ function authHeaders(token: string): Record<string, string> {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(text || `Request failed with status ${response.status}`);
+    await throwApiError(response);
   }
   return (await response.json()) as T;
+}
+
+async function handleEmptyResponse(response: Response): Promise<void> {
+  if (!response.ok) {
+    await throwApiError(response);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -69,12 +147,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 export async function getSystemHealth(): Promise<HealthResponse> {
   const response = await fetch(`${apiBaseUrl()}/health`, { cache: "no-store" });
-
-  if (!response.ok) {
-    throw new Error("CareerOS API health check failed");
-  }
-
-  return (await response.json()) as HealthResponse;
+  return handleResponse<HealthResponse>(response);
 }
 
 // ---------------------------------------------------------------------------
@@ -86,12 +159,7 @@ export async function getCurrentUser(token: string): Promise<UserResponse> {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch current user");
-  }
-
-  return (await response.json()) as UserResponse;
+  return handleResponse<UserResponse>(response);
 }
 
 // ---------------------------------------------------------------------------
@@ -103,12 +171,33 @@ export async function getCareerBrain(token: string): Promise<CareerBrain> {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
+  return handleResponse<CareerBrain>(response);
+}
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch career brain");
-  }
+// ---------------------------------------------------------------------------
+// Contact info
+// ---------------------------------------------------------------------------
 
-  return (await response.json()) as CareerBrain;
+export type { ContactInfo };
+
+export async function getContactInfo(token: string): Promise<ContactInfo> {
+  const response = await fetch(`${apiBaseUrl()}/contact-info`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  return handleResponse<ContactInfo>(response);
+}
+
+export async function updateContactInfo(
+  token: string,
+  data: Partial<ContactInfo>,
+): Promise<ContactInfo> {
+  const response = await fetch(`${apiBaseUrl()}/contact-info`, {
+    method: "PUT",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<ContactInfo>(response);
 }
 
 // ---------------------------------------------------------------------------
@@ -154,9 +243,7 @@ export async function deleteEducation(
       headers: { Authorization: `Bearer ${token}` },
     },
   );
-  if (!response.ok) {
-    throw new Error("Failed to delete education");
-  }
+  await handleEmptyResponse(response);
 }
 
 // ---------------------------------------------------------------------------
@@ -339,9 +426,7 @@ export async function unsaveJob(token: string, jobId: string): Promise<void> {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) {
-    throw new Error("Failed to remove saved job");
-  }
+  await handleEmptyResponse(response);
 }
 
 export async function createJobAnalysis(
@@ -473,9 +558,7 @@ export async function deleteExperience(
       headers: { Authorization: `Bearer ${token}` },
     },
   );
-  if (!response.ok) {
-    throw new Error("Failed to delete experience");
-  }
+  await handleEmptyResponse(response);
 }
 
 // ---------------------------------------------------------------------------
@@ -525,9 +608,7 @@ export async function deleteExperienceDetail(
       headers: { Authorization: `Bearer ${token}` },
     },
   );
-  if (!response.ok) {
-    throw new Error("Failed to delete experience detail");
-  }
+  await handleEmptyResponse(response);
 }
 
 // ---------------------------------------------------------------------------
@@ -564,9 +645,7 @@ export async function deleteProject(token: string, id: string): Promise<void> {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) {
-    throw new Error("Failed to delete project");
-  }
+  await handleEmptyResponse(response);
 }
 
 // ---------------------------------------------------------------------------
@@ -616,9 +695,7 @@ export async function deleteProjectDetail(
       headers: { Authorization: `Bearer ${token}` },
     },
   );
-  if (!response.ok) {
-    throw new Error("Failed to delete project detail");
-  }
+  await handleEmptyResponse(response);
 }
 
 // ---------------------------------------------------------------------------
@@ -655,7 +732,5 @@ export async function deleteSkill(token: string, id: string): Promise<void> {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) {
-    throw new Error("Failed to delete skill");
-  }
+  await handleEmptyResponse(response);
 }

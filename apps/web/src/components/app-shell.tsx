@@ -28,6 +28,11 @@ const navItems = [
     href: "/career",
     path: "M12 12a4 4 0 100-8 4 4 0 000 8zm7 9a7 7 0 00-14 0",
   },
+  {
+    label: "shell.setup" as const,
+    href: "/setup",
+    path: "M12 6.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm0 5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm0 5a1.5 1.5 0 110 3 1.5 1.5 0 010-3M5.5 6.5h13M5.5 11.5h13M5.5 16.5h13",
+  },
 ] as const;
 
 function AppShell({ children }: { children: ReactNode }) {

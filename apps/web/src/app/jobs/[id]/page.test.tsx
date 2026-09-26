@@ -2,7 +2,17 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { LocaleProvider } from "@/lib/i18n";
+
 import JobDetailPage from "./page";
+
+function renderJobDetail(locale: "en" | "zh-CN" = "en") {
+  return render(
+    <LocaleProvider initialLocale={locale}>
+      <JobDetailPage />
+    </LocaleProvider>,
+  );
+}
 
 const mockGetJob = vi.fn();
 const mockListResumes = vi.fn();
@@ -151,7 +161,7 @@ describe("JobDetailPage", () => {
 
   it("prioritizes direct application and makes intelligence optional", async () => {
     const user = userEvent.setup();
-    render(<JobDetailPage />);
+    renderJobDetail();
     expect(await screen.findByText("Platform Engineer")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Start and track application" }),
@@ -197,7 +207,7 @@ describe("JobDetailPage", () => {
       canonical_url: "https://example.com/job",
       availability_status: "AVAILABLE",
     });
-    render(<JobDetailPage />);
+    renderJobDetail();
     expect(
       await screen.findByText("Demo source · available · freshness unknown"),
     ).toBeInTheDocument();
@@ -205,7 +215,7 @@ describe("JobDetailPage", () => {
 
   it("saves the job without creating an application", async () => {
     const user = userEvent.setup();
-    render(<JobDetailPage />);
+    renderJobDetail();
     await user.click(await screen.findByRole("button", { name: "Save job" }));
     expect(mockSaveJob).toHaveBeenCalledWith("token", "job-1");
     expect(
@@ -216,7 +226,7 @@ describe("JobDetailPage", () => {
 
   it("shows an honest state when no application link exists", async () => {
     mockGetJob.mockResolvedValue({ ...job, application_url: null });
-    render(<JobDetailPage />);
+    renderJobDetail();
     expect(
       await screen.findByText(/No application link is available/i),
     ).toBeInTheDocument();
@@ -228,7 +238,7 @@ describe("JobDetailPage", () => {
   it("keeps a direct manual recovery path when tracking fails", async () => {
     const user = userEvent.setup();
     mockCreateApplication.mockRejectedValue(new Error("offline"));
-    render(<JobDetailPage />);
+    renderJobDetail();
     await user.click(
       await screen.findByRole("button", {
         name: "Start and track application",
@@ -244,7 +254,7 @@ describe("JobDetailPage", () => {
 
   it("renders all four explainable evidence categories", async () => {
     mockListAnalyses.mockResolvedValue([analysis]);
-    render(<JobDetailPage />);
+    renderJobDetail();
     expect(await screen.findByText("Strong Evidence")).toBeInTheDocument();
     expect(screen.getByText("Hidden Evidence")).toBeInTheDocument();
     expect(screen.getByText("Weak Evidence")).toBeInTheDocument();
@@ -264,7 +274,7 @@ describe("JobDetailPage", () => {
         resolveAnalysis = resolve;
       }),
     );
-    render(<JobDetailPage />);
+    renderJobDetail();
     await screen.findByText("Platform Engineer");
     const resumeSelect = screen.getByLabelText("Resume for analysis");
     await user.selectOptions(resumeSelect, "version-1");
@@ -284,7 +294,7 @@ describe("JobDetailPage", () => {
   it("shows a recoverable analysis failure", async () => {
     const user = userEvent.setup();
     mockCreateAnalysis.mockRejectedValue(new Error("provider unavailable"));
-    render(<JobDetailPage />);
+    renderJobDetail();
     await user.click(
       await screen.findByRole("button", { name: "Analyze this job" }),
     );
@@ -295,7 +305,7 @@ describe("JobDetailPage", () => {
 
   it("guides users to upload a resume when none exists", async () => {
     mockListResumes.mockResolvedValue([]);
-    render(<JobDetailPage />);
+    renderJobDetail();
     const link = await screen.findByRole("link", {
       name: "Upload and confirm a resume",
     });
@@ -307,10 +317,19 @@ describe("JobDetailPage", () => {
 
   it("shows an ownership-safe error when the job cannot be loaded", async () => {
     mockGetJob.mockRejectedValue(new Error("404"));
-    render(<JobDetailPage />);
+    renderJobDetail();
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "do not have access",
     );
+  });
+
+  it("renders zh-CN job detail chrome", async () => {
+    renderJobDetail("zh-CN");
+    expect(await screen.findByText("Platform Engineer")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "开始并跟踪申请" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("结构化要求")).toBeInTheDocument();
   });
 
   it("keeps intelligence content available in a narrow viewport", async () => {
@@ -319,7 +338,7 @@ describe("JobDetailPage", () => {
       value: 390,
     });
     mockListAnalyses.mockResolvedValue([analysis]);
-    render(<JobDetailPage />);
+    renderJobDetail();
     const categories = await screen.findByRole("region", {
       name: "Job Intelligence categories",
     });

@@ -4,6 +4,7 @@ import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useI18n } from "@/lib/i18n";
 
 type DetailFormProps = {
   initial?: string;
@@ -20,6 +21,7 @@ function DetailForm({
   loading,
   error,
 }: DetailFormProps) {
+  const { t } = useI18n();
   const [content, setContent] = useState(initial ?? "");
 
   const handleSubmit = async (e: FormEvent) => {
@@ -32,11 +34,11 @@ function DetailForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Textarea
-        label="Detail"
+        label={t("detail.heading")}
         value={content}
         onChange={(e) => setContent(e.target.value)}
         required
-        placeholder="Describe what you did..."
+        placeholder={t("detail.form.placeholder")}
       />
       {error && (
         <p className="text-sm text-red-600" role="alert">
@@ -50,10 +52,10 @@ function DetailForm({
           onClick={onCancel}
           disabled={loading}
         >
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button type="submit" loading={loading}>
-          {initial ? "Save" : "Add"}
+          {initial ? t("common.save") : t("common.add")}
         </Button>
       </div>
     </form>

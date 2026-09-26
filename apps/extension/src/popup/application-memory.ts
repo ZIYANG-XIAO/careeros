@@ -9,9 +9,65 @@ import type {
 const persistedSources = new Set([
   "IDENTITY",
   "CAREER_BRAIN",
+  "USER_CONTACT_INFO",
   "RESUME_VERSION",
   "USER_PROVIDED",
 ]);
+
+const GENERIC_ATS_HOSTS = new Set([
+  "boards.greenhouse.io",
+  "job-boards.greenhouse.io",
+  "jobs.lever.co",
+  "jobs.ashbyhq.com",
+]);
+
+const GENERIC_TITLE_SUFFIX =
+  /\s[-|–—·]\s*(Application|Apply(?:\s+Now)?|Careers?|Jobs?|Greenhouse|Lever|Ashby|Workday)\s*$|\s+(Application|Apply(?:\s+Now)?|Careers?|Jobs?)\s*$/i;
+
+function isGenericEmployerHost(host: string): boolean {
+  const normalized = host.toLowerCase();
+  if (normalized === "localhost" || normalized === "127.0.0.1") {
+    return true;
+  }
+  if (GENERIC_ATS_HOSTS.has(normalized)) {
+    return true;
+  }
+  return (
+    normalized.endsWith(".greenhouse.io") ||
+    normalized.endsWith(".lever.co") ||
+    normalized.endsWith(".ashbyhq.com") ||
+    normalized.includes("workday")
+  );
+}
+
+function stripGenericTitleSuffix(text: string): string {
+  let result = text.trim();
+  while (GENERIC_TITLE_SUFFIX.test(result)) {
+    result = result.replace(GENERIC_TITLE_SUFFIX, "").trim();
+  }
+  return result.replace(/^Apply\s+(?:now|for|to)\s+/i, "").trim();
+}
+
+function suggestCompany(context: ApplicationPageContext): string {
+  if (context.application?.company) {
+    return context.application.company;
+  }
+  if (isGenericEmployerHost(context.siteHost)) {
+    return "";
+  }
+  return context.siteHost;
+}
+
+function suggestRole(context: ApplicationPageContext): string {
+  if (context.application?.role) {
+    return context.application.role;
+  }
+  const role = stripGenericTitleSuffix(context.pageTitle);
+  if (!role || /^(apply|application|careers?|jobs?)$/i.test(role)) {
+    return "";
+  }
+  return role;
+}
 
 export function confirmedApplicationAnswers(
   resolution: AnswerResolution | null,
@@ -54,8 +110,8 @@ export function initialApplicationFields(context: ApplicationPageContext): {
   resumeVersionId: string;
 } {
   return {
-    company: context.application?.company ?? context.siteHost,
-    role: context.application?.role ?? context.pageTitle,
+    company: suggestCompany(context),
+    role: suggestRole(context),
     resumeVersionId:
       context.matchKind === "EXACT_URL"
         ? (context.application?.resumeVersionId ?? "")

@@ -10,6 +10,7 @@ import {
   removeResumeDraftItem,
   updateResumeDraftItem,
 } from "@/lib/api";
+import { type MessageKey, useI18n } from "@/lib/i18n";
 import type { ResumeDraftItem, ResumeImport } from "@/lib/types";
 
 const editableFields: Record<ResumeDraftItem["item_type"], string[]> = {
@@ -35,29 +36,29 @@ const editableFields: Record<ResumeDraftItem["item_type"], string[]> = {
   SKILL: ["name"],
 };
 
-const labels: Record<string, string> = {
-  institution: "Institution",
-  degree: "Degree",
-  field_of_study: "Field of study",
-  location: "Location",
-  start_date: "Start date",
-  end_date: "End date",
-  company: "Company",
-  title: "Title",
-  is_current: "Current role",
-  name: "Name",
-  description: "Description",
-  url: "URL",
-  content: "Detail",
+const sectionKeys: Record<ResumeDraftItem["item_type"], MessageKey> = {
+  EDUCATION: "resumeReview.section.EDUCATION",
+  EXPERIENCE: "resumeReview.section.EXPERIENCE",
+  EXPERIENCE_DETAIL: "resumeReview.section.EXPERIENCE_DETAIL",
+  PROJECT: "resumeReview.section.PROJECT",
+  PROJECT_DETAIL: "resumeReview.section.PROJECT_DETAIL",
+  SKILL: "resumeReview.section.SKILL",
 };
 
-const sectionNames: Record<string, string> = {
-  EDUCATION: "Education",
-  EXPERIENCE: "Experience",
-  EXPERIENCE_DETAIL: "Experience details",
-  PROJECT: "Projects",
-  PROJECT_DETAIL: "Project details",
-  SKILL: "Skills",
+const fieldKeys: Record<string, MessageKey> = {
+  institution: "resumeReview.field.institution",
+  degree: "resumeReview.field.degree",
+  field_of_study: "resumeReview.field.field_of_study",
+  location: "resumeReview.field.location",
+  start_date: "resumeReview.field.start_date",
+  end_date: "resumeReview.field.end_date",
+  company: "resumeReview.field.company",
+  title: "resumeReview.field.title",
+  is_current: "resumeReview.field.is_current",
+  name: "resumeReview.field.name",
+  description: "resumeReview.field.description",
+  url: "resumeReview.field.url",
+  content: "resumeReview.field.content",
 };
 
 function DraftCard({
@@ -70,6 +71,7 @@ function DraftCard({
   onChange: (item: ResumeDraftItem) => void;
 }) {
   const { getToken } = useAuth();
+  const { t } = useI18n();
   const [data, setData] = useState<Record<string, unknown>>(item.data);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +91,7 @@ function DraftCard({
       setData(updated.data);
       onChange(updated);
     } catch {
-      setError("Could not save this correction.");
+      setError(t("resumeReview.error.save"));
     } finally {
       setSaving(false);
     }
@@ -103,7 +105,7 @@ function DraftCard({
       if (!token) throw new Error("Missing authentication token");
       onChange(await removeResumeDraftItem(token, importId, item.id));
     } catch {
-      setError("Could not remove this item.");
+      setError(t("resumeReview.error.remove"));
       setSaving(false);
     }
   }
@@ -111,7 +113,7 @@ function DraftCard({
   if (item.status === "REMOVED") {
     return (
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-        Removed from this import
+        {t("resumeReview.removedFromImport")}
       </div>
     );
   }
@@ -134,14 +136,14 @@ function DraftCard({
                   }
                   disabled={item.status !== "ACTIVE"}
                 />
-                {labels[field]}
+                {t(fieldKeys[field])}
               </label>
             );
           }
           return (
             <Input
               key={field}
-              label={labels[field]}
+              label={t(fieldKeys[field])}
               value={typeof data[field] === "string" ? data[field] : ""}
               onChange={(event) =>
                 setData({ ...data, [field]: event.target.value || null })
@@ -154,14 +156,16 @@ function DraftCard({
       {item.status === "ACTIVE" && (
         <div className="mt-4 flex flex-wrap gap-2">
           <Button onClick={() => void save()} disabled={saving}>
-            {saving ? "Saving…" : "Save correction"}
+            {saving
+              ? t("resumeReview.saving")
+              : t("resumeReview.saveCorrection")}
           </Button>
           <Button
             variant="secondary"
             onClick={() => void remove()}
             disabled={saving}
           >
-            Remove
+            {t("resumeReview.remove")}
           </Button>
         </div>
       )}
@@ -182,6 +186,7 @@ export function ResumeReview({
   onConfirmed?: (resumeImport: ResumeImport) => void;
 }) {
   const { getToken } = useAuth();
+  const { t } = useI18n();
   const [resumeImport, setResumeImport] = useState(initialImport);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -189,11 +194,11 @@ export function ResumeReview({
   const grouped = useMemo(() => {
     const groups = new Map<string, ResumeDraftItem[]>();
     for (const item of resumeImport.items) {
-      const section = sectionNames[item.item_type];
+      const section = t(sectionKeys[item.item_type]);
       groups.set(section, [...(groups.get(section) ?? []), item]);
     }
     return [...groups.entries()];
-  }, [resumeImport.items]);
+  }, [resumeImport.items, t]);
 
   function replaceItem(updated: ResumeDraftItem) {
     setResumeImport((current) => {
@@ -236,9 +241,7 @@ export function ResumeReview({
       setResumeImport(confirmed);
       onConfirmed?.(confirmed);
     } catch {
-      setError(
-        "Could not confirm this import. Your Career Brain was not changed.",
-      );
+      setError(t("resumeReview.error.confirm"));
     } finally {
       setConfirming(false);
     }
@@ -256,7 +259,8 @@ export function ResumeReview({
               {section}
             </h2>
             <span className="text-xs text-slate-500">
-              {items.filter((item) => item.status === "ACTIVE").length} included
+              {items.filter((item) => item.status === "ACTIVE").length}{" "}
+              {t("resumeReview.included")}
             </span>
           </div>
           <div className="space-y-3">
@@ -274,15 +278,17 @@ export function ResumeReview({
 
       {resumeImport.status === "CONFIRMED" ? (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800">
-          Confirmed. Accepted facts are now in your Career Brain.
+          {t("resumeReview.confirmed")}
         </div>
       ) : (
         <div className="sticky bottom-4 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex sm:items-center sm:justify-between">
           <p className="mb-3 text-sm text-slate-600 sm:mb-0">
-            Nothing enters your Career Brain until you confirm.
+            {t("resumeReview.confirmHint")}
           </p>
           <Button onClick={() => void confirm()} disabled={confirming}>
-            {confirming ? "Confirming…" : "Confirm accepted facts"}
+            {confirming
+              ? t("resumeReview.confirming")
+              : t("resumeReview.confirmButton")}
           </Button>
         </div>
       )}

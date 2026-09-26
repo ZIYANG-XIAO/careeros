@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { DropdownItem, DropdownMenu } from "@/components/ui/dropdown-menu";
 import { createEducation, deleteEducation, updateEducation } from "@/lib/api";
+import { formatCareerDateRange, useI18n } from "@/lib/i18n";
 import type { EducationSummary } from "@/lib/types";
 
 type EducationSectionProps = {
@@ -19,6 +20,7 @@ type EducationSectionProps = {
 
 function EducationSection({ educations, onMutate }: EducationSectionProps) {
   const { getToken } = useAuth();
+  const { t } = useI18n();
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState<EducationSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<EducationSummary | null>(
@@ -37,7 +39,7 @@ function EducationSection({ educations, onMutate }: EducationSectionProps) {
       await onMutate();
       setShowCreate(false);
     } catch {
-      setMutationError("Failed to add education. Please try again.");
+      setMutationError(t("education.error.add"));
     } finally {
       setLoading(false);
     }
@@ -54,7 +56,7 @@ function EducationSection({ educations, onMutate }: EducationSectionProps) {
       await onMutate();
       setEditTarget(null);
     } catch {
-      setMutationError("Failed to update education. Please try again.");
+      setMutationError(t("education.error.update"));
     } finally {
       setLoading(false);
     }
@@ -71,7 +73,7 @@ function EducationSection({ educations, onMutate }: EducationSectionProps) {
       await onMutate();
       setDeleteTarget(null);
     } catch {
-      setMutationError("Failed to delete education. Please try again.");
+      setMutationError(t("education.error.delete"));
     } finally {
       setLoading(false);
     }
@@ -101,21 +103,21 @@ function EducationSection({ educations, onMutate }: EducationSectionProps) {
             id="education-heading"
             className="text-lg font-semibold text-slate-900"
           >
-            Education
+            {t("career.sections.education")}
           </h2>
           <p className="mt-1 text-sm leading-5 text-slate-500">
-            Schools, degrees, and fields of study that shape your background.
+            {t("career.sections.educationDescription")}
           </p>
         </div>
         <Button variant="secondary" onClick={() => setShowCreate(true)}>
-          Add education
+          {t("education.addButton")}
         </Button>
       </div>
 
       {educations.length === 0 ? (
         <EmptyState
-          title="No education yet"
-          description="Add a school or program to begin your academic history."
+          title={t("education.empty.title")}
+          description={t("education.empty.description")}
         />
       ) : (
         <ul className="mt-4 space-y-3">
@@ -139,21 +141,23 @@ function EducationSection({ educations, onMutate }: EducationSectionProps) {
                   <p className="mt-0.5 truncate text-sm text-slate-400">
                     {[
                       edu.location,
-                      formatDateRange(edu.start_date, edu.end_date),
+                      formatCareerDateRange(edu.start_date, edu.end_date, t),
                     ]
                       .filter(Boolean)
                       .join(" | ")}
                   </p>
                 </div>
-                <DropdownMenu label={`Actions for ${edu.institution}`}>
+                <DropdownMenu
+                  label={`${t("common.actionsFor")} ${edu.institution}`}
+                >
                   <DropdownItem onClick={() => setEditTarget(edu)}>
-                    Edit
+                    {t("common.edit")}
                   </DropdownItem>
                   <DropdownItem
                     onClick={() => setDeleteTarget(edu)}
                     variant="danger"
                   >
-                    Delete
+                    {t("common.delete")}
                   </DropdownItem>
                 </DropdownMenu>
               </div>
@@ -162,7 +166,11 @@ function EducationSection({ educations, onMutate }: EducationSectionProps) {
         </ul>
       )}
 
-      <Dialog open={showCreate} onClose={closeCreate} title="Add Education">
+      <Dialog
+        open={showCreate}
+        onClose={closeCreate}
+        title={t("education.dialog.add")}
+      >
         <EducationForm
           onSubmit={handleCreate}
           onCancel={closeCreate}
@@ -171,7 +179,11 @@ function EducationSection({ educations, onMutate }: EducationSectionProps) {
         />
       </Dialog>
 
-      <Dialog open={!!editTarget} onClose={closeEdit} title="Edit Education">
+      <Dialog
+        open={!!editTarget}
+        onClose={closeEdit}
+        title={t("education.dialog.edit")}
+      >
         {editTarget && (
           <EducationForm
             initial={editTarget}
@@ -188,19 +200,12 @@ function EducationSection({ educations, onMutate }: EducationSectionProps) {
         onClose={closeDelete}
         onConfirm={handleDelete}
         loading={loading}
-        entityName="Education"
+        entityName={t("education.entityName")}
+        description={t("education.deleteConfirm")}
         error={mutationError}
       />
     </section>
   );
-}
-
-function formatDateRange(
-  start: string | null,
-  end: string | null,
-): string | null {
-  if (!start && !end) return null;
-  return `${start ?? "?"} — ${end ?? "Present"}`;
 }
 
 export { EducationSection };

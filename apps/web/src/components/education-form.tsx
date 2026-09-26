@@ -4,6 +4,7 @@ import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
 import type { EducationSummary } from "@/lib/types";
 
 type EducationFormProps = {
@@ -28,6 +29,7 @@ function EducationForm({
   loading,
   error,
 }: EducationFormProps) {
+  const { t } = useI18n();
   const [institution, setInstitution] = useState(initial?.institution ?? "");
   const [degree, setDegree] = useState(initial?.degree ?? "");
   const [fieldOfStudy, setFieldOfStudy] = useState(
@@ -54,48 +56,48 @@ function EducationForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
-        label="Institution"
+        label={t("education.form.institution")}
         value={institution}
         onChange={(e) => setInstitution(e.target.value)}
         required
         maxLength={500}
-        placeholder="University of California, Berkeley"
+        placeholder={t("education.form.institutionPlaceholder")}
       />
       <Input
-        label="Degree"
+        label={t("education.form.degree")}
         value={degree}
         onChange={(e) => setDegree(e.target.value)}
         maxLength={500}
-        placeholder="Bachelor of Science"
+        placeholder={t("education.form.degreePlaceholder")}
       />
       <Input
-        label="Field of Study"
+        label={t("education.form.fieldOfStudy")}
         value={fieldOfStudy}
         onChange={(e) => setFieldOfStudy(e.target.value)}
         maxLength={500}
-        placeholder="Computer Science"
+        placeholder={t("education.form.fieldOfStudyPlaceholder")}
       />
       <Input
-        label="Location"
+        label={t("common.form.location")}
         value={location}
         onChange={(e) => setLocation(e.target.value)}
         maxLength={500}
-        placeholder="Berkeley, CA"
+        placeholder={t("education.form.locationPlaceholder")}
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
-          label="Start Date"
+          label={t("common.form.startDate")}
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
           maxLength={10}
-          placeholder="2020-09"
+          placeholder={t("education.form.startDatePlaceholder")}
         />
         <Input
-          label="End Date"
+          label={t("common.form.endDate")}
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
           maxLength={10}
-          placeholder="2024-05"
+          placeholder={t("education.form.endDatePlaceholder")}
         />
       </div>
       {error && (
@@ -110,10 +112,10 @@ function EducationForm({
           onClick={onCancel}
           disabled={loading}
         >
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button type="submit" loading={loading}>
-          {initial ? "Save" : "Add"}
+          {initial ? t("common.save") : t("common.add")}
         </Button>
       </div>
     </form>

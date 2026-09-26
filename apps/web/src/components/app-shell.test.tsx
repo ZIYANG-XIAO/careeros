@@ -20,12 +20,14 @@ describe("AppShell", () => {
       "Applications",
       "Resumes",
       "Profile",
+      "Browser Extension",
     ]);
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/jobs",
       "/applications",
       "/resumes",
       "/career",
+      "/setup",
     ]);
     expect(screen.getByRole("link", { name: "Jobs" })).toHaveAttribute(
       "aria-current",

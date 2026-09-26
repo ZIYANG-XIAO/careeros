@@ -5,6 +5,7 @@ import { type FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useI18n } from "@/lib/i18n";
 import type { ProjectSummary } from "@/lib/types";
 
 type ProjectFormData = {
@@ -30,6 +31,7 @@ function ProjectForm({
   loading,
   error,
 }: ProjectFormProps) {
+  const { t } = useI18n();
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [url, setUrl] = useState(initial?.url ?? "");
@@ -52,40 +54,40 @@ function ProjectForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
-        label="Project Name"
+        label={t("project.form.name")}
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
         maxLength={500}
-        placeholder="My Open Source Project"
+        placeholder={t("project.form.namePlaceholder")}
       />
       <Textarea
-        label="Description"
+        label={t("common.form.description")}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        placeholder="A brief description of the project..."
+        placeholder={t("project.form.descriptionPlaceholder")}
       />
       <Input
-        label="URL"
+        label={t("common.form.url")}
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         maxLength={2000}
-        placeholder="https://github.com/user/project"
+        placeholder={t("project.form.urlPlaceholder")}
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
-          label="Start Date"
+          label={t("common.form.startDate")}
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
           maxLength={10}
-          placeholder="2023-01"
+          placeholder={t("project.form.startDatePlaceholder")}
         />
         <Input
-          label="End Date"
+          label={t("common.form.endDate")}
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
           maxLength={10}
-          placeholder="2023-12"
+          placeholder={t("project.form.endDatePlaceholder")}
         />
       </div>
       {error && (
@@ -100,10 +102,10 @@ function ProjectForm({
           onClick={onCancel}
           disabled={loading}
         >
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button type="submit" loading={loading}>
-          {initial ? "Save" : "Add"}
+          {initial ? t("common.save") : t("common.add")}
         </Button>
       </div>
     </form>

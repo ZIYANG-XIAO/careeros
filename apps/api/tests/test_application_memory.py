@@ -10,9 +10,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from careeros_api.answer_engine_schemas import CanonicalFieldKey
 from careeros_api.job_schemas import ParsedJobDescription, ParsedJobRequirement
 from careeros_api.main import create_app
 from careeros_api.models import (
+    ApplicationAnswerSource,
     Job,
     JobRequirementCategory,
     JobRequirementImportance,
@@ -598,3 +600,185 @@ async def test_application_ownership_and_nested_reference_isolation(tmp_path: Pa
                 "job_id": foreign_job.json()["id"],
             }
             assert (await owner.post("/applications", json=job_application)).status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# USER_CONTACT_INFO source category chain tests
+# ---------------------------------------------------------------------------
+
+
+def contact_info_answer(
+    *,
+    canonical_key: CanonicalFieldKey = CanonicalFieldKey.CONTACT_PHONE,
+    question: str = "Phone number",
+    answer: str = "+1-555-0100",
+) -> dict[str, object]:
+    return {
+        "canonical_key": canonical_key,
+        "question_text": question,
+        "answer_text": answer,
+        "source_category": ApplicationAnswerSource.USER_CONTACT_INFO,
+        "policy_category": "STANDARD",
+        "sensitivity": "NONE",
+        "user_confirmed": True,
+    }
+
+
+def test_pydantic_accepts_user_contact_info_source() -> None:
+    """CreateApplicationAnswer accepts USER_CONTACT_INFO source_category."""
+    from careeros_api.application_schemas import CreateApplicationAnswer
+
+    answer = CreateApplicationAnswer(
+        canonical_key=CanonicalFieldKey.CONTACT_PHONE,
+        question_text="Phone number",
+        answer_text="+1-555-0100",
+        source_category=ApplicationAnswerSource.USER_CONTACT_INFO,
+        policy_category="STANDARD",
+        sensitivity="NONE",
+        user_confirmed=True,
+    )
+    assert answer.source_category.value == "USER_CONTACT_INFO"
+
+
+def test_pydantic_rejects_invalid_source() -> None:
+    """CreateApplicationAnswer rejects unknown source categories."""
+    from pydantic import ValidationError
+
+    from careeros_api.application_schemas import CreateApplicationAnswer
+
+    with pytest.raises(ValidationError, match="source_category"):
+        CreateApplicationAnswer.model_validate(
+            {
+                "canonical_key": "CONTACT_PHONE",
+                "question_text": "Phone number",
+                "answer_text": "+1-555-0100",
+                "source_category": "MADE_UP_SOURCE",
+                "policy_category": "STANDARD",
+                "sensitivity": "NONE",
+                "user_confirmed": True,
+            }
+        )
+
+
+@pytest.mark.asyncio
+async def test_application_with_user_contact_info_answer_persists_and_reads() -> None:
+    """Full chain: create application with USER_CONTACT_INFO answer,
+    then read it back and verify the source category persists."""
+    async with make_integration_client() as client:
+        payload = external_payload()
+        payload["answers"] = [contact_info_answer()]
+        created = await client.post("/applications", json=payload)
+        assert created.status_code == 201, created.text
+        app = created.json()
+
+        assert len(app["answers"]) == 1
+        assert app["answers"][0]["source_category"] == "USER_CONTACT_INFO"
+        assert app["answers"][0]["answer_text"] == "+1-555-0100"
+        assert app["answers"][0]["question_text"] == "Phone number"
+
+        detail = await client.get(f"/applications/{app['id']}")
+        assert detail.status_code == 200
+        detail_body = detail.json()
+        assert detail_body["answers"][0]["source_category"] == "USER_CONTACT_INFO"
+
+
+@pytest.mark.asyncio
+async def test_user_contact_info_answer_isolated_by_user() -> None:
+    """Another user cannot read an application with USER_CONTACT_INFO answers."""
+    async with make_integration_client() as owner:
+        payload = external_payload()
+        payload["answers"] = [contact_info_answer()]
+        created = await owner.post("/applications", json=payload)
+        assert created.status_code == 201
+        app_id = created.json()["id"]
+
+    async with make_integration_client() as other:
+        resp = await other.get(f"/applications/{app_id}")
+        assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_contact_info_to_answer_engine_to_application_memory() -> None:
+    """Complete chain: save contact info → Answer Engine resolves phone →
+    create Application with that answer → read it back."""
+    async with make_integration_client() as client:
+        save_contact = await client.put(
+            "/contact-info",
+            json={
+                "first_name": "Jane",
+                "last_name": "Doe",
+                "phone": "+1-555-7890",
+            },
+        )
+        assert save_contact.status_code == 200
+
+        resolve = await client.post(
+            "/answer-engine/resolve",
+            json={
+                "fields": [
+                    {
+                        "field_id": "phone-field",
+                        "canonical_key": "CONTACT_PHONE",
+                        "question": "Phone number",
+                        "control_type": "PHONE",
+                        "required": True,
+                        "mapping_confidence": "HIGH",
+                        "options": [],
+                    }
+                ]
+            },
+        )
+        assert resolve.status_code == 200
+        decisions = resolve.json()["decisions"]
+        assert len(decisions) == 1
+        assert decisions[0]["proposed_answer"] == "+1-555-7890"
+        assert decisions[0]["source_category"] == "USER_CONTACT_INFO"
+        assert decisions[0]["action"] == "FILL"
+
+        payload = external_payload()
+        payload["answers"] = [
+            {
+                "canonical_key": decisions[0]["canonical_key"],
+                "question_text": "Phone number",
+                "answer_text": decisions[0]["proposed_answer"],
+                "source_category": decisions[0]["source_category"],
+                "policy_category": "STANDARD",
+                "sensitivity": "NONE",
+                "user_confirmed": True,
+            }
+        ]
+        created = await client.post("/applications", json=payload)
+        assert created.status_code == 201, created.text
+        app = created.json()
+        assert app["answers"][0]["source_category"] == "USER_CONTACT_INFO"
+        assert app["answers"][0]["answer_text"] == "+1-555-7890"
+
+        detail = await client.get(f"/applications/{app['id']}")
+        assert detail.status_code == 200
+        assert detail.json()["answers"][0]["source_category"] == "USER_CONTACT_INFO"
+
+
+@pytest.mark.asyncio
+async def test_mixed_source_categories_in_one_application() -> None:
+    """An application can have answers with different source categories
+    including USER_CONTACT_INFO alongside IDENTITY."""
+    async with make_integration_client() as client:
+        payload = external_payload()
+        payload["answers"] = [
+            {
+                "canonical_key": CanonicalFieldKey.CONTACT_EMAIL,
+                "question_text": "Email",
+                "answer_text": "candidate@example.com",
+                "source_category": ApplicationAnswerSource.IDENTITY,
+                "policy_category": "STANDARD",
+                "sensitivity": "NONE",
+                "user_confirmed": True,
+            },
+            contact_info_answer(),
+        ]
+        created = await client.post("/applications", json=payload)
+        assert created.status_code == 201, created.text
+        app = created.json()
+        sources = {a["source_category"] for a in app["answers"]}
+        assert "IDENTITY" in sources
+        assert "USER_CONTACT_INFO" in sources

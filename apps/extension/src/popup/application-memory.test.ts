@@ -96,7 +96,50 @@ describe("application memory popup policy", () => {
 
     expect(initialApplicationFields(context)).toEqual({
       company: "outside.example",
-      role: "Software Engineer application",
+      role: "Software Engineer",
+      resumeVersionId: "",
+    });
+  });
+
+  it("leaves company empty for generic ATS hosts and localhost", () => {
+    const hosts = [
+      "localhost",
+      "127.0.0.1",
+      "boards.greenhouse.io",
+      "jobs.lever.co",
+      "jobs.ashbyhq.com",
+    ];
+    for (const siteHost of hosts) {
+      const context = {
+        pageUrl: `https://${siteHost}/apply`,
+        pageTitle: "Engineer application",
+        siteHost,
+        matchKind: "NONE",
+        application: null,
+        resumeVersions: [],
+      } satisfies ApplicationPageContext;
+
+      expect(initialApplicationFields(context)).toEqual({
+        company: "",
+        role: "Engineer",
+        resumeVersionId: "",
+      });
+    }
+  });
+
+  it("strips generic apply suffixes from page title role suggestions", () => {
+    const context = {
+      pageUrl: "https://careers.acme.com/apply",
+      pageTitle: "Software Engineer - Application",
+      siteHost: "careers.acme.com",
+      matchKind: "NONE",
+      application: null,
+      resumeVersions: [],
+    } satisfies ApplicationPageContext;
+
+    expect(initialApplicationFields(context)).toEqual({
+      company: "careers.acme.com",
+      role: "Software Engineer",
       resumeVersionId: "",
     });
   });
@@ -126,6 +169,109 @@ describe("application memory popup policy", () => {
       role: "Engineer",
       resumeVersionId: "00000000-0000-4000-8000-000000000001",
     });
+  });
+
+  it("persists USER_CONTACT_INFO answers that were successfully filled", () => {
+    const resolution = {
+      decisions: [
+        {
+          fieldId: "phone",
+          canonicalKey: "CONTACT_PHONE",
+          proposedAnswer: "+1-555-7890",
+          sourceCategory: "USER_CONTACT_INFO",
+          action: "FILL",
+          policyCategory: "STANDARD",
+          sensitivity: "NONE",
+        },
+      ],
+    } as AnswerResolution;
+    const result = {
+      fields: [{ fieldId: "phone", state: "FILLED" }],
+    } as FillExecutionResult;
+
+    expect(confirmedApplicationAnswers(resolution, result)).toEqual([
+      {
+        canonicalKey: "CONTACT_PHONE",
+        questionText: "contact phone",
+        answerText: "+1-555-7890",
+        sourceCategory: "USER_CONTACT_INFO",
+      },
+    ]);
+  });
+
+  it("excludes USER_CONTACT_INFO answers that were not filled", () => {
+    const resolution = {
+      decisions: [
+        {
+          fieldId: "phone",
+          canonicalKey: "CONTACT_PHONE",
+          proposedAnswer: "+1-555-7890",
+          sourceCategory: "USER_CONTACT_INFO",
+          action: "FILL",
+          policyCategory: "STANDARD",
+          sensitivity: "NONE",
+        },
+      ],
+    } as AnswerResolution;
+    const result = {
+      fields: [{ fieldId: "phone", state: "SKIPPED_EXISTING" }],
+    } as FillExecutionResult;
+
+    expect(confirmedApplicationAnswers(resolution, result)).toEqual([]);
+  });
+
+  it("excludes USER_CONTACT_INFO answers with FAILED fill state", () => {
+    const resolution = {
+      decisions: [
+        {
+          fieldId: "phone",
+          canonicalKey: "CONTACT_PHONE",
+          proposedAnswer: "+1-555-7890",
+          sourceCategory: "USER_CONTACT_INFO",
+          action: "FILL",
+          policyCategory: "STANDARD",
+          sensitivity: "NONE",
+        },
+      ],
+    } as AnswerResolution;
+    const result = {
+      fields: [{ fieldId: "phone", state: "FAILED" }],
+    } as FillExecutionResult;
+
+    expect(confirmedApplicationAnswers(resolution, result)).toEqual([]);
+  });
+
+  it("excludes sensitive or ASK decisions regardless of source", () => {
+    const resolution = {
+      decisions: [
+        {
+          fieldId: "ssn",
+          canonicalKey: null,
+          proposedAnswer: "123-45-6789",
+          sourceCategory: "USER_CONTACT_INFO",
+          action: "FILL",
+          policyCategory: "SENSITIVE",
+          sensitivity: "SENSITIVE",
+        },
+        {
+          fieldId: "ask-field",
+          canonicalKey: null,
+          proposedAnswer: null,
+          sourceCategory: "USER_CONTACT_INFO",
+          action: "ASK",
+          policyCategory: "STANDARD",
+          sensitivity: "NONE",
+        },
+      ],
+    } as AnswerResolution;
+    const result = {
+      fields: [
+        { fieldId: "ssn", state: "FILLED" },
+        { fieldId: "ask-field", state: "INPUT_REQUIRED" },
+      ],
+    } as FillExecutionResult;
+
+    expect(confirmedApplicationAnswers(resolution, result)).toEqual([]);
   });
 
   it("shows recent recovery context on a post-submit confirmation page", () => {

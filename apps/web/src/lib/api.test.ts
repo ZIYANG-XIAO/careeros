@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  ApiError,
   createApplication,
   createEducation,
   createExperience,
@@ -15,6 +16,7 @@ import {
   deleteProjectDetail,
   deleteSkill,
   getCareerBrain,
+  getContactInfo,
   getApplication,
   getCurrentUser,
   getResumeImport,
@@ -27,6 +29,7 @@ import {
   unsaveJob,
   updateEducation,
   updateApplicationStatus,
+  updateContactInfo,
   updateExperience,
   updateExperienceDetail,
   updateProject,
@@ -586,11 +589,218 @@ describe("API client", () => {
       ).rejects.toThrow();
     });
 
-    it("throws on failed delete", async () => {
+    it("throws ApiError on failed delete with not_found category", async () => {
       setup({ detail: "Not found" }, 404);
-      await expect(deleteEducation(TOKEN, "missing")).rejects.toThrow(
-        "Failed to delete education",
+      await expect(deleteEducation(TOKEN, "missing")).rejects.toEqual(
+        expect.objectContaining({
+          name: "ApiError",
+          status: 404,
+          category: "not_found",
+          detail: "Not found",
+        }),
       );
+    });
+  });
+
+  describe("ApiError", () => {
+    it("maps HTTP status codes to error categories", async () => {
+      const cases = [
+        [401, "unauthenticated"],
+        [403, "forbidden"],
+        [404, "not_found"],
+        [409, "conflict"],
+        [422, "validation"],
+        [429, "rate_limit"],
+        [502, "server"],
+        [503, "unavailable"],
+        [500, "server"],
+      ] as const;
+
+      for (const [status, category] of cases) {
+        setup({ detail: "Request failed" }, status);
+        await expect(listJobs(TOKEN)).rejects.toMatchObject({
+          status,
+          category,
+        });
+      }
+    });
+
+    it("preserves response detail on ApiError", async () => {
+      setup({ detail: "Invalid filter value" }, 422);
+      await expect(listJobs(TOKEN)).rejects.toEqual(
+        expect.objectContaining({
+          name: "ApiError",
+          status: 422,
+          category: "validation",
+          detail: "Invalid filter value",
+        }),
+      );
+    });
+
+    it("throws ApiError instances from handleResponse callers", async () => {
+      setup({ detail: "Unauthorized" }, 401);
+      await expect(listResumes(TOKEN)).rejects.toBeInstanceOf(ApiError);
+    });
+
+    it("getCurrentUser throws ApiError on 401", async () => {
+      setup({ detail: "Unauthorized" }, 401);
+      await expect(getCurrentUser(TOKEN)).rejects.toEqual(
+        expect.objectContaining({
+          name: "ApiError",
+          status: 401,
+          category: "unauthenticated",
+        }),
+      );
+    });
+
+    it("getCareerBrain throws ApiError on 500 with server category", async () => {
+      setup({ detail: "Internal server error" }, 500);
+      await expect(getCareerBrain(TOKEN)).rejects.toEqual(
+        expect.objectContaining({
+          name: "ApiError",
+          status: 500,
+          category: "server",
+          detail: "Internal server error",
+        }),
+      );
+    });
+
+    it("deleteEducation throws ApiError on 404 with not_found category", async () => {
+      setup({ detail: "Education not found" }, 404);
+      await expect(deleteEducation(TOKEN, "missing")).rejects.toEqual(
+        expect.objectContaining({
+          name: "ApiError",
+          status: 404,
+          category: "not_found",
+          detail: "Education not found",
+        }),
+      );
+    });
+
+    it("unsaveJob throws ApiError on 403 with forbidden category", async () => {
+      setup({ detail: "Forbidden" }, 403);
+      await expect(unsaveJob(TOKEN, "job-1")).rejects.toEqual(
+        expect.objectContaining({
+          name: "ApiError",
+          status: 403,
+          category: "forbidden",
+          detail: "Forbidden",
+        }),
+      );
+    });
+
+    it("422 response with array detail produces readable error message", async () => {
+      setup(
+        {
+          detail: [
+            {
+              loc: ["body", "institution"],
+              msg: "Field required",
+              type: "missing",
+            },
+            {
+              loc: ["body", "degree"],
+              msg: "Invalid degree",
+              type: "value_error",
+            },
+          ],
+        },
+        422,
+      );
+      await expect(createEducation(TOKEN, { institution: "" })).rejects.toEqual(
+        expect.objectContaining({
+          name: "ApiError",
+          status: 422,
+          category: "validation",
+          detail: "Field required; Invalid degree",
+        }),
+      );
+    });
+
+    it("502 response gets server category", async () => {
+      setup({ detail: "Bad gateway" }, 502);
+      await expect(listJobs(TOKEN)).rejects.toMatchObject({
+        status: 502,
+        category: "server",
+      });
+    });
+
+    it("503 response gets unavailable category", async () => {
+      setup({ detail: "Service unavailable" }, 503);
+      await expect(listJobs(TOKEN)).rejects.toMatchObject({
+        status: 503,
+        category: "unavailable",
+      });
+    });
+
+    it("429 response gets rate_limit category", async () => {
+      setup({ detail: "Too many requests" }, 429);
+      await expect(listJobs(TOKEN)).rejects.toMatchObject({
+        status: 429,
+        category: "rate_limit",
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Contact info
+  // ---------------------------------------------------------------------------
+
+  describe("getContactInfo", () => {
+    it("fetches contact info", async () => {
+      const payload = {
+        first_name: "Jane",
+        last_name: "Doe",
+        preferred_name: null,
+        phone: null,
+        address_line_1: null,
+        address_line_2: null,
+        city: null,
+        region: null,
+        postal_code: null,
+        country_code: null,
+        linkedin_url: null,
+        portfolio_url: null,
+        confirmed_at: "2026-09-25T00:00:00Z",
+      };
+      const f = setup(payload);
+      const result = await getContactInfo(TOKEN);
+      expect(result).toEqual(payload);
+      expect(f).toHaveBeenCalledWith(`${BASE}/contact-info`, {
+        headers: { Authorization: `Bearer ${TOKEN}` },
+        cache: "no-store",
+      });
+    });
+  });
+
+  describe("updateContactInfo", () => {
+    it("updates contact info", async () => {
+      const payload = {
+        first_name: "Jane",
+        last_name: "Doe",
+        preferred_name: null,
+        phone: "+1 (555) 123-4567",
+        address_line_1: null,
+        address_line_2: null,
+        city: null,
+        region: null,
+        postal_code: null,
+        country_code: null,
+        linkedin_url: null,
+        portfolio_url: null,
+        confirmed_at: "2026-09-25T00:00:00Z",
+      };
+      const f = setup(payload);
+      const result = await updateContactInfo(TOKEN, { first_name: "Jane" });
+      expect(result).toEqual(payload);
+      expect(f).toHaveBeenCalledWith(`${BASE}/contact-info`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ first_name: "Jane" }),
+      });
     });
   });
 });

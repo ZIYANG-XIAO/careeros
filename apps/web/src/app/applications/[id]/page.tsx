@@ -13,6 +13,13 @@ import {
   updateApplicationStatus,
 } from "@/lib/api";
 import { safeExternalUrl } from "@/lib/external-url";
+import {
+  applicationStatusLabel,
+  formatLocaleDate,
+  formatResumeVersionLabel,
+  type MessageKey,
+  useI18n,
+} from "@/lib/i18n";
 import type {
   Application,
   ApplicationStatus,
@@ -30,24 +37,26 @@ const statuses: ApplicationStatus[] = [
   "WITHDRAWN",
 ];
 
-function label(value: string): string {
-  return value
-    .toLowerCase()
-    .replaceAll("_", " ")
-    .replace(/^./, (character) => character.toUpperCase());
-}
+const SOURCE_CATEGORY_KEYS = {
+  IDENTITY: "application.sourceIdentity",
+  CAREER_BRAIN: "application.sourceCareerBrain",
+  RESUME_VERSION: "application.sourceResumeVersion",
+  USER_PROVIDED: "application.sourceUserProvided",
+  USER_CONTACT_INFO: "application.sourceUserContactInfo",
+} as const satisfies Record<string, MessageKey>;
 
-function formatDate(value: string | null): string {
-  if (!value) return "Not submitted yet";
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+function sourceCategoryLabel(
+  value: string,
+  t: (key: MessageKey) => string,
+): string {
+  const key = SOURCE_CATEGORY_KEYS[value as keyof typeof SOURCE_CATEGORY_KEYS];
+  return key ? t(key) : value;
 }
 
 export default function ApplicationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { locale, t } = useI18n();
   const [application, setApplication] = useState<Application | null>(null);
   const [resumes, setResumes] = useState<ResumeSummary[]>([]);
   const [selectedStatus, setSelectedStatus] =
@@ -56,18 +65,28 @@ export default function ApplicationDetailPage() {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [fetchKey, setFetchKey] = useState(0);
+  const [prevFetchKey, setPrevFetchKey] = useState(0);
   const updateKey = useRef<string | null>(null);
 
+  if (fetchKey !== prevFetchKey) {
+    setPrevFetchKey(fetchKey);
+    setError(null);
+    setLoading(true);
+  }
+
   const resumeLabel = useMemo(() => {
-    if (!application?.resume_version_id) return "No resume recorded";
+    if (!application?.resume_version_id)
+      return t("applications.noResumeRecorded");
     for (const resume of resumes) {
       const version = resume.versions.find(
         (candidate) => candidate.id === application.resume_version_id,
       );
-      if (version) return `${resume.name} · Version ${version.version_number}`;
+      if (version)
+        return formatResumeVersionLabel(resume.name, version.version_number, t);
     }
-    return "Preserved resume version";
-  }, [application, resumes]);
+    return t("applications.preservedResumeVersion");
+  }, [application, resumes, t]);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
@@ -88,9 +107,7 @@ export default function ApplicationDetailPage() {
         }
       } catch {
         if (!cancelled) {
-          setError(
-            "This application could not be loaded or you do not have access to it.",
-          );
+          setError(t("applications.detail.loadError"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -99,7 +116,7 @@ export default function ApplicationDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [getToken, id, isLoaded, isSignedIn]);
+  }, [getToken, id, isLoaded, isSignedIn, t, fetchKey]);
 
   async function saveStatus() {
     if (!application || selectedStatus === application.status) return;
@@ -118,9 +135,7 @@ export default function ApplicationDetailPage() {
       setApplication(updated);
       updateKey.current = null;
     } catch {
-      setUpdateError(
-        "We could not update this status. Nothing else changed; retry when ready.",
-      );
+      setUpdateError(t("applications.detail.updateError"));
     } finally {
       setUpdating(false);
     }
@@ -130,22 +145,41 @@ export default function ApplicationDetailPage() {
   if (!isSignedIn) {
     return (
       <p className="text-sm text-slate-600">
-        Sign in to view this application.
+        {t("applications.detail.signInRequired")}
       </p>
     );
   }
   if (error || !application) {
     return (
-      <div
-        className="mx-auto max-w-3xl rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"
-        role="alert"
-      >
-        {error ?? "Application not found."}
+      <div className="mx-auto max-w-3xl space-y-4">
+        <div
+          className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"
+          role="alert"
+        >
+          <p>{error ?? t("applications.detail.notFound")}</p>
+          <Button
+            variant="secondary"
+            className="mt-3"
+            onClick={() => setFetchKey((k) => k + 1)}
+          >
+            {t("errors.retry")}
+          </Button>
+        </div>
+        <Link
+          href="/applications"
+          className="inline-flex text-sm font-medium text-blue-700 hover:text-blue-800"
+        >
+          {t("applications.detail.backToAll")}
+        </Link>
       </div>
     );
   }
 
   const applicationUrl = safeExternalUrl(application.application_url);
+  const dateTimeOptions: Intl.DateTimeFormatOptions = {
+    dateStyle: "medium",
+    timeStyle: "short",
+  };
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -154,7 +188,7 @@ export default function ApplicationDetailPage() {
           href="/applications"
           className="text-sm font-medium text-blue-700 hover:text-blue-900"
         >
-          ← All applications
+          {t("applications.detail.backToAll")}
         </Link>
         <div className="mt-5 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -166,35 +200,39 @@ export default function ApplicationDetailPage() {
             </h1>
             <p className="mt-3 text-sm text-slate-500">
               {application.origin === "CAREEROS_JOB"
-                ? "Started from a CareerOS Job"
+                ? t("applications.detail.startedFromCareerosJob")
                 : application.origin === "EXTERNAL_PAGE"
-                  ? "Captured from an external application page"
-                  : "Recorded manually"}
+                  ? t("applications.detail.capturedFromExternal")
+                  : t("applications.detail.recordedManually")}
             </p>
           </div>
           <span className="rounded-full bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-800">
-            {label(application.status)}
+            {applicationStatusLabel(application.status, t)}
           </span>
         </div>
 
         <dl className="mt-8 grid gap-5 border-t border-slate-100 pt-6 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Applied
+              {t("applications.applied")}
             </dt>
             <dd className="mt-1 text-sm text-slate-800">
-              {formatDate(application.applied_at)}
+              {formatLocaleDate(
+                locale,
+                application.applied_at,
+                dateTimeOptions,
+              ) ?? t("common.notSubmittedYet")}
             </dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Resume used
+              {t("applications.resumeUsed")}
             </dt>
             <dd className="mt-1 text-sm text-slate-800">{resumeLabel}</dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Source
+              {t("applications.sourceLabel")}
             </dt>
             <dd className="mt-1 text-sm text-slate-800">
               {application.source}
@@ -202,10 +240,14 @@ export default function ApplicationDetailPage() {
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Last updated
+              {t("applications.detail.lastUpdated")}
             </dt>
             <dd className="mt-1 text-sm text-slate-800">
-              {formatDate(application.status_updated_at)}
+              {formatLocaleDate(
+                locale,
+                application.status_updated_at,
+                dateTimeOptions,
+              ) ?? t("common.notSubmittedYet")}
             </dd>
           </div>
         </dl>
@@ -217,16 +259,17 @@ export default function ApplicationDetailPage() {
             rel="noopener noreferrer"
             className="mt-6 inline-flex text-sm font-semibold text-blue-700 hover:underline"
           >
-            Open application page ↗
+            {t("applications.detail.openApplicationPage")}
           </a>
         )}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">Update status</h2>
+        <h2 className="text-lg font-semibold text-slate-950">
+          {t("applications.detail.updateStatus")}
+        </h2>
         <p className="mt-1 text-sm text-slate-600">
-          Keep the current stage visible without rewriting earlier application
-          context.
+          {t("applications.detail.updateStatusHint")}
         </p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
@@ -234,7 +277,7 @@ export default function ApplicationDetailPage() {
               htmlFor="application-status"
               className="block text-sm font-medium text-slate-700"
             >
-              Current status
+              {t("applications.detail.currentStatus")}
             </label>
             <select
               id="application-status"
@@ -247,7 +290,7 @@ export default function ApplicationDetailPage() {
             >
               {statuses.map((status) => (
                 <option key={status} value={status}>
-                  {label(status)}
+                  {applicationStatusLabel(status, t)}
                 </option>
               ))}
             </select>
@@ -257,7 +300,7 @@ export default function ApplicationDetailPage() {
             loading={updating}
             disabled={selectedStatus === application.status}
           >
-            Save status
+            {t("applications.detail.saveStatus")}
           </Button>
         </div>
         {updateError && (
@@ -272,15 +315,14 @@ export default function ApplicationDetailPage() {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-950">
-          Confirmed application answers
+          {t("applications.detail.confirmedAnswers")}
         </h2>
         <p className="mt-1 text-sm text-slate-600">
-          These standard, non-sensitive answers are preserved for this
-          application only.
+          {t("applications.detail.confirmedAnswersHint")}
         </p>
         {application.answers.length === 0 ? (
           <p className="mt-5 rounded-xl border border-dashed border-slate-300 p-5 text-sm text-slate-500">
-            No answer history was retained for this application.
+            {t("applications.detail.noAnswers")}
           </p>
         ) : (
           <dl className="mt-5 space-y-4">
@@ -296,7 +338,8 @@ export default function ApplicationDetailPage() {
                   {answer.answer_text}
                 </dd>
                 <dd className="mt-2 text-xs text-slate-400">
-                  Confirmed from {label(answer.source_category)}
+                  {t("applications.detail.confirmedFrom")}{" "}
+                  {sourceCategoryLabel(answer.source_category, t)}
                 </dd>
               </div>
             ))}

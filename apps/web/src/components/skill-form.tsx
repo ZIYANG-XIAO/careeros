@@ -4,6 +4,8 @@ import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
+import type { SkillSummary } from "@/lib/types";
 
 type SkillFormProps = {
   initial?: string;
@@ -20,6 +22,7 @@ function SkillForm({
   loading,
   error,
 }: SkillFormProps) {
+  const { t } = useI18n();
   const [name, setName] = useState(initial ?? "");
 
   const handleSubmit = async (e: FormEvent) => {
@@ -32,12 +35,12 @@ function SkillForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
-        label="Skill Name"
+        label={t("skill.form.name")}
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
         maxLength={500}
-        placeholder="TypeScript"
+        placeholder={t("skill.form.namePlaceholder")}
       />
       {error && (
         <p className="text-sm text-red-600" role="alert">
@@ -51,10 +54,10 @@ function SkillForm({
           onClick={onCancel}
           disabled={loading}
         >
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button type="submit" loading={loading}>
-          {initial ? "Save" : "Add"}
+          {initial ? t("common.save") : t("common.add")}
         </Button>
       </div>
     </form>

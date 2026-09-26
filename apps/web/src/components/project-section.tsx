@@ -19,6 +19,7 @@ import {
   updateProject,
   updateProjectDetail,
 } from "@/lib/api";
+import { formatCareerDateRange, useI18n } from "@/lib/i18n";
 import type { DetailSummary, ProjectSummary } from "@/lib/types";
 
 type ProjectSectionProps = {
@@ -28,6 +29,7 @@ type ProjectSectionProps = {
 
 function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
   const { getToken } = useAuth();
+  const { t } = useI18n();
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState<ProjectSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProjectSummary | null>(null);
@@ -47,7 +49,7 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
       await onMutate();
       setShowCreate(false);
     } catch {
-      setMutationError("Failed to add project. Please try again.");
+      setMutationError(t("project.error.add"));
     } finally {
       setLoading(false);
     }
@@ -64,7 +66,7 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
       await onMutate();
       setEditTarget(null);
     } catch {
-      setMutationError("Failed to update project. Please try again.");
+      setMutationError(t("project.error.update"));
     } finally {
       setLoading(false);
     }
@@ -81,7 +83,7 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
       await onMutate();
       setDeleteTarget(null);
     } catch {
-      setMutationError("Failed to delete project. Please try again.");
+      setMutationError(t("project.error.delete"));
     } finally {
       setLoading(false);
     }
@@ -98,7 +100,7 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
       await onMutate();
       setAddDetailTo(null);
     } catch {
-      setMutationError("Failed to add detail. Please try again.");
+      setMutationError(t("detail.error.add"));
     } finally {
       setLoading(false);
     }
@@ -115,7 +117,7 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
       await onMutate();
       setEditDetail(null);
     } catch {
-      setMutationError("Failed to update detail. Please try again.");
+      setMutationError(t("detail.error.update"));
     } finally {
       setLoading(false);
     }
@@ -132,7 +134,7 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
       await onMutate();
       setDeleteDetail(null);
     } catch {
-      setMutationError("Failed to delete detail. Please try again.");
+      setMutationError(t("detail.error.delete"));
     } finally {
       setLoading(false);
     }
@@ -151,22 +153,21 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
             id="projects-heading"
             className="text-lg font-semibold text-slate-900"
           >
-            Projects
+            {t("career.sections.projects")}
           </h2>
           <p className="mt-1 text-sm leading-5 text-slate-500">
-            Professional, academic, open-source, and personal work worth
-            remembering.
+            {t("career.sections.projectsDescription")}
           </p>
         </div>
         <Button variant="secondary" onClick={() => setShowCreate(true)}>
-          Add project
+          {t("project.addButton")}
         </Button>
       </div>
 
       {projects.length === 0 ? (
         <EmptyState
-          title="No projects yet"
-          description="Add a project that demonstrates your skills or impact."
+          title={t("project.empty.title")}
+          description={t("project.empty.description")}
         />
       ) : (
         <ul className="mt-4 space-y-3">
@@ -186,20 +187,23 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
                     </p>
                   )}
                   <p className="mt-0.5 truncate text-sm text-slate-400">
-                    {[proj.url, formatDateRange(proj.start_date, proj.end_date)]
+                    {[
+                      proj.url,
+                      formatCareerDateRange(proj.start_date, proj.end_date, t),
+                    ]
                       .filter(Boolean)
                       .join(" | ")}
                   </p>
                 </div>
-                <DropdownMenu label={`Actions for ${proj.name}`}>
+                <DropdownMenu label={`${t("common.actionsFor")} ${proj.name}`}>
                   <DropdownItem onClick={() => setEditTarget(proj)}>
-                    Edit
+                    {t("common.edit")}
                   </DropdownItem>
                   <DropdownItem
                     onClick={() => setDeleteTarget(proj)}
                     variant="danger"
                   >
-                    Delete
+                    {t("common.delete")}
                   </DropdownItem>
                 </DropdownMenu>
               </div>
@@ -207,7 +211,7 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
               {proj.details.length > 0 && (
                 <div className="mt-4 rounded-lg border border-slate-200 bg-white px-3 py-3">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    Project details
+                    {t("project.detailsHeading")}
                   </p>
                   <ul className="space-y-2">
                     {proj.details.map((d) => (
@@ -224,17 +228,17 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
                             type="button"
                             onClick={() => setEditDetail(d)}
                             className="rounded px-1 py-0.5 text-xs text-slate-400 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                            aria-label={`Edit detail: ${d.content.slice(0, 30)}`}
+                            aria-label={`${t("common.edit")}: ${d.content.slice(0, 30)}`}
                           >
-                            Edit
+                            {t("common.edit")}
                           </button>
                           <button
                             type="button"
                             onClick={() => setDeleteDetail(d)}
                             className="rounded px-1 py-0.5 text-xs text-red-400 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                            aria-label={`Delete detail: ${d.content.slice(0, 30)}`}
+                            aria-label={`${t("common.delete")}: ${d.content.slice(0, 30)}`}
                           >
-                            Delete
+                            {t("common.delete")}
                           </button>
                         </span>
                       </li>
@@ -248,7 +252,7 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
                 onClick={() => setAddDetailTo(proj.id)}
                 className="mt-3 rounded text-xs font-medium text-blue-700 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               >
-                + Add project detail
+                {t("project.addDetail")}
               </button>
             </li>
           ))}
@@ -261,7 +265,7 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
           setShowCreate(false);
           clearError();
         }}
-        title="Add Project"
+        title={t("project.dialog.add")}
       >
         <ProjectForm
           onSubmit={handleCreate}
@@ -280,7 +284,7 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
           setEditTarget(null);
           clearError();
         }}
-        title="Edit Project"
+        title={t("project.dialog.edit")}
       >
         {editTarget && (
           <ProjectForm
@@ -302,7 +306,7 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
           setAddDetailTo(null);
           clearError();
         }}
-        title="Add Detail"
+        title={t("detail.dialog.add")}
       >
         <DetailForm
           onSubmit={handleAddDetail}
@@ -321,7 +325,7 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
           setEditDetail(null);
           clearError();
         }}
-        title="Edit Detail"
+        title={t("detail.dialog.edit")}
       >
         {editDetail && (
           <DetailForm
@@ -345,8 +349,8 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
         }}
         onConfirm={handleDelete}
         loading={loading}
-        entityName="Project"
-        description="Are you sure you want to delete this project? All associated details will also be removed. This action cannot be undone."
+        entityName={t("project.entityName")}
+        description={t("project.deleteConfirm")}
         error={mutationError}
       />
 
@@ -358,19 +362,12 @@ function ProjectSection({ projects, onMutate }: ProjectSectionProps) {
         }}
         onConfirm={handleDeleteDetail}
         loading={loading}
-        entityName="Detail"
+        entityName={t("detail.entityName")}
+        description={t("detail.deleteConfirm")}
         error={mutationError}
       />
     </section>
   );
-}
-
-function formatDateRange(
-  start: string | null,
-  end: string | null,
-): string | null {
-  if (!start && !end) return null;
-  return `${start ?? "?"} — ${end ?? "Present"}`;
 }
 
 export { ProjectSection };
