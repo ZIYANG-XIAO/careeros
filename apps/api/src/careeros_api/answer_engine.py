@@ -182,11 +182,6 @@ CONTACT_FIELD_MAPPINGS: tuple[tuple[CanonicalFieldKey, str, AnswerSourceCategory
         "full_name_native",
         AnswerSourceCategory.USER_CONTACT_INFO,
     ),
-    (
-        CanonicalFieldKey.PERSON_LATIN_FULL_NAME,
-        "full_name_latin",
-        AnswerSourceCategory.USER_CONTACT_INFO,
-    ),
     (CanonicalFieldKey.CONTACT_EMAIL, "contact_email", AnswerSourceCategory.USER_CONTACT_INFO),
     (CanonicalFieldKey.CONTACT_PHONE, "phone", AnswerSourceCategory.USER_CONTACT_INFO),
     (CanonicalFieldKey.CONTACT_WECHAT, "wechat_id", AnswerSourceCategory.USER_CONTACT_INFO),
@@ -356,8 +351,25 @@ async def _load_answer_sources(
                         source_category=AnswerSourceCategory.USER_CONTACT_INFO,
                         source_reference_id=source_reference_id,
                     )
+            if CanonicalFieldKey.PERSON_LATIN_FULL_NAME in keys:
+                latin_name = _latin_full_name(contact)
+                if latin_name is not None:
+                    sources[CanonicalFieldKey.PERSON_LATIN_FULL_NAME] = ResolvedAnswer(
+                        value=latin_name,
+                        source_category=AnswerSourceCategory.USER_CONTACT_INFO,
+                        source_reference_id=source_reference_id,
+                    )
 
     return sources
+
+
+def _latin_full_name(contact: UserContactInfo) -> str | None:
+    """Given name and family name are always Latin-script and given/family order."""
+    first_name = contact.first_name.strip() if contact.first_name else ""
+    last_name = contact.last_name.strip() if contact.last_name else ""
+    if not first_name or not last_name:
+        return None
+    return f"{first_name} {last_name}"
 
 
 def _market_full_name(
@@ -365,24 +377,15 @@ def _market_full_name(
     market: str,
     form_locale: str | None,
 ) -> str | None:
+    """Prefer the native-script name for a Chinese-market/locale form, else the Latin name."""
     chinese_context = market == "CHINA" or bool(
         form_locale and form_locale.casefold().startswith("zh")
     )
-    preferred = contact.full_name_native if chinese_context else contact.full_name_latin
-    fallback = contact.full_name_latin if chinese_context else contact.full_name_native
-    if preferred and preferred.strip():
-        return preferred.strip()
-    if fallback and fallback.strip():
-        return fallback.strip()
-
-    first_name = contact.first_name.strip() if contact.first_name else ""
-    last_name = contact.last_name.strip() if contact.last_name else ""
-    if not first_name or not last_name or contact.name_order == "UNKNOWN":
-        return None
-    ordered = (
-        (last_name, first_name) if contact.name_order == "FAMILY_GIVEN" else (first_name, last_name)
-    )
-    return ("" if chinese_context else " ").join(ordered)
+    native = contact.full_name_native.strip() if contact.full_name_native else ""
+    latin = _latin_full_name(contact)
+    if chinese_context:
+        return native or latin
+    return latin or native or None
 
 
 def _sensitive_decision(

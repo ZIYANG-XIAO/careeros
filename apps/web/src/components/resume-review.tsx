@@ -13,20 +13,19 @@ import {
 import { type MessageKey, useI18n } from "@/lib/i18n";
 import type {
   ContactInfo,
-  ContactCandidateField,
+  ContactInfoField,
   ResumeDraftItem,
   ResumeImport,
 } from "@/lib/types";
 
 const contactFields: Array<{
-  field: ContactCandidateField;
+  field: ContactInfoField;
   label: MessageKey;
 }> = [
   { field: "first_name", label: "contactInfo.firstName" },
   { field: "last_name", label: "contactInfo.lastName" },
   { field: "preferred_name", label: "contactInfo.preferredName" },
   { field: "full_name_native", label: "contactInfo.fullNameNative" },
-  { field: "full_name_latin", label: "contactInfo.fullNameLatin" },
   { field: "contact_email", label: "contactInfo.contactEmail" },
   { field: "phone", label: "contactInfo.phone" },
   { field: "wechat_id", label: "contactInfo.wechatId" },
@@ -222,10 +221,10 @@ export function ResumeReview({
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [contactValues, setContactValues] = useState<
-    Partial<Record<ContactCandidateField, string>>
+    Partial<Record<ContactInfoField, string>>
   >(initialImport.contact_info_candidate ?? {});
   const [selectedContactFields, setSelectedContactFields] = useState<
-    Set<ContactCandidateField>
+    Set<ContactInfoField>
   >(
     () =>
       new Set(

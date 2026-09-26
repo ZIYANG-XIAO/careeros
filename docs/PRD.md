@@ -151,8 +151,10 @@ separate from Career Evidence and Career Brain professional facts.
 
 Implemented fields include:
 
-- first name, last name, and preferred name;
-- native-script full name, Latin-script full name, and name order;
+- first name and last name (always given name and family name respectively,
+  regardless of script or cultural convention) and preferred name;
+- an optional full name in another script, for forms that want a single
+  native-script name field rather than a first/last split;
 - contact email;
 - phone and WeChat ID;
 - address line 1, address line 2, city, district, region, postal code, and

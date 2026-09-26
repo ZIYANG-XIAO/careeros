@@ -1,6 +1,5 @@
 import re
 from datetime import UTC, datetime
-from enum import StrEnum
 from typing import Annotated
 from uuid import UUID
 
@@ -20,12 +19,6 @@ PHONE_PATTERN = re.compile(r"^[\d\s\-()+]{7,20}$")
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
-class NameOrder(StrEnum):
-    UNKNOWN = "UNKNOWN"
-    GIVEN_FAMILY = "GIVEN_FAMILY"
-    FAMILY_GIVEN = "FAMILY_GIVEN"
-
-
 # ---------------------------------------------------------------------------
 # Schemas
 # ---------------------------------------------------------------------------
@@ -37,8 +30,6 @@ class ContactInfoResponse(BaseModel):
     last_name: str | None
     preferred_name: str | None
     full_name_native: str | None
-    full_name_latin: str | None
-    name_order: NameOrder
     contact_email: str | None
     phone: str | None
     wechat_id: str | None
@@ -62,8 +53,6 @@ class ContactInfoUpsertRequest(BaseModel):
     last_name: str | None = None
     preferred_name: str | None = None
     full_name_native: str | None = None
-    full_name_latin: str | None = None
-    name_order: NameOrder | None = None
     contact_email: str | None = None
     phone: str | None = None
     wechat_id: str | None = None
@@ -93,7 +82,7 @@ class ContactInfoUpsertRequest(BaseModel):
             raise ValueError("must be at most 100 characters")
         return v
 
-    @field_validator("full_name_native", "full_name_latin")
+    @field_validator("full_name_native")
     @classmethod
     def validate_full_name_length(cls, v: str | None) -> str | None:
         if v is not None and len(v) > 200:
@@ -224,8 +213,6 @@ def _empty_response() -> ContactInfoResponse:
         last_name=None,
         preferred_name=None,
         full_name_native=None,
-        full_name_latin=None,
-        name_order=NameOrder.UNKNOWN,
         contact_email=None,
         phone=None,
         wechat_id=None,
@@ -270,8 +257,6 @@ def _to_response(contact: UserContactInfo) -> ContactInfoResponse:
         last_name=contact.last_name,
         preferred_name=contact.preferred_name,
         full_name_native=contact.full_name_native,
-        full_name_latin=contact.full_name_latin,
-        name_order=NameOrder(contact.name_order),
         contact_email=contact.contact_email,
         phone=contact.phone,
         wechat_id=contact.wechat_id,

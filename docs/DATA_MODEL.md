@@ -13,7 +13,9 @@ Application Memory and M15 adds retry-safe submission recording. M16 adds no
 tables. Migration `0012_user_contact_info` adds `UserContactInfo`. Migration
 `0013_uci_answer_source` adds the `USER_CONTACT_INFO` answer
 source category. Migration `0014_dual_market_profile` adds dual-market name and
-contact fields to `UserContactInfo`.
+contact fields to `UserContactInfo`. Migration `0015_simplify_contact_name`
+removes the separate Latin-script full name and name-order fields in favor of
+treating `first_name`/`last_name` as always given/family name.
 
 The model supports:
 
@@ -99,7 +101,7 @@ The current migrations define:
 - `application_operations`
 - `user_contact_info`
 
-Current Alembic head: `0014_dual_market_profile`.
+Current Alembic head: `0015_simplify_contact_name`.
 
 M12 adds a transient Answer Engine decision contract and no tables. Decisions
 reference owned canonical sources but are not persisted as Application or
@@ -122,11 +124,15 @@ identifiers/labels; it does not return extracted resume text or raw form data.
 M17 adds canonical market/country/workplace/employment metadata on Jobs. The
 post-M17 wave adds `UserContactInfo` for confirmed personal/contact fields used
 by Career Profile and the Answer Engine. It does not create Career Evidence.
-Migration `0014_dual_market_profile` extends `UserContactInfo` with
-native/Latin full name, name order, contact email, WeChat ID, district, and
-GitHub URL, and resume import may surface unconfirmed contact-info candidates
-that only become part of `UserContactInfo` when the user explicitly confirms
-them.
+Migration `0014_dual_market_profile` extends `UserContactInfo` with a
+native-script full name, contact email, WeChat ID, district, and GitHub URL,
+and resume import may surface unconfirmed contact-info candidates that only
+become part of `UserContactInfo` when the user explicitly confirms them.
+Migration `0015_simplify_contact_name` removes the separate Latin-script full
+name and name-order fields: `first_name`/`last_name` are always the given
+name and family name respectively, regardless of script or cultural
+convention, and the Latin-script full name is derived from them rather than
+stored.
 
 ### Planned, not implemented
 
@@ -155,9 +161,12 @@ from Career Evidence and Career Brain professional facts. One record per user.
 
 Implemented fields:
 
-- `first_name`, `last_name`, `preferred_name`;
-- `full_name_native`, `full_name_latin`, `name_order`
-  (`UNKNOWN` | `GIVEN_FAMILY` | `FAMILY_GIVEN`);
+- `first_name`, `last_name` — always the given name and family name
+  respectively, regardless of script or cultural convention;
+- `preferred_name`;
+- `full_name_native` — an optional full name in another script, kept exactly
+  as the user writes it (own order, no first/last split), for forms that
+  want a single native-script name field;
 - `contact_email`;
 - `phone`, `wechat_id`;
 - `address_line_1`, `address_line_2`, `city`, `district`, `region`,
@@ -165,6 +174,10 @@ Implemented fields:
 - `linkedin_url`, `github_url`, `portfolio_url`;
 - `confirmed_at`; and
 - `created_at`, `updated_at`.
+
+There is no stored Latin-script full name or name-order field: since
+`first_name`/`last_name` are unambiguous, a Latin-script full name is derived
+as `"{first_name} {last_name}"` when needed (see `docs/AI_SPEC.md` section 15).
 
 Contact info is explicitly confirmed on save. The Answer Engine uses confirmed
 contact info for deterministic name, phone, address, and link mappings.

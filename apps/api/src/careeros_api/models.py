@@ -239,8 +239,6 @@ class UserContactInfo(Base):
     last_name: Mapped[str | None] = mapped_column(sa.String(100))
     preferred_name: Mapped[str | None] = mapped_column(sa.String(100))
     full_name_native: Mapped[str | None] = mapped_column(sa.String(200))
-    full_name_latin: Mapped[str | None] = mapped_column(sa.String(200))
-    name_order: Mapped[str] = mapped_column(sa.String(20), default="UNKNOWN")
     contact_email: Mapped[str | None] = mapped_column(sa.String(255))
     phone: Mapped[str | None] = mapped_column(sa.String(20))
     wechat_id: Mapped[str | None] = mapped_column(sa.String(100))
@@ -263,13 +261,6 @@ class UserContactInfo(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="contact_info")
-
-    __table_args__ = (
-        sa.CheckConstraint(
-            "name_order IN ('UNKNOWN', 'GIVEN_FAMILY', 'FAMILY_GIVEN')",
-            name="ck_user_contact_info_name_order",
-        ),
-    )
 
 
 class CareerBrain(Base):

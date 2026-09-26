@@ -591,8 +591,13 @@ changing the V1 spine or marking M16 complete:
 - migration `0014_dual_market_profile` extends `UserContactInfo` with
   `full_name_native`, `full_name_latin`, `name_order`, `contact_email`,
   `wechat_id`, `district`, and `github_url`;
+- migration `0015_simplify_contact_name` removes `full_name_latin` and
+  `name_order`: `first_name`/`last_name` are always given/family name, and a
+  Latin-script full name is derived rather than stored, which cut the
+  Career Profile name UI from four field groups to two
+  (`first_name`/`last_name`, and an optional `full_name_native`);
 - Career Profile contact-info UI updated for the new fields;
-- resume parsing (`resume-parser-v2`) extracts grounded, unconfirmed
+- resume parsing (`resume-parser-v3`) extracts grounded, unconfirmed
   contact-info candidates, surfaced on the resume import for explicit user
   review and only persisted to `UserContactInfo` when confirmed as part of, or
   after, confirming the resume import; and

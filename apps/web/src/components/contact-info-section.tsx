@@ -19,8 +19,6 @@ type FormState = {
   last_name: string;
   preferred_name: string;
   full_name_native: string;
-  full_name_latin: string;
-  name_order: ContactInfo["name_order"];
   contact_email: string;
   phone: string;
   wechat_id: string;
@@ -42,8 +40,6 @@ function toFormState(contactInfo: ContactInfo): FormState {
     last_name: contactInfo.last_name ?? "",
     preferred_name: contactInfo.preferred_name ?? "",
     full_name_native: contactInfo.full_name_native ?? "",
-    full_name_latin: contactInfo.full_name_latin ?? "",
-    name_order: contactInfo.name_order,
     contact_email: contactInfo.contact_email ?? "",
     phone: contactInfo.phone ?? "",
     wechat_id: contactInfo.wechat_id ?? "",
@@ -66,8 +62,6 @@ function toPayload(form: FormState): Partial<ContactInfo> {
     last_name: form.last_name.trim() || null,
     preferred_name: form.preferred_name.trim() || null,
     full_name_native: form.full_name_native.trim() || null,
-    full_name_latin: form.full_name_latin.trim() || null,
-    name_order: form.name_order,
     contact_email: form.contact_email.trim() || null,
     phone: form.phone.trim() || null,
     wechat_id: form.wechat_id.trim() || null,
@@ -166,24 +160,6 @@ function ContactInfoSection({ contactInfo, onSaved }: ContactInfoSectionProps) {
         aria-busy={saving}
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label={t("contactInfo.fullNameNative")}
-            value={form.full_name_native}
-            onChange={(event) =>
-              updateField("full_name_native", event.target.value)
-            }
-            autoComplete="name"
-          />
-          <Input
-            label={t("contactInfo.fullNameLatin")}
-            value={form.full_name_latin}
-            onChange={(event) =>
-              updateField("full_name_latin", event.target.value)
-            }
-          />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
           {(locale === "zh-CN"
             ? [
                 ["last_name", "contactInfo.lastName", "family-name"],
@@ -208,30 +184,23 @@ function ContactInfoSection({ contactInfo, onSaved }: ContactInfoSectionProps) {
             />
           ))}
         </div>
+        <p className="text-sm leading-5 text-slate-500">
+          {t("contactInfo.givenFamilyHint")}
+        </p>
 
-        <label className="block text-sm font-medium text-slate-700">
-          <span className="mb-1.5 block">{t("contactInfo.nameOrder")}</span>
-          <select
-            value={form.name_order}
+        <div>
+          <Input
+            label={t("contactInfo.fullNameNative")}
+            value={form.full_name_native}
             onChange={(event) =>
-              updateField(
-                "name_order",
-                event.target.value as ContactInfo["name_order"],
-              )
+              updateField("full_name_native", event.target.value)
             }
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-          >
-            <option value="UNKNOWN">
-              {t("contactInfo.nameOrder.unknown")}
-            </option>
-            <option value="FAMILY_GIVEN">
-              {t("contactInfo.nameOrder.familyGiven")}
-            </option>
-            <option value="GIVEN_FAMILY">
-              {t("contactInfo.nameOrder.givenFamily")}
-            </option>
-          </select>
-        </label>
+            autoComplete="name"
+          />
+          <p className="mt-1 text-sm leading-5 text-slate-500">
+            {t("contactInfo.fullNameNative.hint")}
+          </p>
+        </div>
 
         <Input
           label={t("contactInfo.preferredName")}

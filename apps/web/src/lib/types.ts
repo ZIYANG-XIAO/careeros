@@ -68,8 +68,6 @@ export type ContactInfo = {
   last_name: string | null;
   preferred_name: string | null;
   full_name_native: string | null;
-  full_name_latin: string | null;
-  name_order: "UNKNOWN" | "GIVEN_FAMILY" | "FAMILY_GIVEN";
   contact_email: string | null;
   phone: string | null;
   wechat_id: string | null;
@@ -87,7 +85,6 @@ export type ContactInfo = {
 };
 
 export type ContactInfoField = Exclude<keyof ContactInfo, "confirmed_at">;
-export type ContactCandidateField = Exclude<ContactInfoField, "name_order">;
 
 // ---------------------------------------------------------------------------
 // CRUD endpoint response types (full entity shapes with timestamps).
@@ -250,7 +247,7 @@ export type ResumeImport = {
   status: "PROCESSING" | "READY_FOR_REVIEW" | "CONFIRMED" | "FAILED";
   error_code: string | null;
   error_message: string | null;
-  contact_info_candidate: Partial<Record<ContactCandidateField, string>>;
+  contact_info_candidate: Partial<Record<ContactInfoField, string>>;
   items: ResumeDraftItem[];
   created_at: string;
   confirmed_at: string | null;

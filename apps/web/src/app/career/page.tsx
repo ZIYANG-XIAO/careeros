@@ -18,8 +18,6 @@ const EMPTY_CONTACT_INFO: ContactInfo = {
   last_name: null,
   preferred_name: null,
   full_name_native: null,
-  full_name_latin: null,
-  name_order: "UNKNOWN",
   contact_email: null,
   phone: null,
   wechat_id: null,

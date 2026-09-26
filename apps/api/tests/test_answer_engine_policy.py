@@ -294,7 +294,6 @@ async def test_person_full_name_combines_first_and_last() -> None:
             json={
                 "first_name": "Jane",
                 "last_name": "Doe",
-                "name_order": "GIVEN_FAMILY",
             },
         )
         assert saved.status_code == 200
@@ -336,10 +335,8 @@ async def test_person_full_name_uses_confirmed_market_representation(
             "/contact-info",
             json={
                 "full_name_native": "王小明",
-                "full_name_latin": "Xiaoming Wang",
-                "first_name": "小明",
-                "last_name": "王",
-                "name_order": "FAMILY_GIVEN",
+                "first_name": "Xiaoming",
+                "last_name": "Wang",
             },
         )
         assert saved.status_code == 200
@@ -365,11 +362,11 @@ async def test_person_full_name_uses_confirmed_market_representation(
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_unconfirmed_name_order_does_not_guess_full_name() -> None:
+async def test_incomplete_name_does_not_guess_full_name() -> None:
     async with make_integration_client() as client:
         saved = await client.put(
             "/contact-info",
-            json={"first_name": "小明", "last_name": "王"},
+            json={"first_name": "Xiaoming"},
         )
         assert saved.status_code == 200
 

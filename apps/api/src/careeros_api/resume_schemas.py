@@ -65,7 +65,6 @@ class ParsedContactInfo(BaseModel):
     last_name: ParsedContactValue | None = None
     preferred_name: ParsedContactValue | None = None
     full_name_native: ParsedContactValue | None = None
-    full_name_latin: ParsedContactValue | None = None
     contact_email: ParsedContactValue | None = None
     phone: ParsedContactValue | None = None
     wechat_id: ParsedContactValue | None = None
