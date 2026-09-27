@@ -1,0 +1,158 @@
+"use client";
+
+import { useAuth } from "@clerk/nextjs";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { getResume } from "@/lib/api";
+import { formatLocaleDate, useI18n } from "@/lib/i18n";
+import type { ResumeSummary } from "@/lib/types";
+
+function formatBytes(bytes: number): string {
+  return `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+export default function ResumeDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { locale, t } = useI18n();
+  const [resume, setResume] = useState<ResumeSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [fetchKey, setFetchKey] = useState(0);
+  const [prevFetchKey, setPrevFetchKey] = useState(0);
+
+  if (fetchKey !== prevFetchKey) {
+    setPrevFetchKey(fetchKey);
+    setError(null);
+    setResume(null);
+  }
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const token = await getToken();
+        if (!token) throw new Error("Missing authentication token");
+        const result = await getResume(token, id);
+        if (!cancelled) setResume(result);
+      } catch {
+        if (!cancelled) setError(t("resumes.detail.loadError"));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken, id, isLoaded, isSignedIn, t, fetchKey]);
+
+  if (!isLoaded || (isSignedIn && !resume && !error)) return <Spinner />;
+  if (!isSignedIn)
+    return (
+      <p className="text-sm text-ink-2">{t("resumes.detail.signInRequired")}</p>
+    );
+  if (error || !resume) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-4">
+        <div
+          className="rounded-xl border border-evidence-gap-border bg-evidence-gap-bg p-5 text-sm text-[#6F3627]"
+          role="alert"
+        >
+          <p>{error ?? t("resumes.detail.loadError")}</p>
+          <Button
+            variant="secondary"
+            className="mt-3"
+            onClick={() => setFetchKey((k) => k + 1)}
+          >
+            {t("errors.retry")}
+          </Button>
+        </div>
+        <Link
+          href="/me/resumes"
+          className="inline-flex text-sm font-medium text-accent hover:text-accent-hover"
+        >
+          ← {t("resumes.detail.backToLibrary")}
+        </Link>
+      </div>
+    );
+  }
+
+  const dateTimeOptions: Intl.DateTimeFormatOptions = {
+    dateStyle: "medium",
+    timeStyle: "short",
+  };
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-6">
+      <header className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+        <Link
+          href="/me/resumes"
+          className="text-sm font-medium text-accent hover:text-accent-hover"
+        >
+          {t("resumes.detail.backToLibrary")}
+        </Link>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+            {resume.name}
+          </h1>
+          {resume.is_primary && (
+            <span className="rounded-full bg-accent-tint px-2.5 py-1 text-xs font-medium text-accent">
+              {t("resumes.baseResume")}
+            </span>
+          )}
+        </div>
+        <p className="mt-2 text-sm text-ink-2">
+          {t("resumes.detail.historicalHint")}
+        </p>
+      </header>
+
+      <section aria-labelledby="versions-heading">
+        <h2
+          id="versions-heading"
+          className="mb-3 text-lg font-semibold text-ink"
+        >
+          {t("resumes.detail.versionsHeading")}
+        </h2>
+        <div className="space-y-4">
+          {resume.versions.map((version) => (
+            <article
+              key={version.id}
+              className="rounded-2xl border border-border bg-surface p-5 shadow-sm"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold text-ink">
+                    {t("common.version")} {version.version_number}
+                  </h3>
+                  <p className="mt-1 text-sm text-ink-3">
+                    {version.original_filename}
+                  </p>
+                </div>
+                <div className="text-right text-xs text-ink-3">
+                  <p>
+                    {formatLocaleDate(
+                      locale,
+                      version.created_at,
+                      dateTimeOptions,
+                    )}
+                  </p>
+                  <p className="mt-1">{formatBytes(version.size_bytes)}</p>
+                </div>
+              </div>
+              <details className="mt-4">
+                <summary className="cursor-pointer text-sm font-medium text-accent">
+                  {t("resumes.detail.reviewExtractedText")}
+                </summary>
+                <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl bg-rail p-4 text-xs leading-5 text-ink-2">
+                  {version.extracted_text}
+                </pre>
+              </details>
+            </article>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
