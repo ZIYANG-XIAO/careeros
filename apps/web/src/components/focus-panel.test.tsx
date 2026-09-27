@@ -108,15 +108,13 @@ function renderPanel(
 describe("FocusPanel — application flavour", () => {
   beforeEach(() => {
     mockGetApplication.mockReset().mockResolvedValue(application);
-    mockGetApplicationStatusHistory
-      .mockReset()
-      .mockResolvedValue([
-        {
-          from_status: null,
-          to_status: "APPLIED",
-          changed_at: "2026-09-20T00:00:00Z",
-        },
-      ]);
+    mockGetApplicationStatusHistory.mockReset().mockResolvedValue([
+      {
+        from_status: null,
+        to_status: "APPLIED",
+        changed_at: "2026-09-20T00:00:00Z",
+      },
+    ]);
     mockListResumes.mockReset().mockResolvedValue([]);
     mockListJobAnalyses.mockReset().mockResolvedValue([]);
     mockUpdateApplicationStatus.mockReset();

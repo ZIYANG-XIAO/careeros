@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  applicationsToCsvRows,
   closedApplications,
   groupByStage,
   isClosedStatus,
   needsYouApplications,
+  parseApplicationImportRows,
   savedColumnJobs,
 } from "./pipeline";
 import type { ApplicationSummary, Job } from "./types";
@@ -181,5 +183,131 @@ describe("isClosedStatus", () => {
     expect(isClosedStatus("REJECTED")).toBe(true);
     expect(isClosedStatus("WITHDRAWN")).toBe(true);
     expect(isClosedStatus("OFFER")).toBe(false);
+  });
+});
+
+describe("applicationsToCsvRows", () => {
+  it("emits raw enum/ISO values, not locale-formatted display text", () => {
+    const rows = applicationsToCsvRows([
+      makeApplication({
+        status: "APPLIED",
+        applied_at: "2026-09-21T00:00:00Z",
+        application_url: "https://example.com/apply",
+      }),
+    ]);
+    expect(rows[0]).toEqual([
+      "company",
+      "role",
+      "status",
+      "applied_at",
+      "source",
+      "application_url",
+      "created_at",
+    ]);
+    expect(rows[1]).toEqual([
+      "Acme",
+      "Engineer",
+      "APPLIED",
+      "2026-09-21T00:00:00Z",
+      "manual",
+      "https://example.com/apply",
+      "2026-09-20T00:00:00Z",
+    ]);
+  });
+});
+
+describe("parseApplicationImportRows", () => {
+  it("skips a leading header row when present", () => {
+    const result = parseApplicationImportRows([
+      ["company", "role", "status"],
+      ["Acme", "Engineer", "APPLIED"],
+    ]);
+    expect(result).toEqual([
+      {
+        ok: true,
+        row: 2,
+        payload: {
+          company: "Acme",
+          role: "Engineer",
+          status: "APPLIED",
+          applied_at: undefined,
+          source: "csv_import",
+          application_url: undefined,
+        },
+      },
+    ]);
+  });
+
+  it("fails a row missing company or role", () => {
+    const result = parseApplicationImportRows([["", "Engineer"]]);
+    expect(result).toEqual([
+      { ok: false, row: 1, reason: "missingCompanyRole" },
+    ]);
+  });
+
+  it("falls back to PREPARING for an unrecognized status", () => {
+    const result = parseApplicationImportRows([["Acme", "Engineer", "BOGUS"]]);
+    expect(result).toEqual([
+      {
+        ok: true,
+        row: 1,
+        payload: {
+          company: "Acme",
+          role: "Engineer",
+          status: "PREPARING",
+          applied_at: undefined,
+          source: "csv_import",
+          application_url: undefined,
+        },
+      },
+    ]);
+  });
+
+  it("drops applied_at when status is PREPARING even if a date is present", () => {
+    const result = parseApplicationImportRows([
+      ["Acme", "Engineer", "PREPARING", "2026-09-20T00:00:00Z"],
+    ]);
+    expect(result[0]).toMatchObject({
+      ok: true,
+      payload: { applied_at: undefined },
+    });
+  });
+
+  it("parses a valid applied_at for a non-PREPARING status", () => {
+    const result = parseApplicationImportRows([
+      ["Acme", "Engineer", "APPLIED", "2026-09-20T00:00:00Z"],
+    ]);
+    expect(result[0]).toMatchObject({
+      ok: true,
+      payload: { applied_at: "2026-09-20T00:00:00.000Z" },
+    });
+  });
+
+  it("drops a malformed application_url without failing the row", () => {
+    const result = parseApplicationImportRows([
+      ["Acme", "Engineer", "APPLIED", "", "", "not-a-url"],
+    ]);
+    expect(result[0]).toMatchObject({
+      ok: true,
+      payload: { application_url: undefined },
+    });
+  });
+
+  it("keeps a valid http(s) application_url", () => {
+    const result = parseApplicationImportRows([
+      ["Acme", "Engineer", "APPLIED", "", "", "https://example.com/apply"],
+    ]);
+    expect(result[0]).toMatchObject({
+      ok: true,
+      payload: { application_url: "https://example.com/apply" },
+    });
+  });
+
+  it("defaults source to csv_import when blank", () => {
+    const result = parseApplicationImportRows([["Acme", "Engineer"]]);
+    expect(result[0]).toMatchObject({
+      ok: true,
+      payload: { source: "csv_import" },
+    });
   });
 });

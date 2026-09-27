@@ -656,6 +656,17 @@ const messages = {
     "pipeline.showLane": "Show lane",
     "pipeline.emptyColumn":
       "Nothing here yet. Drag a card in when an offer arrives.",
+    "pipeline.exportCsv": "Export CSV",
+    "pipeline.importCsv": "Import CSV",
+    "pipeline.importing": "Importing…",
+    "pipeline.importSummary":
+      "Imported {imported} application(s). {skipped} row(s) skipped.",
+    "pipeline.importSummaryAllOk": "Imported {imported} application(s).",
+    "pipeline.importError":
+      "We could not read that file. Check it is a CSV exported from CareerOS.",
+    "pipeline.importSkipReason.missingCompanyRole":
+      "row {row}: missing company or role",
+    "pipeline.importSkipReason.createFailed": "row {row}: could not be saved",
 
     // Redesign: record-an-application popover
     "record.title": "Record this application?",
@@ -1328,6 +1339,16 @@ const messages = {
     "pipeline.dropTo": "放开即设为{stage}",
     "pipeline.showLane": "显示该列",
     "pipeline.emptyColumn": "这里还是空的。收到 offer 时把卡片拖进来。",
+    "pipeline.exportCsv": "导出 CSV",
+    "pipeline.importCsv": "导入 CSV",
+    "pipeline.importing": "导入中…",
+    "pipeline.importSummary": "已导入 {imported} 条申请，跳过 {skipped} 行。",
+    "pipeline.importSummaryAllOk": "已导入 {imported} 条申请。",
+    "pipeline.importError":
+      "无法读取该文件，请确认它是从 CareerOS 导出的 CSV。",
+    "pipeline.importSkipReason.missingCompanyRole":
+      "第 {row} 行：缺少公司或职位名称",
+    "pipeline.importSkipReason.createFailed": "第 {row} 行：保存失败",
 
     // Redesign: record-an-application popover
     "record.title": "记录这份申请？",

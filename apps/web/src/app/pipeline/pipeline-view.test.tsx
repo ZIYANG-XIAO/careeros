@@ -54,6 +54,16 @@ vi.mock("@/components/focus-panel", () => ({
   ),
 }));
 
+const mockDownloadCsv = vi.fn();
+
+vi.mock("@/lib/csv", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/csv")>();
+  return {
+    ...actual,
+    downloadCsv: (...args: unknown[]) => mockDownloadCsv(...args),
+  };
+});
+
 const savedJob: Job = {
   id: "job-1",
   company: "Figma",
@@ -157,6 +167,7 @@ beforeEach(() => {
   mockCreateApplication.mockReset();
   mockPush.mockReset();
   mockReplace.mockReset();
+  mockDownloadCsv.mockReset();
   window.localStorage.clear();
 });
 
@@ -299,6 +310,68 @@ describe("PipelineView", () => {
     renderPipeline();
     expect(await screen.findByTestId("focus-panel")).toHaveTextContent(
       "application:app-1",
+    );
+  });
+
+  it("exports the loaded applications as raw-value CSV rows", async () => {
+    const user = userEvent.setup();
+    renderPipeline();
+    await screen.findByText("Backend Engineer");
+
+    await user.click(screen.getByRole("button", { name: "Export CSV" }));
+
+    expect(mockDownloadCsv).toHaveBeenCalledWith("careeros-applications.csv", [
+      [
+        "company",
+        "role",
+        "status",
+        "applied_at",
+        "source",
+        "application_url",
+        "created_at",
+      ],
+      [
+        "Together AI",
+        "Backend Engineer",
+        "APPLIED",
+        "2026-09-19T00:00:00Z",
+        "manual",
+        "",
+        "2026-09-19T00:00:00Z",
+      ],
+    ]);
+  });
+
+  it("imports valid rows and reports skipped rows on CSV upload", async () => {
+    mockCreateApplication.mockResolvedValueOnce(
+      makeApplication({ id: "imported-1", company: "New Co", role: "PM" }),
+    );
+    const user = userEvent.setup();
+    renderPipeline();
+    await screen.findByText("Backend Engineer");
+
+    const csvText =
+      "company,role,status\nNew Co,PM,PREPARING\n,Missing Company,APPLIED\n";
+    const file = new File([csvText], "applications.csv", { type: "text/csv" });
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    await user.upload(input, file);
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Imported 1 application(s). 1 row(s) skipped.",
+    );
+    expect(
+      screen.getByText("row 3: missing company or role"),
+    ).toBeInTheDocument();
+    expect(mockCreateApplication).toHaveBeenCalledWith(
+      "token",
+      expect.objectContaining({
+        origin: "MANUAL",
+        company: "New Co",
+        role: "PM",
+        status: "PREPARING",
+      }),
     );
   });
 });

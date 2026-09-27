@@ -611,7 +611,9 @@ Prompted by a competitive review of simplify.jobs; see the candidate backlog
 below for the parts of that review not yet built.
 
 - Applications list: client-side CSV export (`Export CSV`) of the currently
-  filtered applications, reusing already-loaded data with no new endpoint;
+  filtered applications, reusing already-loaded data with no new endpoint
+  (this list and its export button no longer exist — see Phase M below for
+  where CSV export/import lives now, on the Pipeline board);
 - Applications list: a visual stage stepper (PREPARING → APPLIED → ASSESSMENT
   → INTERVIEW → FINAL → OFFER) on each card. REJECTED/WITHDRAWN keep the plain
   status badge instead of a stepper, since at the time the data model only
@@ -647,15 +649,47 @@ not from the competitive review).
   rail footer, and `data-theme` attribute overrides in `globals.css` so a
   manual choice wins over `prefers-color-scheme` when set.
 
+### Phase M — CSV export/import on the Pipeline board — implementation complete
+
+The third of the three simplify.jobs-review backlog items the user picked
+to build. Also **restores** CSV export, a Phase J feature whose UI was
+accidentally dropped when the old `/applications` page it lived on was
+deleted during the Pipeline/Discover/Me redesign (the redesign migration
+notes said to verify every route before deleting the old ones — this slipped
+through because nothing exercises "click every button" the way a test suite
+exercises routes).
+
+- `lib/csv.ts` gained `parseCsv` (quoted fields, embedded commas/newlines,
+  escaped `""`, BOM-safe) alongside the existing `toCsv`/`downloadCsv`.
+- `lib/pipeline.ts` gained `applicationsToCsvRows` and
+  `parseApplicationImportRows`, both pure and unit-tested.
+- **Format change from the original Phase J export**: columns are now
+  `company,role,status,applied_at,source,application_url,created_at` with
+  raw enum values and ISO dates, not the old locale-formatted display
+  text (translated status labels, `Intl`-formatted dates) or the "Resume"
+  display column. The old format was never designed to round-trip; this
+  one is, which is the whole point of adding import.
+- Import is lenient: an unrecognized `status` falls back to `PREPARING`,
+  a malformed `application_url` is dropped rather than failing the row,
+  a leading header row is detected and skipped. Only a missing company or
+  role fails a row outright. Each imported row becomes its own
+  `MANUAL`-origin Application via the existing `POST /applications` (no
+  new backend endpoint); the on-screen summary reports counts and
+  per-row skip reasons.
+- Not built: a true **cross-tool** importer that reads Simplify's own
+  export format — see the candidate backlog below; unchanged from the
+  original note, still needs that tool's actual export file inspected
+  first.
+
 ### Candidate backlog from the simplify.jobs review (not yet scheduled)
 
 Not approved work; listed so a future session does not re-derive this from
 scratch. Each needs its own scoping/approval pass before implementation:
 
-- **CSV import for the Job Tracker**, round-tripping CareerOS's own Export
-  CSV column format (bulk entry / backup-restore). A true cross-tool importer
-  (e.g. from Simplify's own export) needs that tool's actual export file
-  inspected first — do not guess its column mapping;
+- **A cross-tool CSV importer** that reads Simplify's own Job Tracker
+  export format (as opposed to Phase M's round-trip of CareerOS's own
+  format) — needs that tool's actual export file inspected first, do not
+  guess its column mapping;
 - **A reusable, explicitly-confirmed sensitive/demographic answer bank**
   (ethnicity, disability, LGBTQ+, gender, veteran status, per-country work
   authorization), mirroring `UserContactInfo`'s confirm-once pattern. This

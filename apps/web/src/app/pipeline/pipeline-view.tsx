@@ -2,10 +2,11 @@
 
 import { useAuth } from "@clerk/nextjs";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { FocusPanel, type FocusTarget } from "@/components/focus-panel";
 import { LoadErrorBanner } from "@/components/load-error-banner";
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
   createApplication,
@@ -14,11 +15,14 @@ import {
   listResumes,
   updateApplicationStatus,
 } from "@/lib/api";
+import { downloadCsv, parseCsv } from "@/lib/csv";
 import { applicationStatusLabel, useI18n } from "@/lib/i18n";
 import {
+  applicationsToCsvRows,
   closedApplications,
   groupByStage,
   needsYouApplications,
+  parseApplicationImportRows,
   PIPELINE_STAGES,
   savedColumnJobs,
 } from "@/lib/pipeline";
@@ -72,6 +76,13 @@ export default function PipelineView() {
   const [recordSubmitting, setRecordSubmitting] = useState(false);
   const [moveError, setMoveError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState<{
+    imported: number;
+    skipped: string[];
+  } | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   type PipelineData = {
     applications: ApplicationSummary[];
@@ -226,6 +237,63 @@ export default function PipelineView() {
     }
   }
 
+  function handleExportCsv() {
+    downloadCsv(
+      "careeros-applications.csv",
+      applicationsToCsvRows(applications),
+    );
+  }
+
+  async function handleImportFile(file: File) {
+    setImportError(null);
+    setImportSummary(null);
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const parsedRows = parseApplicationImportRows(parseCsv(text));
+      const skipped: string[] = [];
+      const created: ApplicationSummary[] = [];
+      const token = await getToken();
+      if (!token) throw new Error("Missing authentication token");
+
+      for (const parsed of parsedRows) {
+        if (!parsed.ok) {
+          skipped.push(
+            t("pipeline.importSkipReason.missingCompanyRole", {
+              row: parsed.row,
+            }),
+          );
+          continue;
+        }
+        try {
+          const application = await createApplication(token, {
+            idempotency_key: crypto.randomUUID(),
+            origin: "MANUAL",
+            answers: [],
+            ...parsed.payload,
+          });
+          created.push(application);
+        } catch {
+          skipped.push(
+            t("pipeline.importSkipReason.createFailed", { row: parsed.row }),
+          );
+        }
+      }
+
+      if (created.length > 0) {
+        setData((current) => ({
+          ...current,
+          applications: [...current.applications, ...created],
+        }));
+      }
+      setImportSummary({ imported: created.length, skipped });
+    } catch {
+      setImportError(t("pipeline.importError"));
+    } finally {
+      setImporting(false);
+    }
+  }
+
   function handleColumnDrop(stage: ApplicationStatus) {
     if (!dragging) return;
     if (dragging.kind === "saved") {
@@ -297,7 +365,63 @@ export default function PipelineView() {
               {t("pipeline.view.list")}
             </button>
           </div>
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (file) void handleImportFile(file);
+              }}
+            />
+            <Button
+              variant="secondary"
+              disabled={importing}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {importing ? t("pipeline.importing") : t("pipeline.importCsv")}
+            </Button>
+            <Button variant="secondary" onClick={handleExportCsv}>
+              {t("pipeline.exportCsv")}
+            </Button>
+          </div>
         </header>
+
+        {importError && (
+          <div
+            role="alert"
+            className="rounded-lg border border-evidence-gap-border bg-evidence-gap-bg p-3 text-sm text-[#6F3627]"
+          >
+            {importError}
+          </div>
+        )}
+        {importSummary && (
+          <div
+            role="status"
+            className="rounded-lg border border-border bg-rail p-3 text-sm text-ink-2"
+          >
+            <p>
+              {importSummary.skipped.length > 0
+                ? t("pipeline.importSummary", {
+                    imported: importSummary.imported,
+                    skipped: importSummary.skipped.length,
+                  })
+                : t("pipeline.importSummaryAllOk", {
+                    imported: importSummary.imported,
+                  })}
+            </p>
+            {importSummary.skipped.length > 0 && (
+              <ul className="mt-1 list-inside list-disc text-xs text-ink-3">
+                {importSummary.skipped.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {refreshError && (
           <LoadErrorBanner
