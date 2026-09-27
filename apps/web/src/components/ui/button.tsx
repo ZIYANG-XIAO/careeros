@@ -11,12 +11,13 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-blue-700 text-white hover:bg-blue-800 focus-visible:ring-blue-600",
+    "bg-accent text-white hover:bg-accent-hover focus-visible:ring-accent",
   secondary:
-    "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus-visible:ring-slate-400",
-  danger: "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500",
+    "border border-border bg-surface text-ink-2 hover:bg-sunken focus-visible:ring-border-strong",
+  danger:
+    "bg-[#8A4530] text-white hover:bg-[#6F3627] focus-visible:ring-[#8A4530]",
   ghost:
-    "text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-slate-400",
+    "text-ink-2 hover:bg-sunken hover:text-ink focus-visible:ring-border-strong",
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(

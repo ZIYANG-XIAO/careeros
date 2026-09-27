@@ -105,9 +105,9 @@ function Dialog({ open, onClose, title, children }: DialogProps) {
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="relative z-10 max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl outline-none"
+        className="relative z-10 max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-md border border-border bg-surface p-6 shadow-overlay outline-none"
       >
-        <h2 id="dialog-title" className="text-lg font-semibold text-slate-900">
+        <h2 id="dialog-title" className="text-lg font-semibold text-ink">
           {title}
         </h2>
         <div className="mt-4">{children}</div>

@@ -7,7 +7,7 @@ function Spinner() {
       aria-label="Loading"
     >
       <svg
-        className="h-8 w-8 animate-spin text-blue-600"
+        className="h-8 w-8 animate-spin text-accent"
         viewBox="0 0 24 24"
         fill="none"
         aria-hidden="true"

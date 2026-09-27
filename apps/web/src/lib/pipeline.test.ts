@@ -1,0 +1,185 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  closedApplications,
+  groupByStage,
+  isClosedStatus,
+  needsYouApplications,
+  savedColumnJobs,
+} from "./pipeline";
+import type { ApplicationSummary, Job } from "./types";
+
+function makeJob(overrides: Partial<Job> = {}): Job {
+  return {
+    id: "job-1",
+    company: "Acme",
+    title: "Engineer",
+    location: null,
+    source_url: null,
+    application_url: null,
+    source_type: "MANUAL_ENTRY",
+    source_key: "manual",
+    external_job_id: null,
+    canonical_url: null,
+    first_observed_at: null,
+    last_observed_at: null,
+    availability_status: "UNKNOWN",
+    freshness_status: "UNKNOWN",
+    market: "UNKNOWN",
+    country_code: "UNKNOWN",
+    workplace_type: "UNKNOWN",
+    employment_type: "UNKNOWN",
+    captured_at: "2026-09-01T00:00:00Z",
+    created_at: "2026-09-01T00:00:00Z",
+    updated_at: "2026-09-01T00:00:00Z",
+    is_saved: true,
+    saved_at: "2026-09-01T00:00:00Z",
+    latest_snapshot: {
+      id: "snap-1",
+      version_number: 1,
+      raw_description: "",
+      normalized_description: "",
+      content_sha256: "x",
+      parser_version: "v1",
+      parser_model: "test",
+      created_at: "2026-09-01T00:00:00Z",
+      requirements: [],
+    },
+    ...overrides,
+  };
+}
+
+function makeApplication(
+  overrides: Partial<ApplicationSummary> = {},
+): ApplicationSummary {
+  return {
+    id: "app-1",
+    job_id: null,
+    resume_version_id: null,
+    origin: "MANUAL",
+    company: "Acme",
+    role: "Engineer",
+    application_url: null,
+    source: "manual",
+    status: "PREPARING",
+    applied_at: null,
+    status_updated_at: "2026-09-20T00:00:00Z",
+    created_at: "2026-09-20T00:00:00Z",
+    updated_at: "2026-09-20T00:00:00Z",
+    ...overrides,
+  };
+}
+
+describe("savedColumnJobs", () => {
+  it("excludes jobs that already have an application", () => {
+    const jobs = [makeJob({ id: "job-1" }), makeJob({ id: "job-2" })];
+    const applications = [makeApplication({ job_id: "job-1" })];
+    const result = savedColumnJobs(jobs, applications);
+    expect(result.map((job) => job.id)).toEqual(["job-2"]);
+  });
+
+  it("orders by created_at descending", () => {
+    const jobs = [
+      makeJob({ id: "old", created_at: "2026-01-01T00:00:00Z" }),
+      makeJob({ id: "new", created_at: "2026-06-01T00:00:00Z" }),
+    ];
+    expect(savedColumnJobs(jobs, []).map((job) => job.id)).toEqual([
+      "new",
+      "old",
+    ]);
+  });
+});
+
+describe("groupByStage", () => {
+  it("buckets applications by status and excludes closed statuses", () => {
+    const applications = [
+      makeApplication({ id: "a1", status: "PREPARING" }),
+      makeApplication({ id: "a2", status: "INTERVIEW" }),
+      makeApplication({ id: "a3", status: "REJECTED" }),
+      makeApplication({ id: "a4", status: "WITHDRAWN" }),
+    ];
+    const groups = groupByStage(applications);
+    expect(groups.PREPARING.map((a) => a.id)).toEqual(["a1"]);
+    expect(groups.INTERVIEW.map((a) => a.id)).toEqual(["a2"]);
+    expect(groups.APPLIED).toEqual([]);
+    expect(Object.values(groups).flat()).not.toContainEqual(
+      expect.objectContaining({ id: "a3" }),
+    );
+  });
+
+  it("orders each stage by status_updated_at descending", () => {
+    const applications = [
+      makeApplication({
+        id: "older",
+        status: "APPLIED",
+        status_updated_at: "2026-09-01T00:00:00Z",
+      }),
+      makeApplication({
+        id: "newer",
+        status: "APPLIED",
+        status_updated_at: "2026-09-20T00:00:00Z",
+      }),
+    ];
+    expect(groupByStage(applications).APPLIED.map((a) => a.id)).toEqual([
+      "newer",
+      "older",
+    ]);
+  });
+});
+
+describe("closedApplications", () => {
+  it("returns only rejected/withdrawn, most recent first", () => {
+    const applications = [
+      makeApplication({ id: "open", status: "APPLIED" }),
+      makeApplication({
+        id: "rejected",
+        status: "REJECTED",
+        status_updated_at: "2026-09-01T00:00:00Z",
+      }),
+      makeApplication({
+        id: "withdrawn",
+        status: "WITHDRAWN",
+        status_updated_at: "2026-09-10T00:00:00Z",
+      }),
+    ];
+    expect(closedApplications(applications).map((a) => a.id)).toEqual([
+      "withdrawn",
+      "rejected",
+    ]);
+  });
+});
+
+describe("needsYouApplications", () => {
+  const now = new Date("2026-09-27T00:00:00Z");
+
+  it("flags Preparing applications stale over 72h", () => {
+    const applications = [
+      makeApplication({
+        id: "stale",
+        status: "PREPARING",
+        status_updated_at: "2026-09-20T00:00:00Z",
+      }),
+      makeApplication({
+        id: "fresh",
+        status: "PREPARING",
+        status_updated_at: "2026-09-26T12:00:00Z",
+      }),
+      makeApplication({
+        id: "wrong-stage",
+        status: "APPLIED",
+        status_updated_at: "2026-09-01T00:00:00Z",
+      }),
+    ];
+    expect(needsYouApplications(applications, now).map((a) => a.id)).toEqual([
+      "stale",
+    ]);
+  });
+});
+
+describe("isClosedStatus", () => {
+  it("identifies rejected and withdrawn as closed", () => {
+    expect(isClosedStatus("REJECTED")).toBe(true);
+    expect(isClosedStatus("WITHDRAWN")).toBe(true);
+    expect(isClosedStatus("OFFER")).toBe(false);
+  });
+});

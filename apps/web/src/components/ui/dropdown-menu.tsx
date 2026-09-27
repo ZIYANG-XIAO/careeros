@@ -41,7 +41,7 @@ function DropdownMenu({ children, label = "Actions" }: DropdownMenuProps) {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="true"
         aria-expanded={open}
-        className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+        className="inline-flex items-center justify-center rounded-lg p-1.5 text-ink-3 hover:bg-sunken hover:text-ink-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         aria-label={label}
       >
         <svg
@@ -55,7 +55,7 @@ function DropdownMenu({ children, label = "Actions" }: DropdownMenuProps) {
       </button>
       {open && (
         <div
-          className="absolute right-0 z-10 mt-1 w-36 rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+          className="absolute right-0 z-10 mt-1 w-36 rounded-lg border border-border bg-surface py-1 shadow-overlay"
           role="menu"
         >
           <div onClick={() => setOpen(false)}>{children}</div>
@@ -83,8 +83,8 @@ function DropdownItem({
       onClick={onClick}
       className={`block w-full px-4 py-2 text-left text-sm ${
         variant === "danger"
-          ? "text-red-600 hover:bg-red-50"
-          : "text-slate-700 hover:bg-slate-50"
+          ? "text-[#8A4530] hover:bg-evidence-gap-bg"
+          : "text-ink-2 hover:bg-sunken"
       }`}
     >
       {children}
