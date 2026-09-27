@@ -682,6 +682,9 @@ const messages = {
     "panel.nothingHint": "Pick a card to see its stage, resume and answers.",
     "panel.openPage": "Open application page ↗",
     "panel.noLink": "No link recorded",
+    "panel.statusHistory": "Status history",
+    "panel.statusHistoryCreated": "Recorded as {stage}",
+    "panel.statusHistoryTransition": "{from} → {to}",
 
     // Redesign: Discover, Me, first run
     "discover.saveToPipeline": "Save to pipeline",
@@ -1350,6 +1353,9 @@ const messages = {
     "panel.nothingHint": "选择一张卡片即可查看阶段、简历与回答。",
     "panel.openPage": "打开申请页面 ↗",
     "panel.noLink": "未记录链接",
+    "panel.statusHistory": "状态历史",
+    "panel.statusHistoryCreated": "创建时记为{stage}",
+    "panel.statusHistoryTransition": "{from} → {to}",
 
     // Redesign: Discover, Me, first run
     "discover.saveToPipeline": "加入流程",

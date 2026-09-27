@@ -979,6 +979,11 @@ class Application(Base):
     operations: Mapped[list["ApplicationOperation"]] = relationship(
         back_populates="application", cascade="all, delete-orphan"
     )
+    status_history: Mapped[list["ApplicationStatusHistory"]] = relationship(
+        back_populates="application",
+        cascade="all, delete-orphan",
+        order_by="ApplicationStatusHistory.changed_at",
+    )
 
     __table_args__ = (
         sa.UniqueConstraint("user_id", "idempotency_key"),
@@ -1058,3 +1063,28 @@ class ApplicationOperation(Base):
         ),
         sa.Index("ix_application_operations_application_id", "application_id"),
     )
+
+
+class ApplicationStatusHistory(Base):
+    """One row per status transition, oldest first.
+
+    ``from_status`` is null for the initial row recorded at Application
+    creation. Insert-only: rows are never edited or deleted individually,
+    only cascade-deleted with their Application.
+    """
+
+    __tablename__ = "application_status_history"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    application_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("applications.id", ondelete="CASCADE")
+    )
+    from_status: Mapped[str | None] = mapped_column(sa.String(50))
+    to_status: Mapped[str] = mapped_column(sa.String(50))
+    changed_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    application: Mapped["Application"] = relationship(back_populates="status_history")
+
+    __table_args__ = (sa.Index("ix_application_status_history_application_id", "application_id"),)

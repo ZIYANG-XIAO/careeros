@@ -9,6 +9,7 @@ import {
   createApplication,
   createJobAnalysis,
   getApplication,
+  getApplicationStatusHistory,
   getJob,
   listApplications,
   listJobAnalyses,
@@ -29,6 +30,7 @@ import { jobSourceSummary } from "@/lib/job-source";
 import type {
   Application,
   ApplicationStatus,
+  ApplicationStatusHistoryEntry,
   Job,
   JobAnalysis,
   ResumeSummary,
@@ -197,6 +199,9 @@ function ApplicationPanelBody({
   const { locale, t } = useI18n();
   const [application, setApplication] = useState<Application | null>(null);
   const [resumes, setResumes] = useState<ResumeSummary[]>([]);
+  const [statusHistory, setStatusHistory] = useState<
+    ApplicationStatusHistoryEntry[]
+  >([]);
   const [analysis, setAnalysis] = useState<JobAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -218,13 +223,16 @@ function ApplicationPanelBody({
       try {
         const token = await getToken();
         if (!token) throw new Error("Missing authentication token");
-        const [applicationResult, resumeResult] = await Promise.all([
-          getApplication(token, id),
-          listResumes(token),
-        ]);
+        const [applicationResult, resumeResult, historyResult] =
+          await Promise.all([
+            getApplication(token, id),
+            listResumes(token),
+            getApplicationStatusHistory(token, id),
+          ]);
         if (cancelled) return;
         setApplication(applicationResult);
         setResumes(resumeResult);
+        setStatusHistory(historyResult);
         if (applicationResult.job_id) {
           const analyses = await listJobAnalyses(
             token,
@@ -274,6 +282,14 @@ function ApplicationPanelBody({
         updateKey.current,
       );
       setApplication(updated);
+      setStatusHistory((current) => [
+        ...current,
+        {
+          from_status: previous,
+          to_status: next,
+          changed_at: updated.status_updated_at,
+        },
+      ]);
       onChanged?.(updated);
     } catch {
       setApplication({ ...application, status: previous });
@@ -330,9 +346,35 @@ function ApplicationPanelBody({
           {stageError}
         </div>
       )}
-      <p className="text-xs text-ink-3">
-        {formatLocaleDate(locale, application.status_updated_at)}
-      </p>
+      {statusHistory.length > 0 && (
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-ink-3">
+            {t("panel.statusHistory")}
+          </p>
+          <ol className="mt-2 space-y-1.5">
+            {statusHistory.map((entry, index) => (
+              <li
+                key={`${entry.changed_at}-${index}`}
+                className="flex items-baseline justify-between gap-3 text-xs"
+              >
+                <span className="text-ink-2">
+                  {entry.from_status === null
+                    ? t("panel.statusHistoryCreated", {
+                        stage: applicationStatusLabel(entry.to_status, t),
+                      })
+                    : t("panel.statusHistoryTransition", {
+                        from: applicationStatusLabel(entry.from_status, t),
+                        to: applicationStatusLabel(entry.to_status, t),
+                      })}
+                </span>
+                <span className="shrink-0 text-ink-3">
+                  {formatLocaleDate(locale, entry.changed_at)}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       <dl className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-rail p-3">
         <div>

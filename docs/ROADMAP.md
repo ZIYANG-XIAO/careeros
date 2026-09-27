@@ -614,12 +614,38 @@ below for the parts of that review not yet built.
   filtered applications, reusing already-loaded data with no new endpoint;
 - Applications list: a visual stage stepper (PREPARING → APPLIED → ASSESSMENT
   → INTERVIEW → FINAL → OFFER) on each card. REJECTED/WITHDRAWN keep the plain
-  status badge instead of a stepper, since the current data model only stores
-  the latest `status`/`status_updated_at`, not a per-transition history, so a
-  dated timeline like Simplify's cannot be shown honestly; and
+  status badge instead of a stepper, since at the time the data model only
+  stored the latest `status`/`status_updated_at`, not a per-transition
+  history — resolved in Phase L below; and
 - Career Brain: skills gained a `preferred` flag (heart toggle in Career
   Profile), a plain user preference marker independent of Career Evidence —
   toggling it does not append an evidence revision.
+
+### Phase L — Job Preferences and Application status history — implementation complete
+
+The next two simplify.jobs-review backlog items the user picked to build,
+alongside a manual light/dark/auto theme toggle (the user's own request,
+not from the competitive review).
+
+- **Job Preferences**: migration `0018_job_preferences` + `JobPreferences`
+  model (target_roles, cities, company_sizes, industries_include/exclude,
+  company_blocklist, minimum_salary, security_clearance_interest), GET/PUT
+  `/job-preferences`, and a form on `/me/contact` below contact info. Pure
+  data capture — nothing reads these values yet, per the original backlog
+  note that it's worth storing ahead of any recommendation feature.
+- **Application status-transition history**: migration
+  `0019_application_status_history` + `ApplicationStatusHistory` (one row
+  per transition, `from_status` null on the initial row, backfilled for
+  existing applications from `status`/`status_updated_at`), a new
+  `GET /applications/{id}/status-history`, and a dated timeline in
+  FocusPanel's Application view — replacing the old aria-hidden, dateless
+  `ApplicationStepper` component (removed; it was already dead code after
+  the Pipeline/Discover/Me redesign deleted the old Applications list it
+  lived on).
+- **Theme toggle**: `lib/theme.tsx` (ThemeProvider/useTheme, mirroring the
+  existing LocaleProvider), a Light/Auto/Dark segmented control in the
+  rail footer, and `data-theme` attribute overrides in `globals.css` so a
+  manual choice wins over `prefers-color-scheme` when set.
 
 ### Candidate backlog from the simplify.jobs review (not yet scheduled)
 
@@ -630,14 +656,6 @@ scratch. Each needs its own scoping/approval pass before implementation:
   CSV column format (bulk entry / backup-restore). A true cross-tool importer
   (e.g. from Simplify's own export) needs that tool's actual export file
   inspected first — do not guess its column mapping;
-- **Per-application status-transition history** (a table recording each
-  status change with a timestamp), which the current stepper cannot show
-  without one;
-- **Job Preferences data model** (target roles/specializations, city
-  multi-select, ideal company size, industries/skills to include or exclude,
-  minimum salary, security-clearance interest, company block-list) — worth
-  designing and storing now even before any recommendation algorithm consumes
-  it, since M17/Enhance-phase job matching (section 12) will need it;
 - **A reusable, explicitly-confirmed sensitive/demographic answer bank**
   (ethnicity, disability, LGBTQ+, gender, veteran status, per-country work
   authorization), mirroring `UserContactInfo`'s confirm-once pattern. This

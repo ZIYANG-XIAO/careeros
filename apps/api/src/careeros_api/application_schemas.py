@@ -165,3 +165,9 @@ class ApplicationSummaryResponse(StrictModel):
 
 class ApplicationResponse(ApplicationSummaryResponse):
     answers: list[ApplicationAnswerResponse]
+
+
+class ApplicationStatusHistoryEntryResponse(StrictModel):
+    from_status: str | None
+    to_status: str
+    changed_at: datetime

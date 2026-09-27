@@ -8,6 +8,7 @@ import type { Application, Job } from "@/lib/types";
 import { FocusPanel } from "./focus-panel";
 
 const mockGetApplication = vi.fn();
+const mockGetApplicationStatusHistory = vi.fn();
 const mockListResumes = vi.fn();
 const mockListJobAnalyses = vi.fn();
 const mockUpdateApplicationStatus = vi.fn();
@@ -25,6 +26,8 @@ vi.mock("@clerk/nextjs", () => ({
 
 vi.mock("@/lib/api", () => ({
   getApplication: (...args: unknown[]) => mockGetApplication(...args),
+  getApplicationStatusHistory: (...args: unknown[]) =>
+    mockGetApplicationStatusHistory(...args),
   listResumes: (...args: unknown[]) => mockListResumes(...args),
   listJobAnalyses: (...args: unknown[]) => mockListJobAnalyses(...args),
   updateApplicationStatus: (...args: unknown[]) =>
@@ -105,6 +108,15 @@ function renderPanel(
 describe("FocusPanel — application flavour", () => {
   beforeEach(() => {
     mockGetApplication.mockReset().mockResolvedValue(application);
+    mockGetApplicationStatusHistory
+      .mockReset()
+      .mockResolvedValue([
+        {
+          from_status: null,
+          to_status: "APPLIED",
+          changed_at: "2026-09-20T00:00:00Z",
+        },
+      ]);
     mockListResumes.mockReset().mockResolvedValue([]);
     mockListJobAnalyses.mockReset().mockResolvedValue([]);
     mockUpdateApplicationStatus.mockReset();
@@ -164,6 +176,42 @@ describe("FocusPanel — application flavour", () => {
     await screen.findByText("Platform Engineer");
     await user.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("renders the dated status history timeline", async () => {
+    mockGetApplicationStatusHistory.mockResolvedValue([
+      {
+        from_status: null,
+        to_status: "PREPARING",
+        changed_at: "2026-09-18T00:00:00Z",
+      },
+      {
+        from_status: "PREPARING",
+        to_status: "APPLIED",
+        changed_at: "2026-09-20T00:00:00Z",
+      },
+    ]);
+    renderPanel({ kind: "application", id: "app-1" });
+    await screen.findByText("Platform Engineer");
+
+    expect(screen.getByText("Recorded as Preparing")).toBeInTheDocument();
+    expect(screen.getByText("Preparing → Applied")).toBeInTheDocument();
+  });
+
+  it("appends a new history entry after a successful stage change", async () => {
+    mockUpdateApplicationStatus.mockResolvedValue({
+      ...application,
+      status: "INTERVIEW",
+      status_updated_at: "2026-09-25T00:00:00Z",
+    });
+    const user = userEvent.setup();
+    renderPanel({ kind: "application", id: "app-1" });
+    await screen.findByText("Platform Engineer");
+    expect(screen.getByText("Recorded as Applied")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Interview" }));
+
+    expect(await screen.findByText("Applied → Interview")).toBeInTheDocument();
   });
 });
 

@@ -20,6 +20,7 @@ from careeros_api.application_schemas import (
     ApplicationAssistantMatchResponse,
     ApplicationAssistantResumeOptionResponse,
     ApplicationResponse,
+    ApplicationStatusHistoryEntryResponse,
     ApplicationSummaryResponse,
     CreateApplicationRequest,
     RecordApplicationSubmissionRequest,
@@ -33,6 +34,7 @@ from careeros_api.models import (
     ApplicationAnswerSource,
     ApplicationOperation,
     ApplicationStatus,
+    ApplicationStatusHistory,
     Job,
     Resume,
     ResumeVersion,
@@ -356,6 +358,15 @@ async def create_application(
         response.status_code = status.HTTP_200_OK
         return _response(raced_application)
 
+    session.add(
+        ApplicationStatusHistory(
+            application_id=application_id,
+            from_status=None,
+            to_status=body.status.value,
+            changed_at=now,
+        )
+    )
+
     for position, answer in enumerate(body.answers):
         session.add(
             ApplicationAnswer(
@@ -404,6 +415,39 @@ async def get_application(
     if application is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
     return _response(application)
+
+
+@router.get(
+    "/{application_id}/status-history",
+    response_model=list[ApplicationStatusHistoryEntryResponse],
+)
+async def get_application_status_history(
+    application_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[ApplicationStatusHistoryEntryResponse]:
+    application = await _owned_application(session, user.id, application_id)
+    if application is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+    entries = (
+        (
+            await session.execute(
+                select(ApplicationStatusHistory)
+                .where(ApplicationStatusHistory.application_id == application_id)
+                .order_by(ApplicationStatusHistory.changed_at)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return [
+        ApplicationStatusHistoryEntryResponse(
+            from_status=entry.from_status,
+            to_status=entry.to_status,
+            changed_at=entry.changed_at,
+        )
+        for entry in entries
+    ]
 
 
 @router.patch("/{application_id}/status", response_model=ApplicationResponse)
@@ -480,9 +524,19 @@ async def update_application_status(
     now = datetime.now(UTC)
     if application.applied_at is None and body.status != ApplicationStatus.PREPARING:
         application.applied_at = body.applied_at or now
+    previous_status = application.status
     application.status = body.status.value
     application.status_updated_at = now
     application.updated_at = now
+    if previous_status != application.status:
+        session.add(
+            ApplicationStatusHistory(
+                application_id=application.id,
+                from_status=previous_status,
+                to_status=application.status,
+                changed_at=now,
+            )
+        )
     await session.flush()
     return _response(application)
 
@@ -600,6 +654,14 @@ async def record_application_submission(
     if application.applied_at is None:
         application.applied_at = body.applied_at or now
     if application.status == ApplicationStatus.PREPARING:
+        session.add(
+            ApplicationStatusHistory(
+                application_id=application.id,
+                from_status=application.status,
+                to_status=ApplicationStatus.APPLIED.value,
+                changed_at=now,
+            )
+        )
         application.status = ApplicationStatus.APPLIED.value
     application.status_updated_at = now
     application.updated_at = now

@@ -462,6 +462,12 @@ export type Application = ApplicationSummary & {
   answers: ApplicationAnswer[];
 };
 
+export type ApplicationStatusHistoryEntry = {
+  from_status: ApplicationStatus | null;
+  to_status: ApplicationStatus;
+  changed_at: string;
+};
+
 export type CreateApplicationRequest = {
   idempotency_key: string;
   origin: ApplicationOrigin;

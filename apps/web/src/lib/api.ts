@@ -1,6 +1,7 @@
 import type {
   Application,
   ApplicationStatus,
+  ApplicationStatusHistoryEntry,
   ApplicationSummary,
   CareerBrain,
   ContactInfo,
@@ -544,6 +545,20 @@ export async function getApplication(
     },
   );
   return handleResponse<Application>(response);
+}
+
+export async function getApplicationStatusHistory(
+  token: string,
+  applicationId: string,
+): Promise<ApplicationStatusHistoryEntry[]> {
+  const response = await fetch(
+    `${apiBaseUrl()}/applications/${applicationId}/status-history`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    },
+  );
+  return handleResponse<ApplicationStatusHistoryEntry[]>(response);
 }
 
 export async function updateApplicationStatus(
