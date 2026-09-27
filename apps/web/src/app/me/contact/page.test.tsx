@@ -1,12 +1,15 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LocaleProvider } from "@/lib/i18n";
-import type { ContactInfo } from "@/lib/types";
+import type { ContactInfo, JobPreferences } from "@/lib/types";
 
 import MeContactPage from "./page";
 
 const mockGetContactInfo = vi.fn();
+const mockGetJobPreferences = vi.fn();
+const mockUpdateJobPreferences = vi.fn();
 const mockGetToken = vi.fn().mockResolvedValue("token");
 
 vi.mock("@clerk/nextjs", () => ({
@@ -22,8 +25,22 @@ vi.mock("@/lib/api", async (importOriginal) => {
   return {
     ...actual,
     getContactInfo: (...args: unknown[]) => mockGetContactInfo(...args),
+    getJobPreferences: (...args: unknown[]) => mockGetJobPreferences(...args),
+    updateJobPreferences: (...args: unknown[]) =>
+      mockUpdateJobPreferences(...args),
   };
 });
+
+const emptyJobPreferences: JobPreferences = {
+  target_roles: [],
+  cities: [],
+  company_sizes: [],
+  industries_include: [],
+  industries_exclude: [],
+  company_blocklist: [],
+  minimum_salary: null,
+  security_clearance_interest: false,
+};
 
 const contactInfo: ContactInfo = {
   first_name: "Ada",
@@ -50,6 +67,8 @@ const contactInfo: ContactInfo = {
 
 beforeEach(() => {
   mockGetContactInfo.mockReset().mockResolvedValue(contactInfo);
+  mockGetJobPreferences.mockReset().mockResolvedValue(emptyJobPreferences);
+  mockUpdateJobPreferences.mockReset();
 });
 
 describe("MeContactPage", () => {
@@ -68,5 +87,53 @@ describe("MeContactPage", () => {
     expect(
       screen.getByRole("link", { name: "Contact & answers" }),
     ).toHaveAttribute("aria-current", "page");
+  });
+
+  it("loads and renders the job preferences form", async () => {
+    mockGetJobPreferences.mockResolvedValue({
+      ...emptyJobPreferences,
+      target_roles: ["Backend Engineer"],
+      minimum_salary: 120000,
+    });
+    render(
+      <LocaleProvider>
+        <MeContactPage />
+      </LocaleProvider>,
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Job preferences" }),
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Backend Engineer")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("120000")).toBeInTheDocument();
+  });
+
+  it("splits comma-separated list fields and parses salary on save", async () => {
+    const user = userEvent.setup();
+    mockUpdateJobPreferences.mockResolvedValue({
+      ...emptyJobPreferences,
+      target_roles: ["Backend Engineer", "Platform Engineer"],
+      minimum_salary: 100000,
+    });
+    render(
+      <LocaleProvider>
+        <MeContactPage />
+      </LocaleProvider>,
+    );
+
+    const targetRolesInput = await screen.findByLabelText("Target roles");
+    await user.type(targetRolesInput, "Backend Engineer, Platform Engineer");
+    const salaryInput = screen.getByLabelText("Minimum salary");
+    await user.type(salaryInput, "100000");
+    await user.click(
+      screen.getByRole("button", { name: "Save job preferences" }),
+    );
+
+    expect(mockUpdateJobPreferences).toHaveBeenCalledWith(
+      "token",
+      expect.objectContaining({
+        target_roles: ["Backend Engineer", "Platform Engineer"],
+        minimum_salary: 100000,
+      }),
+    );
   });
 });

@@ -224,6 +224,9 @@ class User(Base):
     contact_info: Mapped["UserContactInfo | None"] = relationship(
         back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
+    job_preferences: Mapped["JobPreferences | None"] = relationship(
+        back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
 
     __table_args__ = (sa.UniqueConstraint("auth_provider", "auth_subject"),)
 
@@ -263,6 +266,38 @@ class UserContactInfo(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="contact_info")
+
+
+class JobPreferences(Base):
+    """User-declared job search preferences.
+
+    Pure data capture: nothing in the product currently reads these values.
+    Stored now so a future recommendation feature does not need to collect
+    them retroactively.
+    """
+
+    __tablename__ = "job_preferences"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("users.id", ondelete="CASCADE"), unique=True
+    )
+    target_roles: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    cities: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    company_sizes: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    industries_include: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    industries_exclude: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    company_blocklist: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    minimum_salary: Mapped[int | None] = mapped_column(sa.Integer)
+    security_clearance_interest: Mapped[bool] = mapped_column(sa.Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+    user: Mapped["User"] = relationship(back_populates="job_preferences")
 
 
 class CareerBrain(Base):

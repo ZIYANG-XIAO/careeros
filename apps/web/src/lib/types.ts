@@ -89,6 +89,17 @@ export type ContactInfo = {
 
 export type ContactInfoField = Exclude<keyof ContactInfo, "confirmed_at">;
 
+export type JobPreferences = {
+  target_roles: string[];
+  cities: string[];
+  company_sizes: string[];
+  industries_include: string[];
+  industries_exclude: string[];
+  company_blocklist: string[];
+  minimum_salary: number | null;
+  security_clearance_interest: boolean;
+};
+
 // ---------------------------------------------------------------------------
 // CRUD endpoint response types (full entity shapes with timestamps).
 // ---------------------------------------------------------------------------

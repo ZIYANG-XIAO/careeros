@@ -15,6 +15,7 @@ import type {
   ExperienceDetailResponse,
   Job,
   JobAnalysis,
+  JobPreferences,
   Project,
   ProjectDetailResponse,
   ResumeDraftItem,
@@ -214,6 +215,34 @@ export async function updateContactInfo(
     body: JSON.stringify(data),
   });
   return handleResponse<ContactInfo>(response);
+}
+
+// ---------------------------------------------------------------------------
+// Job preferences
+// ---------------------------------------------------------------------------
+
+export type { JobPreferences };
+
+export async function getJobPreferences(
+  token: string,
+): Promise<JobPreferences> {
+  const response = await fetch(`${apiBaseUrl()}/job-preferences`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  return handleResponse<JobPreferences>(response);
+}
+
+export async function updateJobPreferences(
+  token: string,
+  data: Partial<JobPreferences>,
+): Promise<JobPreferences> {
+  const response = await fetch(`${apiBaseUrl()}/job-preferences`, {
+    method: "PUT",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<JobPreferences>(response);
 }
 
 // ---------------------------------------------------------------------------
