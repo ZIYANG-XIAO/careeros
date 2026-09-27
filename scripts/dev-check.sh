@@ -74,7 +74,8 @@ fi
 section "PostgreSQL"
 
 if command -v docker >/dev/null 2>&1; then
-  if docker compose --env-file .env -f infra/compose.yaml ps postgres 2>/dev/null | grep -q "running"; then
+  if docker compose --env-file .env -f infra/compose.yaml ps --format json postgres 2>/dev/null \
+    | grep -q '"State":"running"'; then
     note_ready "PostgreSQL container is running"
   else
     note_attention "PostgreSQL is not running. Start it with: docker compose --env-file .env -f infra/compose.yaml up -d postgres"

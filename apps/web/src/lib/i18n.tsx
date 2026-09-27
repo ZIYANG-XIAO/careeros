@@ -588,6 +588,113 @@ const messages = {
     "jobs.detail.trackError":
       "The application page is still available, but CareerOS could not start tracking it. Open the page directly and use Mark as applied afterward.",
     "jobs.detail.intelligenceCategories": "Job Intelligence categories",
+
+    // Redesign: shell/nav
+    "nav.pipeline": "Pipeline",
+    "nav.discover": "Discover",
+    "nav.me": "Me",
+    "nav.allOpen": "All open",
+    "nav.needsYou": "Needs you",
+    "nav.closed": "Closed",
+    "nav.inPipeline": "In my pipeline",
+    "nav.addedByMe": "Added by me",
+    "nav.careerBrain": "Career Brain",
+    "nav.resumes": "Resumes",
+    "nav.contactAnswers": "Contact & answers",
+    "shell.capture": "Capture",
+    "shell.search": "Jump to anything",
+    "shell.assistantOn": "Assistant connected",
+    "shell.assistantOff": "Assistant not installed",
+
+    // Redesign: Pipeline
+    "pipeline.title": "Job tracker",
+    "pipeline.intro":
+      "Drag a card to change its status. Moving a card saves straight away.",
+    "pipeline.column.saved": "Saved",
+    "pipeline.savedFoot":
+      "Saved jobs, not applications yet. Dragging one right creates the application record.",
+    "pipeline.lifecycleFoot":
+      "Column order is the lifecycle and cannot be rearranged.",
+    "pipeline.view.board": "Board",
+    "pipeline.view.list": "List",
+    "pipeline.groupBy": "Group by stage",
+    "pipeline.needsYou.one":
+      "1 application sat in Preparing over 3 days — did you send it?",
+    "pipeline.needsYou.many":
+      "{count} applications sat in Preparing over 3 days — did you send them?",
+    "pipeline.reviewBoth": "Review them",
+    "pipeline.dismissToday": "Dismiss for today",
+    "pipeline.stale": "Stale {days}d",
+    "pipeline.didApply": "I applied",
+    "pipeline.notYet": "Not yet",
+    "pipeline.dropTo": "Drop to set {stage}",
+    "pipeline.showLane": "Show lane",
+    "pipeline.emptyColumn":
+      "Nothing here yet. Drag a card in when an offer arrives.",
+
+    // Redesign: record-an-application popover
+    "record.title": "Record this application?",
+    "record.body":
+      "CareerOS keeps the exact resume version you sent, so pick it now.",
+    "record.resumeLabel": "Resume sent",
+    "record.confirm": "Record",
+    "record.cancel": "Cancel",
+    "record.noResume": "No resume recorded",
+
+    // Redesign: focus panel
+    "panel.stage": "Stage",
+    "panel.stageHint": "Changing it saves immediately",
+    "panel.markRejected": "Mark rejected",
+    "panel.withdraw": "Withdraw",
+    "panel.resumeSent": "Resume sent",
+    "panel.frozen":
+      "The resume version is frozen at what you actually sent. Uploading a new version later never rewrites this record.",
+    "panel.answers": "Answers kept with this application",
+    "panel.noAnswers": "No answers were recorded with this application.",
+    "panel.noAnalysis": "No analysis yet — open the job to run one.",
+    "panel.openAnalysis": "Open the full analysis",
+    "panel.nothingSelected": "Nothing selected",
+    "panel.nothingHint": "Pick a card to see its stage, resume and answers.",
+    "panel.openPage": "Open application page ↗",
+    "panel.noLink": "No link recorded",
+
+    // Redesign: Discover, Me, first run
+    "discover.saveToPipeline": "Save to pipeline",
+    "discover.applyNow": "Apply now ↗",
+    "discover.inPipeline": "In pipeline · {stage}",
+    "discover.openInPipeline": "Open in pipeline",
+    "discover.pasteJob": "Paste a job",
+    "discover.notLive":
+      "Your jobs and seeded demo data — CareerOS is not a live feed.",
+    "discover.noLinkHint":
+      "No application link — use the source link or find the company's page.",
+    "me.notAResume":
+      "Career Brain is not a resume. Editing it never rewrites a resume you already sent.",
+    "me.coverage": "Career Brain coverage",
+    "me.importWaiting": "1 import waiting for review",
+    "me.reviewImport": "Review the import",
+    "me.uploadResume": "Upload resume",
+    "start.title": "Your pipeline is empty",
+    "start.body":
+      "CareerOS works best once it knows your professional history. Start with a resume — it becomes your Career Brain, and everything after that reuses it.",
+    "start.step1": "Upload your resume",
+    "start.step2": "Review what was read",
+    "start.step3": "Put something in the pipeline",
+    "start.dropFile": "Drop a file here",
+    "start.chooseFile": "Choose a file",
+    "start.byHand": "Or build it by hand instead",
+
+    // Redesign: errors and empties
+    "error.stageUpdate":
+      "Could not save the new stage. It has been put back to {stage}.",
+    "error.recordFromSaved":
+      "Could not record this application. The job is still saved.",
+    "error.panelLoad":
+      "We could not load this application. Nothing was changed.",
+    "empty.pipelineFiltered": "Nothing at this stage yet.",
+    "a11y.cardMoved": "Moved {company} · {role} to {stage}",
+    "a11y.savedColumnLocked":
+      "Applications cannot move back to Saved. Use Withdraw instead.",
   },
   "zh-CN": {
     "shell.tagline": "求职工作台",
@@ -1131,21 +1238,126 @@ const messages = {
     "jobs.detail.trackError":
       "申请页面仍可用，但 CareerOS 无法开始跟踪。请直接打开页面，之后使用“标记为已申请”。",
     "jobs.detail.intelligenceCategories": "Job Intelligence 分类",
+
+    // Redesign: shell/nav
+    "nav.pipeline": "申请流程",
+    "nav.discover": "发现机会",
+    "nav.me": "我的档案",
+    "nav.allOpen": "进行中",
+    "nav.needsYou": "待你处理",
+    "nav.closed": "已结束",
+    "nav.inPipeline": "已在流程中",
+    "nav.addedByMe": "我添加的",
+    "nav.careerBrain": "Career Brain",
+    "nav.resumes": "简历",
+    "nav.contactAnswers": "联系方式与回答",
+    "shell.capture": "快速添加",
+    "shell.search": "快速跳转",
+    "shell.assistantOn": "助手已连接",
+    "shell.assistantOff": "尚未安装助手",
+
+    // Redesign: Pipeline
+    "pipeline.title": "申请看板",
+    "pipeline.intro": "拖动卡片即可更改状态，移动后会立即保存。",
+    "pipeline.column.saved": "已收藏",
+    "pipeline.savedFoot": "这些还只是收藏的职位。向右拖动才会建立申请记录。",
+    "pipeline.lifecycleFoot": "列的顺序即申请阶段顺序，不可调整。",
+    "pipeline.view.board": "看板",
+    "pipeline.view.list": "列表",
+    "pipeline.groupBy": "按阶段分组",
+    "pipeline.needsYou.one":
+      "有 1 份申请停留在“准备中”超过 3 天，你已经投出了吗？",
+    "pipeline.needsYou.many":
+      "有 {count} 份申请停留在“准备中”超过 3 天，你已经投出了吗？",
+    "pipeline.reviewBoth": "去查看",
+    "pipeline.dismissToday": "今天不再提示",
+    "pipeline.stale": "停滞 {days} 天",
+    "pipeline.didApply": "已投递",
+    "pipeline.notYet": "还没有",
+    "pipeline.dropTo": "放开即设为{stage}",
+    "pipeline.showLane": "显示该列",
+    "pipeline.emptyColumn": "这里还是空的。收到 offer 时把卡片拖进来。",
+
+    // Redesign: record-an-application popover
+    "record.title": "记录这份申请？",
+    "record.body": "CareerOS 会保留你实际投递的简历版本，请先选择。",
+    "record.resumeLabel": "投递的简历",
+    "record.confirm": "记录",
+    "record.cancel": "取消",
+    "record.noResume": "未记录简历",
+
+    // Redesign: focus panel
+    "panel.stage": "阶段",
+    "panel.stageHint": "更改后立即保存",
+    "panel.markRejected": "标记为已拒绝",
+    "panel.withdraw": "撤回申请",
+    "panel.resumeSent": "投递的简历",
+    "panel.frozen":
+      "简历版本会固定为你当时实际投递的文件。之后上传新版本不会改写这条记录。",
+    "panel.answers": "随申请保留的回答",
+    "panel.noAnswers": "这份申请没有保留任何回答。",
+    "panel.noAnalysis": "尚未分析——打开职位即可运行。",
+    "panel.openAnalysis": "查看完整分析",
+    "panel.nothingSelected": "未选择任何记录",
+    "panel.nothingHint": "选择一张卡片即可查看阶段、简历与回答。",
+    "panel.openPage": "打开申请页面 ↗",
+    "panel.noLink": "未记录链接",
+
+    // Redesign: Discover, Me, first run
+    "discover.saveToPipeline": "加入流程",
+    "discover.applyNow": "立即申请 ↗",
+    "discover.inPipeline": "流程中 · {stage}",
+    "discover.openInPipeline": "在流程中查看",
+    "discover.pasteJob": "粘贴职位",
+    "discover.notLive":
+      "这里只有你添加的职位和演示数据——CareerOS 不是实时招聘源。",
+    "discover.noLinkHint":
+      "暂无申请链接——请使用来源链接或自行查找公司申请页面。",
+    "me.notAResume": "Career Brain 不是简历。修改它不会改写你已经投出的简历。",
+    "me.coverage": "Career Brain 完整度",
+    "me.importWaiting": "有 1 次导入待审阅",
+    "me.reviewImport": "去审阅",
+    "me.uploadResume": "上传简历",
+    "start.title": "你的申请流程还是空的",
+    "start.body":
+      "CareerOS 了解你的职业经历后才好用。先上传一份简历——它会成为你的 Career Brain，之后的一切都会复用它。",
+    "start.step1": "上传简历",
+    "start.step2": "审阅识别结果",
+    "start.step3": "向流程中添加机会",
+    "start.dropFile": "把文件拖到这里",
+    "start.chooseFile": "选择文件",
+    "start.byHand": "也可以手动填写",
+
+    // Redesign: errors and empties
+    "error.stageUpdate": "阶段保存失败，已恢复为{stage}。",
+    "error.recordFromSaved": "无法记录这份申请，该职位仍在收藏中。",
+    "error.panelLoad": "无法加载这份申请，数据未发生变更。",
+    "empty.pipelineFiltered": "该阶段暂时没有记录。",
+    "a11y.cardMoved": "已将{company} · {role}移动到{stage}",
+    "a11y.savedColumnLocked": "申请无法移回“已收藏”，请改用“撤回申请”。",
   },
 } as const;
 
 export type MessageKey = keyof (typeof messages)["en"];
+export type MessageParams = Record<string, string | number>;
+
+function interpolate(template: string, params?: MessageParams): string {
+  if (!params) return template;
+  return template.replace(/\{(\w+)\}/g, (match, token: string) =>
+    token in params ? String(params[token]) : match,
+  );
+}
 
 type I18nValue = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: MessageKey) => string;
+  t: (key: MessageKey, params?: MessageParams) => string;
 };
 
 const defaultValue: I18nValue = {
   locale: "en",
   setLocale: () => undefined,
-  t: (key) => messages.en[key],
+  t: (key, params) => interpolate(messages.en[key], params),
 };
 
 const I18nContext = createContext<I18nValue>(defaultValue);
@@ -1168,7 +1380,11 @@ export function LocaleProvider({
   }
 
   const value = useMemo<I18nValue>(
-    () => ({ locale, setLocale, t: (key) => messages[locale][key] }),
+    () => ({
+      locale,
+      setLocale,
+      t: (key, params) => interpolate(messages[locale][key], params),
+    }),
     [locale],
   );
 

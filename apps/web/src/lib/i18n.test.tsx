@@ -1,3 +1,4 @@
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -7,6 +8,8 @@ import {
   formatResumeVersionLabel,
   getMessageKeys,
   intlLocale,
+  LocaleProvider,
+  useI18n,
 } from "./i18n";
 
 const enT = (key: string) => {
@@ -53,6 +56,49 @@ describe("i18n helpers", () => {
     expect(
       formatCareerDateRange("2022-01", "2024-06", enT, { isCurrent: false }),
     ).toBe("2022-01 — 2024-06");
+  });
+});
+
+function Interpolated({
+  msgKey,
+  params,
+}: {
+  msgKey: Parameters<ReturnType<typeof useI18n>["t"]>[0];
+  params: Record<string, string | number>;
+}) {
+  const { t } = useI18n();
+  return <span>{t(msgKey, params)}</span>;
+}
+
+describe("t() interpolation", () => {
+  it("substitutes named placeholders", () => {
+    render(
+      <LocaleProvider>
+        <Interpolated msgKey="pipeline.stale" params={{ days: 4 }} />
+      </LocaleProvider>,
+    );
+    expect(screen.getByText("Stale 4d")).toBeInTheDocument();
+  });
+
+  it("leaves an unmatched placeholder untouched", () => {
+    render(
+      <LocaleProvider>
+        <Interpolated msgKey="pipeline.stale" params={{ other: 1 }} />
+      </LocaleProvider>,
+    );
+    expect(screen.getByText("Stale {days}d")).toBeInTheDocument();
+  });
+
+  it("returns the template unchanged when no params are given", () => {
+    render(
+      <LocaleProvider>
+        <Interpolated
+          msgKey="panel.nothingSelected"
+          params={undefined as unknown as Record<string, string>}
+        />
+      </LocaleProvider>,
+    );
+    expect(screen.getByText("Nothing selected")).toBeInTheDocument();
   });
 });
 
