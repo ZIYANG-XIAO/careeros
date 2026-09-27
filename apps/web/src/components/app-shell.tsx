@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { type ReactNode, useState } from "react";
 
 import { useI18n } from "@/lib/i18n";
+import { type Theme, useTheme } from "@/lib/theme";
 
 const navItems = [
   {
@@ -29,6 +30,7 @@ function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { locale, setLocale, t } = useI18n();
+  const { theme, setTheme } = useTheme();
 
   return (
     <div className="flex min-h-screen bg-ground">
@@ -150,6 +152,34 @@ function AppShell({ children }: { children: ReactNode }) {
                   {item === "en" ? "EN" : "中文"}
                 </button>
               ))}
+            </div>
+          </div>
+          <div className="mb-3 flex items-center justify-between gap-3 px-2">
+            <span className="text-xs font-medium text-ink-3">
+              {t("shell.theme")}
+            </span>
+            <div className="inline-flex rounded-lg bg-sunken p-0.5">
+              {(["light", "system", "dark"] as const satisfies Theme[]).map(
+                (item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setTheme(item)}
+                    aria-pressed={theme === item}
+                    className={`rounded-md px-2 py-1 text-xs font-semibold transition ${
+                      theme === item
+                        ? "bg-surface text-ink shadow-sm"
+                        : "text-ink-3 hover:text-ink-2"
+                    }`}
+                  >
+                    {item === "light"
+                      ? t("shell.themeLight")
+                      : item === "dark"
+                        ? t("shell.themeDark")
+                        : t("shell.themeSystem")}
+                  </button>
+                ),
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-xl px-2 py-2">
