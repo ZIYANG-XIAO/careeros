@@ -684,6 +684,7 @@ const messages = {
     "start.dropFile": "Drop a file here",
     "start.chooseFile": "Choose a file",
     "start.byHand": "Or build it by hand instead",
+    "start.browseDiscover": "Browse Discover",
 
     // Redesign: errors and empties
     "error.stageUpdate":
@@ -1329,6 +1330,7 @@ const messages = {
     "start.dropFile": "把文件拖到这里",
     "start.chooseFile": "选择文件",
     "start.byHand": "也可以手动填写",
+    "start.browseDiscover": "浏览发现机会",
 
     // Redesign: errors and empties
     "error.stageUpdate": "阶段保存失败，已恢复为{stage}。",

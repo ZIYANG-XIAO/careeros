@@ -65,17 +65,17 @@ export function deriveOnboardingSteps(
   return [
     {
       id: "upload_resume",
-      href: "/resumes?upload=1",
+      href: "/me/resumes?upload=1",
       status: uploadStatus,
     },
     {
       id: "review_career_brain",
-      href: "/career",
+      href: "/me",
       status: brainStatus,
     },
     {
       id: "contact_info",
-      href: "/career",
+      href: "/me/contact",
       status: "optional",
     },
     {
@@ -85,7 +85,7 @@ export function deriveOnboardingSteps(
     },
     {
       id: "browse_jobs",
-      href: "/jobs",
+      href: "/discover",
       status: "optional",
     },
   ];
