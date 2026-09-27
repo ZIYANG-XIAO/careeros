@@ -14,7 +14,7 @@ export default async function Home() {
     if (token) {
       redirect(await resolveHomeRedirect(token, userId));
     }
-    redirect("/welcome");
+    redirect("/start");
   }
 
   return <LandingPage />;

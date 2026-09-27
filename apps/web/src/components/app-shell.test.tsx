@@ -6,7 +6,7 @@ import { AppShell } from "./app-shell";
 import { LocaleProvider } from "@/lib/i18n";
 
 vi.mock("@clerk/nextjs", () => ({ UserButton: () => <div>Account menu</div> }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/jobs/job-1" }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/pipeline" }));
 
 describe("AppShell", () => {
   it("uses the approved user-facing information architecture", () => {
@@ -16,23 +16,22 @@ describe("AppShell", () => {
     });
     const links = Array.from(navigation.querySelectorAll("a"));
     expect(links.map((link) => link.textContent)).toEqual([
-      "Jobs",
-      "Applications",
-      "Resumes",
-      "Profile",
-      "Browser Extension",
+      "Pipeline",
+      "Discover",
+      "Me",
     ]);
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
-      "/jobs",
-      "/applications",
-      "/resumes",
-      "/career",
-      "/setup",
+      "/pipeline",
+      "/discover",
+      "/me",
     ]);
-    expect(screen.getByRole("link", { name: "Jobs" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Pipeline" })).toHaveAttribute(
       "aria-current",
       "page",
     );
+    expect(
+      screen.getByRole("link", { name: "Assistant not installed" }),
+    ).toHaveAttribute("href", "/setup");
     expect(screen.getByText("Workspace content")).toBeInTheDocument();
   });
 
@@ -44,7 +43,7 @@ describe("AppShell", () => {
       </LocaleProvider>,
     );
     await user.click(screen.getByRole("button", { name: "中文" }));
-    expect(screen.getByRole("link", { name: "职位" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "申请流程" })).toBeInTheDocument();
     expect(screen.getByText("求职工作台")).toBeInTheDocument();
     expect(window.localStorage.getItem("careeros.locale")).toBe("zh-CN");
     expect(document.documentElement.lang).toBe("zh-CN");

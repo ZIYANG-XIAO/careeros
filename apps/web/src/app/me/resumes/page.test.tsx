@@ -30,6 +30,7 @@ vi.mock("@clerk/nextjs", () => ({
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
   useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/me/resumes",
 }));
 
 vi.mock("@/lib/api", async (importOriginal) => {
@@ -140,7 +141,7 @@ describe("ResumesPage", () => {
     );
     resolveUpload({ id: "import-1" });
     await vi.waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/resumes/imports/import-1");
+      expect(mockPush).toHaveBeenCalledWith("/me/imports/import-1");
     });
   });
 

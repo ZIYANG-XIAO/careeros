@@ -31,7 +31,7 @@ describe("Home page", () => {
   beforeEach(() => {
     mockAuth.mockReset();
     mockRedirect.mockReset();
-    mockResolveHomeRedirect.mockReset().mockResolvedValue("/welcome");
+    mockResolveHomeRedirect.mockReset().mockResolvedValue("/start");
   });
 
   it("renders landing value props and auth actions for signed-out users", async () => {
@@ -63,31 +63,31 @@ describe("Home page", () => {
     expect(mockRedirect).not.toHaveBeenCalled();
   });
 
-  it("redirects new users without profile data to welcome", async () => {
+  it("redirects new users without profile data to start", async () => {
     mockAuth.mockResolvedValue({
       userId: "user-1",
       getToken: vi.fn().mockResolvedValue("token"),
     });
-    mockResolveHomeRedirect.mockResolvedValue("/welcome");
+    mockResolveHomeRedirect.mockResolvedValue("/start");
 
     const Home = (await import("./page")).default;
 
-    await expect(Home()).rejects.toThrow("REDIRECT:/welcome");
+    await expect(Home()).rejects.toThrow("REDIRECT:/start");
     expect(mockResolveHomeRedirect).toHaveBeenCalledWith("token", "user-1");
-    expect(mockRedirect).toHaveBeenCalledWith("/welcome");
+    expect(mockRedirect).toHaveBeenCalledWith("/start");
   });
 
-  it("redirects returning users with profile data to jobs", async () => {
+  it("redirects returning users with profile data to pipeline", async () => {
     mockAuth.mockResolvedValue({
       userId: "user-1",
       getToken: vi.fn().mockResolvedValue("token"),
     });
-    mockResolveHomeRedirect.mockResolvedValue("/jobs");
+    mockResolveHomeRedirect.mockResolvedValue("/pipeline");
 
     const Home = (await import("./page")).default;
 
-    await expect(Home()).rejects.toThrow("REDIRECT:/jobs");
+    await expect(Home()).rejects.toThrow("REDIRECT:/pipeline");
     expect(mockResolveHomeRedirect).toHaveBeenCalledWith("token", "user-1");
-    expect(mockRedirect).toHaveBeenCalledWith("/jobs");
+    expect(mockRedirect).toHaveBeenCalledWith("/pipeline");
   });
 });

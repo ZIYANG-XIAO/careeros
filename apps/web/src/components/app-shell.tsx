@@ -9,29 +9,19 @@ import { useI18n } from "@/lib/i18n";
 
 const navItems = [
   {
-    label: "shell.jobs" as const,
-    href: "/jobs",
-    path: "M9 6h6m-7 4h8m-9 4h10m-8 4h6M6 3h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2z",
-  },
-  {
-    label: "shell.applications" as const,
-    href: "/applications",
+    label: "nav.pipeline" as const,
+    href: "/pipeline",
     path: "M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2zm2 5h6m-6 4h6m-6 4h4",
   },
   {
-    label: "shell.resumes" as const,
-    href: "/resumes",
-    path: "M7 3h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2zm7 0v6h6M9 13h6m-6 4h6",
+    label: "nav.discover" as const,
+    href: "/discover",
+    path: "M11 4a7 7 0 100 14 7 7 0 000-14zm9 16l-5.2-5.2",
   },
   {
-    label: "shell.profile" as const,
-    href: "/career",
+    label: "nav.me" as const,
+    href: "/me",
     path: "M12 12a4 4 0 100-8 4 4 0 000 8zm7 9a7 7 0 00-14 0",
-  },
-  {
-    label: "shell.setup" as const,
-    href: "/setup",
-    path: "M12 6.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm0 5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm0 5a1.5 1.5 0 110 3 1.5 1.5 0 010-3M5.5 6.5h13M5.5 11.5h13M5.5 16.5h13",
   },
 ] as const;
 
@@ -41,38 +31,39 @@ function AppShell({ children }: { children: ReactNode }) {
   const { locale, setLocale, t } = useI18n();
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-ground">
       {sidebarOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-30 bg-slate-950/35 md:hidden"
+          className="fixed inset-0 z-30 bg-ink/35 md:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-label={t("shell.closeMenu")}
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200/80 bg-white transition-transform md:sticky md:top-0 md:h-screen md:translate-x-0 ${
+        style={{ width: "var(--spacing-rail)" }}
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-border bg-rail transition-transform md:sticky md:top-0 md:h-screen md:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-20 items-center justify-between px-6">
+        <div className="flex h-20 items-center justify-between px-5">
           <Link
-            href="/jobs"
+            href="/pipeline"
             className="group"
             onClick={() => setSidebarOpen(false)}
           >
-            <span className="block text-base font-bold tracking-tight text-slate-950">
-              Career<span className="text-blue-700">OS</span>
+            <span className="block text-base font-bold tracking-tight text-ink">
+              Career<span className="text-accent">OS</span>
             </span>
-            <span className="mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            <span className="mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-3">
               {t("shell.tagline")}
             </span>
           </Link>
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 md:hidden"
+            className="rounded-lg p-2 text-ink-2 hover:bg-sunken md:hidden"
             aria-label={t("shell.closeMenu")}
           >
             <svg
@@ -89,10 +80,7 @@ function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 px-3 py-4" aria-label={t("shell.primaryNav")}>
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-            {t("shell.workspace")}
-          </p>
-          <ul className="mt-3 space-y-1">
+          <ul className="space-y-1">
             {navItems.map((item) => {
               const active =
                 pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -103,8 +91,8 @@ function AppShell({ children }: { children: ReactNode }) {
                     onClick={() => setSidebarOpen(false)}
                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                       active
-                        ? "bg-blue-50 text-blue-800"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                        ? "bg-accent-soft text-accent"
+                        : "text-ink-2 hover:bg-sunken hover:text-ink"
                     }`}
                     aria-current={active ? "page" : undefined}
                   >
@@ -130,12 +118,23 @@ function AppShell({ children }: { children: ReactNode }) {
           </ul>
         </nav>
 
-        <div className="border-t border-slate-200 p-4">
+        <div className="border-t border-border p-4">
+          <Link
+            href="/setup"
+            onClick={() => setSidebarOpen(false)}
+            className="mb-3 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-ink-3 hover:bg-sunken hover:text-ink-2"
+          >
+            <span
+              className="h-1.5 w-1.5 shrink-0 rounded-full bg-icon-muted"
+              aria-hidden="true"
+            />
+            {t("shell.assistantOff")}
+          </Link>
           <div className="mb-3 flex items-center justify-between gap-3 px-2">
-            <span className="text-xs font-medium text-slate-500">
+            <span className="text-xs font-medium text-ink-3">
               {t("shell.language")}
             </span>
-            <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+            <div className="inline-flex rounded-lg bg-sunken p-0.5">
               {(["en", "zh-CN"] as const).map((item) => (
                 <button
                   key={item}
@@ -144,8 +143,8 @@ function AppShell({ children }: { children: ReactNode }) {
                   aria-pressed={locale === item}
                   className={`rounded-md px-2 py-1 text-xs font-semibold transition ${
                     locale === item
-                      ? "bg-white text-slate-950 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
+                      ? "bg-surface text-ink shadow-sm"
+                      : "text-ink-3 hover:text-ink-2"
                   }`}
                 >
                   {item === "en" ? "EN" : "中文"}
@@ -156,21 +155,21 @@ function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3 rounded-xl px-2 py-2">
             <UserButton />
             <div className="min-w-0">
-              <p className="text-sm font-medium text-slate-800">
+              <p className="text-sm font-medium text-ink">
                 {t("shell.yourWorkspace")}
               </p>
-              <p className="text-xs text-slate-500">{t("shell.account")}</p>
+              <p className="text-xs text-ink-3">{t("shell.account")}</p>
             </div>
           </div>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-16 items-center border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur md:hidden">
+        <header className="sticky top-0 z-20 flex h-16 items-center border-b border-border bg-surface/95 px-4 backdrop-blur md:hidden">
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
-            className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+            className="rounded-lg p-2 text-ink-2 hover:bg-sunken"
             aria-label={t("shell.openMenu")}
           >
             <svg
@@ -185,10 +184,10 @@ function AppShell({ children }: { children: ReactNode }) {
             </svg>
           </button>
           <Link
-            href="/jobs"
-            className="ml-3 text-sm font-bold tracking-tight text-slate-950"
+            href="/pipeline"
+            className="ml-3 text-sm font-bold tracking-tight text-ink"
           >
-            Career<span className="text-blue-700">OS</span>
+            Career<span className="text-accent">OS</span>
           </Link>
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-10">{children}</main>

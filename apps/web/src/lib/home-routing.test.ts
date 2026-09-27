@@ -31,14 +31,14 @@ describe("resolveHomeRedirect", () => {
     mockCookieGet.mockReset().mockReturnValue(undefined);
   });
 
-  it("sends new users without profile data to welcome", async () => {
+  it("sends new users without profile data to start", async () => {
     const { resolveHomeRedirect } = await import("./home-routing");
     await expect(resolveHomeRedirect("token", "user-1")).resolves.toBe(
-      "/welcome",
+      "/start",
     );
   });
 
-  it("sends returning users with profile data to jobs", async () => {
+  it("sends returning users with profile data to pipeline", async () => {
     mockListResumes.mockResolvedValue([
       {
         id: "resume-1",
@@ -52,25 +52,29 @@ describe("resolveHomeRedirect", () => {
     ]);
 
     const { resolveHomeRedirect } = await import("./home-routing");
-    await expect(resolveHomeRedirect("token", "user-1")).resolves.toBe("/jobs");
+    await expect(resolveHomeRedirect("token", "user-1")).resolves.toBe(
+      "/pipeline",
+    );
   });
 
-  it("falls back to welcome when profile lookup fails", async () => {
+  it("falls back to start when profile lookup fails", async () => {
     mockListResumes.mockRejectedValue(new Error("network"));
 
     const { resolveHomeRedirect } = await import("./home-routing");
     await expect(resolveHomeRedirect("token", "user-1")).resolves.toBe(
-      "/welcome",
+      "/start",
     );
   });
 
-  it("skips to jobs when skip cookie matches current user", async () => {
+  it("skips to pipeline when skip cookie matches current user", async () => {
     mockCookieGet.mockImplementation((name: string) =>
       name === ONBOARDING_SKIP_COOKIE ? { value: "user-1" } : undefined,
     );
 
     const { resolveHomeRedirect } = await import("./home-routing");
-    await expect(resolveHomeRedirect("token", "user-1")).resolves.toBe("/jobs");
+    await expect(resolveHomeRedirect("token", "user-1")).resolves.toBe(
+      "/pipeline",
+    );
     expect(mockListResumes).not.toHaveBeenCalled();
   });
 
@@ -81,7 +85,7 @@ describe("resolveHomeRedirect", () => {
 
     const { resolveHomeRedirect } = await import("./home-routing");
     await expect(resolveHomeRedirect("token", "user-new")).resolves.toBe(
-      "/welcome",
+      "/start",
     );
     expect(mockListResumes).toHaveBeenCalled();
   });
@@ -91,7 +95,7 @@ describe("resolveHomeRedirect", () => {
 
     const { resolveHomeRedirect } = await import("./home-routing");
     await expect(resolveHomeRedirect("token", "user-1")).resolves.toBe(
-      "/welcome",
+      "/start",
     );
     expect(mockListResumes).toHaveBeenCalled();
   });

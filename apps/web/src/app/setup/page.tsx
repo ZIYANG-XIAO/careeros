@@ -50,7 +50,7 @@ export default function SetupPage() {
         </p>
         <p className="mt-4 text-sm">
           <Link
-            href="/welcome#extension-setup"
+            href="/start#extension-setup"
             className="font-medium text-blue-700 hover:text-blue-800"
           >
             {t("setup.backToWelcome")}
