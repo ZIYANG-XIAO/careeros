@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LocaleProvider } from "@/lib/i18n";
-import type { Application, Job } from "@/lib/types";
+import type { Application, Job, JobAnalysis } from "@/lib/types";
 
 import { FocusPanel } from "./focus-panel";
 
@@ -92,6 +92,55 @@ const job: Job = {
     created_at: "2026-09-20T00:00:00Z",
     requirements: [],
   },
+};
+
+const analysis: JobAnalysis = {
+  id: "analysis-1",
+  job_id: "job-1",
+  job_snapshot_id: "snap-1",
+  company: "Globex",
+  title: "Backend Engineer",
+  resume_version_id: "version-1",
+  resume_name: "Backend Resume",
+  resume_version_number: 3,
+  analysis_version: 1,
+  matcher_version: "v1",
+  matcher_model: "test",
+  overall_recommendation: "STRONG_APPLY",
+  summary: "Strong backend evidence with one important platform gap.",
+  created_at: "2026-09-20T00:00:00Z",
+  matches: [
+    {
+      id: "match-1",
+      requirement_id: "requirement-1",
+      category: "SKILL",
+      description: "Java backend systems",
+      normalized_value: "Java",
+      importance: "REQUIRED",
+      source_text: "Strong Java experience",
+      support_strength: "STRONG",
+      resume_representation: "REPRESENTED",
+      classification: "STRONG_EVIDENCE",
+      explanation: "Confirmed experience directly supports this requirement.",
+      resume_source_text: "Built Java services",
+      evidence_references: [],
+    },
+    {
+      id: "match-2",
+      requirement_id: "requirement-2",
+      category: "SKILL",
+      description: "Kubernetes",
+      normalized_value: "Kubernetes",
+      importance: "PREFERRED",
+      source_text: "Kubernetes preferred",
+      support_strength: "NONE_OR_INSUFFICIENT",
+      resume_representation: "ABSENT",
+      classification: "GENUINE_GAP",
+      explanation: "No confirmed evidence was found.",
+      resume_source_text: null,
+      evidence_references: [],
+    },
+  ],
 };
 
 function renderPanel(
@@ -251,6 +300,20 @@ describe("FocusPanel — job flavour", () => {
     expect(
       screen.queryByRole("button", { name: "Save to pipeline" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("explains an existing opportunity recommendation with grounded reasons", async () => {
+    mockListJobAnalyses.mockResolvedValue([analysis]);
+    renderPanel({ kind: "job", id: "job-1" });
+
+    expect(await screen.findByText("Opportunity view")).toBeInTheDocument();
+    expect(screen.getByText("Strong Apply")).toBeInTheDocument();
+    expect(
+      screen.getByText("Why CareerOS reached this recommendation"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Java backend systems/)).toBeInTheDocument();
+    expect(screen.getByText(/Kubernetes/)).toBeInTheDocument();
+    expect(screen.getByText(/Backend Resume · version 3/)).toBeInTheDocument();
   });
 
   it("shows the in-pipeline strip when an application is already linked", async () => {

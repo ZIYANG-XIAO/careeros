@@ -507,6 +507,94 @@ function classificationLabelKey(
   }
 }
 
+function OpportunitySummary({ analysis }: { analysis: JobAnalysis }) {
+  const { t } = useI18n();
+  const recommendationKey =
+    `jobs.detail.recommendation.${analysis.overall_recommendation}` as MessageKey;
+  const classificationCounts = CLASSIFICATION_KEYS.map((key) => ({
+    key,
+    count: analysis.matches.filter((match) => match.classification === key)
+      .length,
+  }));
+  const reasons = analysis.matches
+    .slice()
+    .sort((a, b) => {
+      const rank = {
+        STRONG_EVIDENCE: 0,
+        HIDDEN_EVIDENCE: 1,
+        WEAK_EVIDENCE: 2,
+        GENUINE_GAP: 3,
+      } as const;
+      return rank[a.classification] - rank[b.classification];
+    })
+    .slice(0, 3);
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-lg border border-accent-soft-border bg-accent-tint">
+      <div className="p-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent">
+          {t("panel.opportunityVerdict")}
+        </p>
+        <p className="mt-1 text-base font-semibold text-ink">
+          {t(recommendationKey)}
+        </p>
+        <p className="mt-1 text-sm leading-5 text-ink-2">{analysis.summary}</p>
+      </div>
+      <dl className="grid grid-cols-4 border-y border-accent-soft-border bg-surface/70 text-center">
+        {classificationCounts.map(({ key, count }) => (
+          <div
+            key={key}
+            className="border-r border-accent-soft-border p-2 last:border-r-0"
+          >
+            <dd className="text-base font-semibold text-ink">{count}</dd>
+            <dt className="mt-0.5 text-[9px] leading-tight text-ink-3">
+              {t(`jobs.detail.${classificationLabelKey(key)}` as MessageKey)}
+            </dt>
+          </div>
+        ))}
+      </dl>
+      {reasons.length > 0 && (
+        <div className="p-3">
+          <p className="text-xs font-semibold text-ink">
+            {t("panel.whyRecommendation")}
+          </p>
+          <ul className="mt-2 space-y-2">
+            {reasons.map((reason) => (
+              <li
+                key={reason.id}
+                className="flex gap-2 text-xs leading-5 text-ink-2"
+              >
+                <span
+                  className={
+                    reason.classification === "GENUINE_GAP"
+                      ? "text-status-assessment-ink"
+                      : "text-status-offer-ink"
+                  }
+                  aria-hidden="true"
+                >
+                  {reason.classification === "GENUINE_GAP" ? "△" : "✓"}
+                </span>
+                <span>
+                  <span className="font-semibold text-ink">
+                    {reason.description}
+                  </span>
+                  {reason.explanation ? ` — ${reason.explanation}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <p className="border-t border-accent-soft-border px-3 py-2 text-[11px] text-ink-3">
+        {t("panel.analysisSource", {
+          resume: analysis.resume_name,
+          version: analysis.resume_version_number,
+        })}
+      </p>
+    </div>
+  );
+}
+
 function JobPanelBody({
   id,
   onChanged,
@@ -657,9 +745,6 @@ function JobPanelBody({
     job.employment_type !== "UNKNOWN" ? job.employment_type : null,
     job.market !== "UNKNOWN" ? job.market : null,
   ].filter((value): value is string => Boolean(value));
-  const recommendationKey =
-    `jobs.detail.recommendation.${analysis?.overall_recommendation ?? "APPLY"}` as MessageKey;
-
   return (
     <div className="flex flex-col gap-5 overflow-y-auto p-4">
       <div className="flex items-start gap-3">
@@ -778,12 +863,7 @@ function JobPanelBody({
           </div>
         )}
         {analysis ? (
-          <div className="mt-3 flex flex-col gap-2">
-            <p className="text-sm font-semibold text-ink">
-              {t(recommendationKey)}
-            </p>
-            <p className="text-sm text-ink-2">{analysis.summary}</p>
-          </div>
+          <OpportunitySummary analysis={analysis} />
         ) : (
           <p className="mt-2 text-sm text-ink-3">{t("panel.noAnalysis")}</p>
         )}

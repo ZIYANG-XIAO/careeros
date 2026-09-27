@@ -188,7 +188,7 @@ function AppShell({ children }: { children: ReactNode }) {
               className="h-1.5 w-1.5 shrink-0 rounded-full bg-icon-muted"
               aria-hidden="true"
             />
-            {t("shell.assistantOff")}
+            {t("shell.assistantSetup")}
           </Link>
           <div className="mb-3 flex items-center justify-between gap-3 px-2">
             <span className="text-xs font-medium text-ink-3">

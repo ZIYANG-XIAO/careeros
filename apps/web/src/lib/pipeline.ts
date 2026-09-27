@@ -11,6 +11,20 @@ export const PIPELINE_STAGES: ApplicationStatus[] = [
 
 const CLOSED_STATUSES = new Set<ApplicationStatus>(["REJECTED", "WITHDRAWN"]);
 const NEEDS_YOU_THRESHOLD_MS = 72 * 60 * 60 * 1000;
+const FOLLOW_UP_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
+
+export type PipelineAttentionItem = {
+  application: ApplicationSummary;
+  reason: "CONFIRM_SUBMISSION" | "CONSIDER_FOLLOW_UP";
+  daysWaiting: number;
+};
+
+export type PipelineSummary = {
+  active: number;
+  needsAction: number;
+  interviews: number;
+  offers: number;
+};
 
 /** Saved jobs that have not yet become an application — Pipeline's column 0. */
 export function savedColumnJobs(
@@ -68,6 +82,57 @@ export function needsYouApplications(
       now.getTime() - Date.parse(application.status_updated_at) >
         NEEDS_YOU_THRESHOLD_MS,
   );
+}
+
+/**
+ * A deliberately small action queue based only on facts CareerOS already owns.
+ * It never claims an external follow-up is due or that an application was sent:
+ * Preparing items are confirmation prompts, and older Applied items are merely
+ * suggestions to consider a follow-up.
+ */
+export function pipelineAttentionItems(
+  applications: ApplicationSummary[],
+  now: Date = new Date(),
+): PipelineAttentionItem[] {
+  return applications
+    .flatMap((application): PipelineAttentionItem[] => {
+      const elapsed = now.getTime() - Date.parse(application.status_updated_at);
+      const daysWaiting = Math.max(
+        0,
+        Math.floor(elapsed / (24 * 60 * 60 * 1000)),
+      );
+      if (
+        application.status === "PREPARING" &&
+        elapsed > NEEDS_YOU_THRESHOLD_MS
+      ) {
+        return [{ application, reason: "CONFIRM_SUBMISSION", daysWaiting }];
+      }
+      if (
+        application.status === "APPLIED" &&
+        elapsed > FOLLOW_UP_THRESHOLD_MS
+      ) {
+        return [{ application, reason: "CONSIDER_FOLLOW_UP", daysWaiting }];
+      }
+      return [];
+    })
+    .sort((a, b) => b.daysWaiting - a.daysWaiting);
+}
+
+export function pipelineSummary(
+  applications: ApplicationSummary[],
+  now: Date = new Date(),
+): PipelineSummary {
+  return {
+    active: applications.filter(
+      (application) => !CLOSED_STATUSES.has(application.status),
+    ).length,
+    needsAction: pipelineAttentionItems(applications, now).length,
+    interviews: applications.filter((application) =>
+      ["ASSESSMENT", "INTERVIEW", "FINAL"].includes(application.status),
+    ).length,
+    offers: applications.filter((application) => application.status === "OFFER")
+      .length,
+  };
 }
 
 export function isClosedStatus(status: ApplicationStatus): boolean {

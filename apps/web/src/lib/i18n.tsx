@@ -137,6 +137,33 @@ const messages = {
     "landing.spine.remember.title": "Remember",
     "landing.spine.remember.description":
       "Every application, resume, and answer is preserved",
+    "landing.preview.eyebrow": "See the connected workflow",
+    "landing.preview.title": "Career context becomes action",
+    "landing.preview.description":
+      "CareerOS connects confirmed evidence, opportunity context, application help, and history instead of treating each step as a separate tool.",
+    "landing.preview.evidence":
+      "Recommendations explain the evidence behind them",
+    "landing.preview.review":
+      "You review uncertain or generated answers before use",
+    "landing.preview.memory":
+      "The exact resume and answers stay with each application",
+    "landing.preview.role": "Software Engineer — Data Platform",
+    "landing.preview.recent": "posted recently",
+    "landing.preview.verdict": "Worth reviewing",
+    "landing.preview.evidenceFit": "Evidence fit",
+    "landing.preview.preferenceFit": "Preference fit",
+    "landing.preview.freshness": "Freshness",
+    "landing.preview.reviewState": "Review state",
+    "landing.preview.strong": "Strong",
+    "landing.preview.good": "Good",
+    "landing.preview.ready": "Ready",
+    "landing.preview.why": "Why CareerOS surfaced this",
+    "landing.preview.whyBackend": "The role aligns with your backend direction",
+    "landing.preview.whyEvidence":
+      "Java and data-platform work have confirmed evidence",
+    "landing.preview.whyGap": "Kubernetes is an important evidence gap",
+    "landing.preview.viewEvidence": "View evidence",
+    "landing.preview.apply": "Apply with CareerOS",
     "welcome.eyebrow": "Getting started",
     "welcome.title": "Welcome to CareerOS",
     "welcome.subtitle":
@@ -384,11 +411,30 @@ const messages = {
     "career.intro":
       "Keep the professional facts CareerOS can rely on accurate and complete. This profile is your source of truth—not a resume—and can support many future applications.",
     "career.signedInAs": "Signed in as",
+    "career.overview.eyebrow": "Career Brain overview",
+    "career.overview.title": "Your professional foundation",
+    "career.overview.description":
+      "A clear view of the confirmed context CareerOS can reuse across discovery, applications, and history.",
+    "career.overview.experience": "Experience",
+    "career.overview.projects": "Projects",
+    "career.overview.skills": "Skills",
+    "career.overview.evidence": "Confirmed evidence",
+    "career.overview.focusSkills": "Skills you want to emphasize",
+    "career.overview.noFocusSkills":
+      "Mark important skills with a heart below to make your priorities visible here.",
+    "career.overview.reuseTitle": "Ready for CareerOS",
+    "career.overview.reuseReady":
+      "{count} confirmed evidence items can support grounded job analysis and application help.",
+    "career.overview.reuseEmpty":
+      "Add and confirm experience details so CareerOS has evidence it can safely reuse.",
+    "career.overview.completeContact": "Complete application contact details",
     "career.signInRequired.title": "Sign in required",
     "career.signInRequired.description":
       "Please sign in to view your career profile.",
     "career.authTokenError":
       "Unable to obtain authentication token. Please sign in again.",
+    "career.loadError":
+      "We could not load your Career Brain. Please try again.",
     "career.sections.education": "Education",
     "career.sections.educationDescription":
       "Schools, degrees, and fields of study that shape your background.",
@@ -632,6 +678,7 @@ const messages = {
     "shell.searchHint": "Search applications, saved jobs, and pages",
     "shell.assistantOn": "Assistant connected",
     "shell.assistantOff": "Assistant not installed",
+    "shell.assistantSetup": "Application Assistant setup",
     "capture.description":
       "Quickly track a job you found elsewhere. Fill in the rest later.",
     "capture.save": "Add to pipeline",
@@ -673,6 +720,37 @@ const messages = {
     "pipeline.importSkipReason.missingCompanyRole":
       "row {row}: missing company or role",
     "pipeline.importSkipReason.createFailed": "row {row}: could not be saved",
+    "pipeline.today": "Today",
+    "pipeline.actionCenter.title": "Your next useful actions",
+    "pipeline.actionCenter.count":
+      "{count} application(s) are worth checking now.",
+    "pipeline.actionCenter.clear":
+      "Nothing is waiting for your attention right now.",
+    "pipeline.actionCenter.priority": "Needs review",
+    "pipeline.actionCenter.upToDate": "Up to date",
+    "pipeline.summary.active": "Active",
+    "pipeline.summary.needsAction": "Needs action",
+    "pipeline.summary.interviews": "Assessment + interview",
+    "pipeline.summary.offers": "Offers",
+    "pipeline.action.confirmSubmission":
+      "Preparing for {days} days — confirm whether you submitted it.",
+    "pipeline.action.considerFollowUp":
+      "Applied {days} days ago — consider whether a follow-up is useful.",
+    "pipeline.action.review": "Review",
+    "pipeline.home.eyebrow": "Your workspace",
+    "pipeline.home.title": "Make progress on your job search today.",
+    "pipeline.home.intro":
+      "Start with what needs attention, then manage every opportunity in one place.",
+    "pipeline.home.quickActions": "Quick actions",
+    "pipeline.home.discover": "Find opportunities",
+    "pipeline.home.discoverHint": "Browse and save roles worth considering.",
+    "pipeline.home.brain": "Strengthen your Career Brain",
+    "pipeline.home.brainHint": "Review evidence, skills, and resume versions.",
+    "pipeline.home.assistant": "Set up the application assistant",
+    "pipeline.home.assistantHint": "Prepare browser-assisted form filling.",
+    "pipeline.workspace.title": "All opportunities",
+    "pipeline.workspace.intro":
+      "Move applications through their real stage, or switch to a compact list.",
 
     // Redesign: record-an-application popover
     "record.title": "Record this application?",
@@ -702,6 +780,9 @@ const messages = {
     "panel.statusHistory": "Status history",
     "panel.statusHistoryCreated": "Recorded as {stage}",
     "panel.statusHistoryTransition": "{from} → {to}",
+    "panel.opportunityVerdict": "Opportunity view",
+    "panel.whyRecommendation": "Why CareerOS reached this recommendation",
+    "panel.analysisSource": "Grounded in {resume} · version {version}",
 
     // Redesign: Discover, Me, first run
     "discover.saveToPipeline": "Save to pipeline",
@@ -857,6 +938,29 @@ const messages = {
     "landing.spine.applyAnywhere.description": "在任何申请页面获得智能辅助",
     "landing.spine.remember.title": "记住一切",
     "landing.spine.remember.description": "保留每一次申请、简历与回答",
+    "landing.preview.eyebrow": "查看完整工作流",
+    "landing.preview.title": "让职业信息直接变成行动",
+    "landing.preview.description":
+      "CareerOS 把已确认的职业证据、职位判断、申请辅助与历史记录连接起来，而不是把它们拆成彼此孤立的工具。",
+    "landing.preview.evidence": "每个推荐都能解释背后的职业证据",
+    "landing.preview.review": "不确定或生成的回答使用前由你审阅",
+    "landing.preview.memory": "每次申请准确保留当时的简历与回答",
+    "landing.preview.role": "软件工程师 — 数据平台",
+    "landing.preview.recent": "最近发布",
+    "landing.preview.verdict": "值得查看",
+    "landing.preview.evidenceFit": "证据匹配",
+    "landing.preview.preferenceFit": "偏好匹配",
+    "landing.preview.freshness": "职位时效",
+    "landing.preview.reviewState": "审阅状态",
+    "landing.preview.strong": "较强",
+    "landing.preview.good": "良好",
+    "landing.preview.ready": "可审阅",
+    "landing.preview.why": "CareerOS 为什么推荐它",
+    "landing.preview.whyBackend": "职位与你的后端方向一致",
+    "landing.preview.whyEvidence": "Java 与数据平台经历已有确认的证据",
+    "landing.preview.whyGap": "Kubernetes 是一项重要证据缺口",
+    "landing.preview.viewEvidence": "查看证据",
+    "landing.preview.apply": "使用 CareerOS 申请",
     "welcome.eyebrow": "开始使用",
     "welcome.title": "欢迎使用 CareerOS",
     "welcome.subtitle":
@@ -1092,9 +1196,27 @@ const messages = {
     "career.intro":
       "保持 CareerOS 可依赖的职业事实准确完整。此档案是事实来源——不是简历——可支持未来多次申请。",
     "career.signedInAs": "登录身份",
+    "career.overview.eyebrow": "Career Brain 总览",
+    "career.overview.title": "你的职业基础",
+    "career.overview.description":
+      "清楚查看 CareerOS 可以在职位发现、申请辅助与历史记录中复用的已确认信息。",
+    "career.overview.experience": "工作经历",
+    "career.overview.projects": "项目",
+    "career.overview.skills": "技能",
+    "career.overview.evidence": "已确认的证据",
+    "career.overview.focusSkills": "你希望重点展示的技能",
+    "career.overview.noFocusSkills":
+      "在下方用爱心标记重要技能，它们会显示在这里。",
+    "career.overview.reuseTitle": "CareerOS 可用信息",
+    "career.overview.reuseReady":
+      "{count} 条已确认的证据可用于有依据的职位分析与申请辅助。",
+    "career.overview.reuseEmpty":
+      "添加并确认经历细节，让 CareerOS 获得可以安全复用的职业证据。",
+    "career.overview.completeContact": "补充申请所需联系信息",
     "career.signInRequired.title": "需要登录",
     "career.signInRequired.description": "请登录后查看职业档案。",
     "career.authTokenError": "无法获取认证令牌，请重新登录。",
+    "career.loadError": "无法加载 Career Brain，请重试。",
     "career.sections.education": "教育经历",
     "career.sections.educationDescription":
       "塑造你背景的学校、学位与专业方向。",
@@ -1325,6 +1447,7 @@ const messages = {
     "shell.searchHint": "搜索申请、收藏的职位和页面",
     "shell.assistantOn": "助手已连接",
     "shell.assistantOff": "尚未安装助手",
+    "shell.assistantSetup": "Application Assistant 设置",
     "capture.description": "快速记录一个在别处找到的职位，细节可以稍后补充。",
     "capture.save": "添加到流程",
     "capture.error": "保存失败，请重试。",
@@ -1360,6 +1483,34 @@ const messages = {
     "pipeline.importSkipReason.missingCompanyRole":
       "第 {row} 行：缺少公司或职位名称",
     "pipeline.importSkipReason.createFailed": "第 {row} 行：保存失败",
+    "pipeline.today": "今天",
+    "pipeline.actionCenter.title": "下一步最值得做的事",
+    "pipeline.actionCenter.count": "现在有 {count} 份申请值得检查。",
+    "pipeline.actionCenter.clear": "目前没有等待你处理的申请。",
+    "pipeline.actionCenter.priority": "需要查看",
+    "pipeline.actionCenter.upToDate": "已处理",
+    "pipeline.summary.active": "进行中",
+    "pipeline.summary.needsAction": "需要行动",
+    "pipeline.summary.interviews": "测评与面试",
+    "pipeline.summary.offers": "Offer",
+    "pipeline.action.confirmSubmission":
+      "已准备 {days} 天——请确认是否已经提交。",
+    "pipeline.action.considerFollowUp":
+      "已投递 {days} 天——可以考虑是否需要跟进。",
+    "pipeline.action.review": "查看",
+    "pipeline.home.eyebrow": "你的工作台",
+    "pipeline.home.title": "今天，让求职继续向前推进。",
+    "pipeline.home.intro": "先处理需要关注的事项，再在一个地方管理所有机会。",
+    "pipeline.home.quickActions": "快捷操作",
+    "pipeline.home.discover": "发现新机会",
+    "pipeline.home.discoverHint": "浏览并收藏值得考虑的职位。",
+    "pipeline.home.brain": "完善 Career Brain",
+    "pipeline.home.brainHint": "检查经历证据、技能和简历版本。",
+    "pipeline.home.assistant": "设置申请助手",
+    "pipeline.home.assistantHint": "准备浏览器辅助填写申请表。",
+    "pipeline.workspace.title": "全部机会",
+    "pipeline.workspace.intro":
+      "按真实进度推进申请，也可以切换成更紧凑的列表。",
 
     // Redesign: record-an-application popover
     "record.title": "记录这份申请？",
@@ -1388,6 +1539,9 @@ const messages = {
     "panel.statusHistory": "状态历史",
     "panel.statusHistoryCreated": "创建时记为{stage}",
     "panel.statusHistoryTransition": "{from} → {to}",
+    "panel.opportunityVerdict": "机会判断",
+    "panel.whyRecommendation": "CareerOS 为什么得出这个建议",
+    "panel.analysisSource": "依据 {resume} · 第 {version} 版",
 
     // Redesign: Discover, Me, first run
     "discover.saveToPipeline": "加入流程",

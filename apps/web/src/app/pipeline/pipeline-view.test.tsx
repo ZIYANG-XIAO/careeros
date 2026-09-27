@@ -172,6 +172,28 @@ beforeEach(() => {
 });
 
 describe("PipelineView", () => {
+  it("presents a signed-in workspace before the full pipeline", async () => {
+    renderPipeline();
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Make progress on your job search today.",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Find opportunities/i }),
+    ).toHaveAttribute("href", "/discover");
+    expect(
+      screen.getByRole("link", { name: /Strengthen your Career Brain/i }),
+    ).toHaveAttribute("href", "/me");
+    expect(
+      screen.getByRole("heading", { name: "Your next useful actions" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "All opportunities" }),
+    ).toBeInTheDocument();
+  });
+
   it("renders the saved column and stage columns with counts", async () => {
     renderPipeline();
     expect(await screen.findByText("Full Stack Engineer")).toBeInTheDocument();
@@ -251,7 +273,7 @@ describe("PipelineView", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the needs-you strip and dismisses it for today", async () => {
+  it("shows a next-action queue and opens the application for review", async () => {
     mockListApplications.mockResolvedValue([
       makeApplication({
         status: "PREPARING",
@@ -262,17 +284,14 @@ describe("PipelineView", () => {
     renderPipeline();
 
     expect(
-      await screen.findByText(
-        "1 application sat in Preparing over 3 days — did you send it?",
-      ),
+      await screen.findByText("Your next useful actions"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/confirm whether you submitted it/i),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Dismiss for today" }));
-    expect(
-      screen.queryByText(
-        "1 application sat in Preparing over 3 days — did you send it?",
-      ),
-    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Review/i }));
+    expect(mockPush).toHaveBeenCalledWith("/pipeline?focus=app-1");
   });
 
   it("keeps the closed lane hidden until Show lane is clicked", async () => {

@@ -57,6 +57,10 @@ describe("Home page", () => {
     expect(screen.getByText("Apply Anywhere")).toBeInTheDocument();
     expect(screen.getByText("Remember")).toBeInTheDocument();
     expect(
+      screen.getByText("Career context becomes action"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Why CareerOS surfaced this")).toBeInTheDocument();
+    expect(
       screen.getByRole("button", { name: "Get started" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();

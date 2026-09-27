@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { EducationSection } from "@/components/education-section";
 import { ExperienceSection } from "@/components/experience-section";
+import { CareerBrainOverview } from "@/components/career-brain-overview";
 import { ProjectSection } from "@/components/project-section";
 import { SkillSection } from "@/components/skill-section";
 import { Spinner } from "@/components/ui/spinner";
@@ -49,7 +50,7 @@ export default function CareerBrainPage() {
         setError(null);
       } catch {
         if (!cancelled) {
-          setError(t("contactInfo.loadError"));
+          setError(t("career.loadError"));
         }
       }
     }
@@ -69,7 +70,7 @@ export default function CareerBrainPage() {
       setBrain(data);
       setError(null);
     } catch {
-      setError(t("contactInfo.loadError"));
+      setError(t("career.loadError"));
     }
   }, [getToken, t]);
 
@@ -140,6 +141,8 @@ export default function CareerBrainPage() {
       </div>
 
       <MeTabs />
+
+      <CareerBrainOverview brain={brain} />
 
       <div id="education">
         <EducationSection educations={brain.educations} onMutate={refetch} />

@@ -705,6 +705,66 @@ rail-level palette does not need that).
   from any page) has no shared store with pipeline-view's local state. Not
   worth a state-management refactor for this.
 
+### Phase O — Existing-capability productization — implementation complete
+
+A focused product review chose to make already-implemented CareerOS context
+more visible before adding another domain or recommendation system.
+
+- Pipeline now opens with a small Action Center derived only from owned
+  Application state: Preparing records older than three days ask the user to
+  confirm whether they submitted, and Applied records older than seven days
+  suggest considering a follow-up. It does not claim an external deadline or
+  event that CareerOS cannot observe. The board scrolls within its own surface
+  rather than forcing the whole workspace wider than the viewport.
+- the signed-in Pipeline entry now behaves as a daily workspace rather than
+  opening on board controls: it leads with orientation and real quick links,
+  then the Action Center, and keeps the full board/list and CSV tools in a
+  clearly labelled `All opportunities` section.
+- Career Brain now has an overview before its editing sections, showing factual
+  entity counts, confirmed evidence count, preferred skills, and the context
+  CareerOS can safely reuse. It deliberately avoids an invented profile score.
+- existing Job Intelligence is presented as an Opportunity view with an
+  explainable recommendation, classification counts, grounded reasons, and the
+  exact Resume Version used. Apply remains available without analysis.
+- the signed-out landing page now previews the connected evidence → decision →
+  review → memory workflow instead of communicating the product only through
+  abstract feature cards.
+- the rail no longer falsely reports that the extension is not installed;
+  until a trustworthy cross-surface connection signal exists, it uses a
+  neutral setup link.
+
+No schema, API, answer-policy, or submission behavior changed in this phase.
+
+### Product-direction backlog from the 2026-09 review (not yet scheduled)
+
+Not approved work. Preserve these candidates for a later scoping and policy
+review rather than treating them as implemented behavior:
+
+- **Reusable non-sensitive Answer Memory** with explicit save/revoke intent,
+  separate from Career Evidence and application-specific immutable answers;
+- **Eligibility profile and decision layer** with explicit user-provided data,
+  `PASS` / `BLOCKED` / `UNKNOWN` / `REVIEW` outcomes, field-level permissions,
+  and no inference of work authorization, sponsorship, citizenship, salary, or
+  protected traits;
+- **explicit-action Job Clipper** that captures and confirms the active job
+  page through the existing least-privilege extension boundary;
+- **one approved ATS job source**, reviewed through
+  `docs/JOB_SOURCE_DECISION.md`, before any Opportunity Radar, Watchlists, or
+  recurring job-lifecycle monitoring;
+- **Application Ledger expansion** to pin the exact Job Snapshot and distinguish
+  generated, user-edited, and confirmed answer history;
+- **Career Goals and Preference Fit**, initially extending the existing
+  JobPreferences domain rather than introducing a generic strategy agent;
+- **real follow-up dates, notes, interview events, and reminders**, which need
+  explicit Application subdomains rather than age-based inference; and
+- **outcome-informed learning, skill graphs, company intelligence, and career
+  strategy**, deferred until representative usage and sufficient owned outcome
+  data exist.
+
+Still excluded from near-term scope: autonomous mass apply, offer-probability
+claims, ghost-job declarations, community/marketplace features, broad inbox or
+email ingestion, and a generic conversational career agent.
+
 ### Candidate backlog from the simplify.jobs review (not yet scheduled)
 
 Not approved work; listed so a future session does not re-derive this from
@@ -759,8 +819,8 @@ Deliberate scope trims (each a reasoned simplification, not an oversight):
 - `/me/imports/[id]` kept the same AppShell chrome rather than a rail-less
   focused-task treatment;
 - the assistant-status chip that replaced the old Setup nav item has no
-  live extension-connection detection yet, so it always reads "not
-  installed" — it links to `/setup` either way.
+  live extension-connection detection yet, so Phase O changed it to a neutral
+  setup link rather than claiming an installation state it cannot observe.
 
 Explicitly not recommended, and not on this backlog: a visual resume-builder/
 layout designer, AI resume tailoring, or a resume-quality score — all conflict

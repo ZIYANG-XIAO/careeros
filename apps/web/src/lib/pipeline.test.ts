@@ -7,6 +7,8 @@ import {
   isClosedStatus,
   needsYouApplications,
   parseApplicationImportRows,
+  pipelineAttentionItems,
+  pipelineSummary,
   savedColumnJobs,
 } from "./pipeline";
 import type { ApplicationSummary, Job } from "./types";
@@ -175,6 +177,59 @@ describe("needsYouApplications", () => {
     expect(needsYouApplications(applications, now).map((a) => a.id)).toEqual([
       "stale",
     ]);
+  });
+});
+
+describe("pipeline action center", () => {
+  const now = new Date("2026-09-27T00:00:00Z");
+
+  it("separates submission confirmation from optional follow-up prompts", () => {
+    const applications = [
+      makeApplication({
+        id: "preparing",
+        status: "PREPARING",
+        status_updated_at: "2026-09-20T00:00:00Z",
+      }),
+      makeApplication({
+        id: "applied",
+        status: "APPLIED",
+        status_updated_at: "2026-09-10T00:00:00Z",
+      }),
+      makeApplication({
+        id: "fresh",
+        status: "APPLIED",
+        status_updated_at: "2026-09-26T00:00:00Z",
+      }),
+    ];
+
+    expect(
+      pipelineAttentionItems(applications, now).map((item) => [
+        item.application.id,
+        item.reason,
+      ]),
+    ).toEqual([
+      ["applied", "CONSIDER_FOLLOW_UP"],
+      ["preparing", "CONFIRM_SUBMISSION"],
+    ]);
+  });
+
+  it("summarizes open, attention, interview and offer states", () => {
+    const applications = [
+      makeApplication({
+        status: "PREPARING",
+        status_updated_at: "2026-09-20T00:00:00Z",
+      }),
+      makeApplication({ id: "interview", status: "INTERVIEW" }),
+      makeApplication({ id: "offer", status: "OFFER" }),
+      makeApplication({ id: "closed", status: "REJECTED" }),
+    ];
+
+    expect(pipelineSummary(applications, now)).toEqual({
+      active: 3,
+      needsAction: 1,
+      interviews: 1,
+      offers: 1,
+    });
   });
 });
 

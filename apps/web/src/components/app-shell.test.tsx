@@ -56,7 +56,7 @@ describe("AppShell", () => {
       "page",
     );
     expect(
-      screen.getByRole("link", { name: "Assistant not installed" }),
+      screen.getByRole("link", { name: "Application Assistant setup" }),
     ).toHaveAttribute("href", "/setup");
     expect(screen.getByText("Workspace content")).toBeInTheDocument();
   });
