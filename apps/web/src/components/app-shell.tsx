@@ -3,8 +3,10 @@
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
+import { CaptureDialog } from "@/components/capture-dialog";
+import { CommandPalette } from "@/components/command-palette";
 import { useI18n } from "@/lib/i18n";
 import { type Theme, useTheme } from "@/lib/theme";
 
@@ -29,8 +31,21 @@ const navItems = [
 function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [captureOpen, setCaptureOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const { locale, setLocale, t } = useI18n();
   const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    function handleGlobalKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen(true);
+      }
+    }
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-ground">
@@ -78,6 +93,49 @@ function AppShell({ children }: { children: ReactNode }) {
             >
               <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
             </svg>
+          </button>
+        </div>
+
+        <div className="space-y-2 px-3 pb-1">
+          <button
+            type="button"
+            onClick={() => setCaptureOpen(true)}
+            className="flex w-full items-center gap-2 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover"
+          >
+            <svg
+              className="h-4 w-4 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" d="M12 5v14m-7-7h14" />
+            </svg>
+            {t("shell.capture")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaletteOpen(true)}
+            className="flex w-full items-center justify-between rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-ink-2 hover:bg-sunken"
+          >
+            <span className="flex items-center gap-2">
+              <svg
+                className="h-4 w-4 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="7" strokeLinecap="round" />
+                <path strokeLinecap="round" d="M20 20l-4.3-4.3" />
+              </svg>
+              {t("shell.search")}
+            </span>
+            <kbd className="rounded border border-border-strong bg-rail px-1.5 py-0.5 text-[10px] text-ink-3">
+              ⌘K
+            </kbd>
           </button>
         </div>
 
@@ -222,6 +280,12 @@ function AppShell({ children }: { children: ReactNode }) {
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-10">{children}</main>
       </div>
+
+      <CaptureDialog open={captureOpen} onClose={() => setCaptureOpen(false)} />
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+      />
     </div>
   );
 }

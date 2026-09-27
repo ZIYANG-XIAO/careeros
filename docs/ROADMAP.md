@@ -681,6 +681,30 @@ exercises routes).
   original note, still needs that tool's actual export file inspected
   first.
 
+### Phase N — Capture quick-add and ⌘K command palette — implementation complete
+
+The two previously-deferred design-spec items from the Pipeline/Discover/Me
+redesign (FocusPanel's own follow-up note said these depended on
+"not-yet-built parent list-traversal/command-index state" — a global,
+rail-level palette does not need that).
+
+- `components/capture-dialog.tsx`: a small dialog (Company/Role/URL/Status)
+  reachable from a "Capture" button in the rail, reusing the same
+  `MANUAL`-origin `POST /applications` call as CSV import and the pipeline's
+  existing record-from-saved flow. No new backend endpoint.
+- `components/command-palette.tsx`: opened by the rail's "Jump to anything"
+  button or ⌘K/Ctrl+K anywhere in the app. Always lists the fixed nav
+  destinations; lazily fetches applications and saved jobs on first open and
+  adds them as filterable, navigable entries (`/pipeline?focus=` /
+  `/discover?focus=`). Arrow keys move the highlight, Enter activates,
+  Escape/backdrop-click close (via the shared `Dialog` component's existing
+  focus trap).
+- Known trim: neither writes back into an already-mounted Pipeline page's
+  in-memory list — a Capture or palette-driven application only shows up
+  there on next load/refetch, since AppShell (where both live, so they work
+  from any page) has no shared store with pipeline-view's local state. Not
+  worth a state-management refactor for this.
+
 ### Candidate backlog from the simplify.jobs review (not yet scheduled)
 
 Not approved work; listed so a future session does not re-derive this from
@@ -723,8 +747,10 @@ information-architecture overhaul, approved for autonomous implementation.
 
 Deliberate scope trims (each a reasoned simplification, not an oversight):
 
-- FocusPanel's J/K/S/⌘K keyboard shortcuts deferred until Pipeline/Discover
-  have list-traversal state to hang them on;
+- FocusPanel's J/K/S keyboard shortcuts (row-level list traversal within
+  Pipeline/Discover) remain deferred until those pages have list-traversal
+  state to hang them on. ⌘K itself shipped separately in Phase N below as
+  a global command palette, which needed no such state;
 - Pipeline's "lift/arrow/drop" keyboard Kanban gesture replaced with a
   native `<select>` "move to" control — simpler and keyboard-accessible by
   default without a bespoke gesture;

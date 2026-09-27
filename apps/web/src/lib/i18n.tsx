@@ -628,8 +628,14 @@ const messages = {
     "nav.contactAnswers": "Contact & answers",
     "shell.capture": "Capture",
     "shell.search": "Jump to anything",
+    "shell.searchEmpty": "No matches",
+    "shell.searchHint": "Search applications, saved jobs, and pages",
     "shell.assistantOn": "Assistant connected",
     "shell.assistantOff": "Assistant not installed",
+    "capture.description":
+      "Quickly track a job you found elsewhere. Fill in the rest later.",
+    "capture.save": "Add to pipeline",
+    "capture.error": "We could not save that. Please try again.",
 
     // Redesign: Pipeline
     "pipeline.title": "Job tracker",
@@ -1315,8 +1321,13 @@ const messages = {
     "nav.contactAnswers": "联系方式与回答",
     "shell.capture": "快速添加",
     "shell.search": "快速跳转",
+    "shell.searchEmpty": "没有匹配结果",
+    "shell.searchHint": "搜索申请、收藏的职位和页面",
     "shell.assistantOn": "助手已连接",
     "shell.assistantOff": "尚未安装助手",
+    "capture.description": "快速记录一个在别处找到的职位，细节可以稍后补充。",
+    "capture.save": "添加到流程",
+    "capture.error": "保存失败，请重试。",
 
     // Redesign: Pipeline
     "pipeline.title": "申请看板",
