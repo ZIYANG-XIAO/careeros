@@ -70,7 +70,7 @@ Implemented domains and workflows:
   Shadow DOM style isolation, explicit activation, and page lifecycle handling;
 - user-owned `UserContactInfo` with Career Profile UI and Answer Engine
   integration;
-- resume-first onboarding at `/welcome`, landing improvements, and `/setup`;
+- resume-first onboarding at `/start`, landing improvements, and `/setup`;
 - a `/readiness` endpoint and local JWKS preflight diagnostic
   (`scripts/preflight.py` checks Clerk JWKS reachability only);
 - partial English/Simplified Chinese localization for Applications, Resumes,
@@ -192,16 +192,19 @@ Directories are introduced only when their approved milestone begins.
 
 Stack: Next.js, TypeScript, React, Tailwind CSS.
 
-Current routes cover landing, `/welcome` onboarding, `/setup` extension guide,
-Career Profile, Resumes, manually captured Jobs/Job Intelligence, and
-Applications list/detail/status/manual recovery.
+Current routes cover landing, `/start` onboarding (empty-pipeline first-run
+state), `/setup` extension guide, and the three-destination shell below. A
+shared `FocusPanel` component (opened via a `?focus=` query param) replaces
+separate detail routes for both jobs and applications.
 
 Implemented primary navigation:
 
-- Jobs
-- Applications
-- Resumes
-- Profile
+- Pipeline (merged Jobs + Applications Kanban board, `/pipeline`)
+- Discover (job search, `/discover`)
+- Me (Career Brain, Resumes, Contact, `/me`)
+
+Retired routes (`/jobs`, `/applications`, `/career`, `/resumes`, `/welcome`)
+permanently redirect to their replacements via `next.config.ts`.
 
 The Web application handles presentation, interaction, and local UI state. It is
 not authoritative for ownership, professional truth, answer policy, or

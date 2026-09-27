@@ -71,7 +71,7 @@ directly to application assistance.
   representation;
 - user-owned personal/contact information with Career Profile UI and Answer
   Engine integration;
-- resume-first onboarding at `/welcome`, an improved landing page, and an
+- resume-first onboarding at `/start`, an improved landing page, and an
   extension setup guide at `/setup`;
 - a `/readiness` endpoint and local JWKS preflight diagnostic
   (`scripts/preflight.py` checks Clerk JWKS reachability only); and
@@ -174,7 +174,7 @@ Requirements:
 - contact info remains distinct from application preferences, reusable answers,
   application-specific answers, and sensitive answers; and
 - users can view and edit contact info from Career Profile and the onboarding
-  flow at `/welcome`.
+  flow at `/start`.
 
 ### 4.4 Provenance and evidence
 

@@ -375,7 +375,7 @@ representative browser gate still pending):
   representation;
 - user-owned `UserContactInfo` with Career Profile UI and Answer Engine
   integration for name, phone, address, and professional links;
-- resume-first onboarding at `/welcome`, an improved landing page, and an
+- resume-first onboarding at `/start`, an improved landing page, and an
   extension setup guide at `/setup`;
 - a `/readiness` endpoint and local JWKS preflight diagnostic
   (`scripts/preflight.py` checks Clerk JWKS reachability only);

@@ -81,7 +81,7 @@ Implemented Web flows today:
 - confirmation-page recovery from one recent reviewed Preparing Application;
   and
 - Job Intelligence creation and review;
-- resume-first onboarding at `/welcome` with step guidance;
+- resume-first onboarding at `/start` with step guidance;
 - personal/contact information editing in Career Profile;
 - extension setup guidance at `/setup`;
 - partial English/Simplified Chinese localization for Applications, Resumes,
@@ -97,7 +97,7 @@ Final submission remains user-controlled.
 ```text
 Landing
 → Sign up
-→ /welcome onboarding
+→ /start onboarding
 → Upload resume
 → Parsing state
 → Career Brain draft
@@ -114,7 +114,7 @@ The landing experience communicates that CareerOS helps users find, apply to,
 and remember opportunities using one shared understanding of their career.
 
 Primary action: Get Started. Returning users can sign in. Signed-in users with
-incomplete onboarding may be routed to `/welcome`.
+incomplete onboarding may be routed to `/start`.
 
 ### 4.2 Resume upload
 
@@ -148,12 +148,12 @@ live in `UserContactInfo`, separate from Career Evidence. They are user-provided
 explicitly confirmed, and become eligible for deterministic Answer Engine use.
 They are not inferred from the resume or email.
 
-The `/welcome` onboarding surface tracks contact-info completion as an optional
+The `/start` onboarding surface tracks contact-info completion as an optional
 step. Users can also manage contact info from Career Profile at any time.
 
 ### 4.6 Extension setup
 
-The `/welcome` flow and `/setup` guide explain how to build, load, and authenticate
+The `/start` flow and `/setup` guide explain how to build, load, and authenticate
 the unpacked extension, including Clerk Native API and allowed-origin requirements.
 Extension setup is guidance only; it does not block Web product entry.
 

@@ -30,7 +30,10 @@ Today the repository supports:
 - Career Profile management backed by the Career Brain;
 - stable Career Evidence with immutable revisions;
 - PDF and DOCX resume upload, parsing, review, confirmation, and versioning;
-- a Jobs-first product shell with Jobs, Applications, Resumes, and Profile;
+- a three-destination product shell — Pipeline (merged jobs + applications
+  Kanban board), Discover (job search), and Me (Career Brain, Resumes,
+  Contact) — with a shared FocusPanel detail view opened via a `?focus=`
+  query param;
 - manual job capture, server-owned search/location filters, detail, durable
   per-user saved state, and safe direct-apply links;
 - a provider-neutral job-source contract, canonical source attribution,
@@ -64,8 +67,8 @@ Today the repository supports:
   representation across Web surfaces;
 - user-owned personal/contact information with Career Profile UI and Answer
   Engine integration;
-- resume-first onboarding at `/welcome`, an improved landing page, and an
-  extension setup guide at `/setup`;
+- resume-first onboarding at `/start` (an empty-pipeline first-run state), an
+  improved landing page, and an extension setup guide at `/setup`;
 - a `/readiness` endpoint and local JWKS preflight diagnostic
   (`scripts/preflight.py` checks Clerk JWKS reachability only);
 - partial English/Simplified Chinese localization for Applications, Resumes,
@@ -80,7 +83,11 @@ Today the repository supports:
   ID, district, and GitHub URL) and explicit,
   user-confirmed contact-info candidates surfaced from resume import; and
 - Applications list CSV export, a visual application-stage stepper, and a
-  user-set preferred-skill marker on Career Brain skills.
+  user-set preferred-skill marker on Career Brain skills; and
+- a full visual and information-architecture redesign (new design tokens,
+  typography, and the Pipeline/Discover/Me/Start IA above), informed by a
+  competitive review of simplify.jobs — see "Candidate backlog from the
+  simplify.jobs review" in `docs/ROADMAP.md` for trims and deferred items.
 
 The following V1 capabilities are planned, not implemented:
 
@@ -247,8 +254,10 @@ and Clerk JWKS reachability (`ok` or `degraded`).
 npm run web:dev
 ```
 
-Open `http://localhost:3000`. Implemented routes include `/`, `/welcome`,
-`/setup`, `/jobs`, `/applications`, `/career`, and `/resumes`.
+Open `http://localhost:3000`. Implemented routes include `/`, `/start`,
+`/setup`, `/pipeline`, `/discover`, and `/me` (with `/me/resumes` and
+`/me/contact` tabs). The old `/jobs`, `/applications`, `/career`, `/resumes`,
+and `/welcome` routes permanently redirect to their replacements.
 
 ### Build the browser extension
 

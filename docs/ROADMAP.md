@@ -633,8 +633,6 @@ scratch. Each needs its own scoping/approval pass before implementation:
 - **Per-application status-transition history** (a table recording each
   status change with a timestamp), which the current stepper cannot show
   without one;
-- **A Kanban board view** for the Job Tracker (drag-between-columns), as an
-  alternative to the card grid, for users with large application counts;
 - **Job Preferences data model** (target roles/specializations, city
   multi-select, ideal company size, industries/skills to include or exclude,
   minimum salary, security-clearance interest, company block-list) — worth
@@ -650,6 +648,41 @@ scratch. Each needs its own scoping/approval pass before implementation:
   starting; and
 - **Email digest notification cadence** (daily/weekly/never), which depends on
   whether outbound email infrastructure exists yet.
+
+### Phase K — Full visual + IA redesign (Pipeline/Discover/Me/Start) — implementation complete
+
+Escalated from Phase J's targeted polish to a full Opus-designed visual and
+information-architecture overhaul, approved for autonomous implementation.
+
+- new design tokens, typography (IBM Plex Sans/Mono + Noto Sans SC), and a
+  restyled shared UI kit (`globals.css`, `components/ui/*`);
+- a new 3-destination IA replacing the old 5-item nav: Pipeline (merged
+  Jobs+Applications Kanban board — the drag-between-columns view from the
+  candidate backlog above, now shipped), Discover (two-pane job search), and
+  Me (Career Brain + Resumes + Contact, tabbed);
+- a shared `FocusPanel` component (Application and Job flavors) opened via a
+  `?focus=` query param, replacing the separate `/jobs/:id` and
+  `/applications/:id` detail routes;
+- `/start` replaces `/welcome` as the first-run empty-pipeline state;
+- `next.config.ts` permanent redirects retire `/jobs`, `/applications`,
+  `/career`, `/resumes`, and `/welcome` in favor of the routes above, with
+  query strings preserved automatically; the old route folders and their
+  now-superseded tests were removed.
+
+Deliberate scope trims (each a reasoned simplification, not an oversight):
+
+- FocusPanel's J/K/S/⌘K keyboard shortcuts deferred until Pipeline/Discover
+  have list-traversal state to hang them on;
+- Pipeline's "lift/arrow/drop" keyboard Kanban gesture replaced with a
+  native `<select>` "move to" control — simpler and keyboard-accessible by
+  default without a bespoke gesture;
+- `/me/resumes/[id]` kept as a distinct route rather than an inline
+  `?resume=` expansion;
+- `/me/imports/[id]` kept the same AppShell chrome rather than a rail-less
+  focused-task treatment;
+- the assistant-status chip that replaced the old Setup nav item has no
+  live extension-connection detection yet, so it always reads "not
+  installed" — it links to `/setup` either way.
 
 Explicitly not recommended, and not on this backlog: a visual resume-builder/
 layout designer, AI resume tailoring, or a resume-quality score — all conflict
