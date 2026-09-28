@@ -199,30 +199,8 @@ export function JobFilters({
           </select>
         </label>
       </div>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-        <div
-          className="inline-flex rounded-xl bg-sunken p-1"
-          aria-label={t("jobs.filterViews")}
-        >
-          {(["all", "saved"] as const).map((view) => (
-            <button
-              key={view}
-              type="button"
-              onClick={() => {
-                setFilters((current) => ({ ...current, view }));
-              }}
-              aria-pressed={filters.view === view}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition ${
-                filters.view === view
-                  ? "bg-surface text-ink shadow-sm"
-                  : "text-ink-3 hover:text-ink-2"
-              }`}
-            >
-              {view === "all" ? t("jobs.allJobs") : t("jobs.savedJobs")}
-            </button>
-          ))}
-        </div>
-        {hasFilters && (
+      {hasFilters && (
+        <div className="mt-4 flex justify-end border-t border-border pt-4">
           <button
             type="button"
             onClick={onClearFilters}
@@ -230,8 +208,8 @@ export function JobFilters({
           >
             {t("jobs.clearFilters")}
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }

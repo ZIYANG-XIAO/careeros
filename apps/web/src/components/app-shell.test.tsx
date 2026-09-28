@@ -42,16 +42,18 @@ describe("AppShell", () => {
     });
     const links = Array.from(navigation.querySelectorAll("a"));
     expect(links.map((link) => link.textContent)).toEqual([
-      "Pipeline",
+      "Home",
       "Discover",
-      "Me",
+      "Applications",
+      "Career Brain",
     ]);
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
-      "/pipeline",
+      "/home",
       "/discover",
+      "/pipeline",
       "/me",
     ]);
-    expect(screen.getByRole("link", { name: "Pipeline" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Applications" })).toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -69,7 +71,7 @@ describe("AppShell", () => {
       </LocaleProvider>,
     );
     await user.click(screen.getByRole("button", { name: "中文" }));
-    expect(screen.getByRole("link", { name: "申请流程" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "申请中心" })).toBeInTheDocument();
     expect(screen.getByText("求职工作台")).toBeInTheDocument();
     expect(window.localStorage.getItem("careeros.locale")).toBe("zh-CN");
     expect(document.documentElement.lang).toBe("zh-CN");

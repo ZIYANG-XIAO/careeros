@@ -171,3 +171,84 @@ class ApplicationStatusHistoryEntryResponse(StrictModel):
     from_status: str | None
     to_status: str
     changed_at: datetime
+
+
+class CreateApplicationActivityRequest(StrictModel):
+    idempotency_key: UUID
+    activity_type: Literal["NOTE", "FOLLOW_UP", "INTERVIEW"]
+    title: str = Field(min_length=1, max_length=200)
+    body: str | None = Field(default=None, max_length=4_000)
+    scheduled_at: datetime | None = None
+
+    @field_validator("title")
+    @classmethod
+    def reject_blank_title(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Activity title must not be blank")
+        return value.strip()
+
+    @field_validator("body")
+    @classmethod
+    def normalize_body(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+    @field_validator("scheduled_at")
+    @classmethod
+    def require_scheduled_timezone(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("scheduled_at must include a timezone")
+        return value
+
+    @model_validator(mode="after")
+    def schedule_matches_type(self) -> "CreateApplicationActivityRequest":
+        if self.activity_type == "NOTE" and self.scheduled_at is not None:
+            raise ValueError("Notes cannot have scheduled_at")
+        if self.activity_type != "NOTE" and self.scheduled_at is None:
+            raise ValueError("Follow-ups and interviews require scheduled_at")
+        return self
+
+
+class UpdateApplicationActivityRequest(StrictModel):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    body: str | None = Field(default=None, max_length=4_000)
+    scheduled_at: datetime | None = None
+    completed: bool | None = None
+
+    @field_validator("title")
+    @classmethod
+    def normalize_title(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if not value.strip():
+            raise ValueError("Activity title must not be blank")
+        return value.strip()
+
+    @field_validator("body")
+    @classmethod
+    def normalize_updated_body(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+    @field_validator("scheduled_at")
+    @classmethod
+    def require_updated_timezone(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("scheduled_at must include a timezone")
+        return value
+
+
+class ApplicationActivityResponse(StrictModel):
+    id: UUID
+    application_id: UUID
+    activity_type: Literal["NOTE", "FOLLOW_UP", "INTERVIEW"]
+    title: str
+    body: str | None
+    scheduled_at: datetime | None
+    completed_at: datetime | None
+    created_at: datetime
+    updated_at: datetime

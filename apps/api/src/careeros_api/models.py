@@ -984,6 +984,11 @@ class Application(Base):
         cascade="all, delete-orphan",
         order_by="ApplicationStatusHistory.changed_at",
     )
+    activities: Mapped[list["ApplicationActivity"]] = relationship(
+        back_populates="application",
+        cascade="all, delete-orphan",
+        order_by="ApplicationActivity.created_at",
+    )
 
     __table_args__ = (
         sa.UniqueConstraint("user_id", "idempotency_key"),
@@ -1088,3 +1093,48 @@ class ApplicationStatusHistory(Base):
     application: Mapped["Application"] = relationship(back_populates="status_history")
 
     __table_args__ = (sa.Index("ix_application_status_history_application_id", "application_id"),)
+
+
+class ApplicationActivity(Base):
+    """User-authored note, follow-up, or interview attached to an Application."""
+
+    __tablename__ = "application_activities"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    application_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("applications.id", ondelete="CASCADE")
+    )
+    activity_type: Mapped[str] = mapped_column(sa.String(50))
+    title: Mapped[str] = mapped_column(sa.String(200))
+    body: Mapped[str | None] = mapped_column(sa.Text)
+    scheduled_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    idempotency_key: Mapped[UUID] = mapped_column(sa.Uuid)
+    request_fingerprint: Mapped[str] = mapped_column(sa.String(64))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+    application: Mapped["Application"] = relationship(back_populates="activities")
+
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "application_id",
+            "idempotency_key",
+            name="uq_application_activities_idempotency",
+        ),
+        sa.CheckConstraint(
+            "activity_type IN ('NOTE', 'FOLLOW_UP', 'INTERVIEW')",
+            name="ck_application_activities_type",
+        ),
+        sa.CheckConstraint(
+            "(activity_type = 'NOTE' AND scheduled_at IS NULL AND completed_at IS NULL) "
+            "OR (activity_type IN ('FOLLOW_UP', 'INTERVIEW') AND scheduled_at IS NOT NULL)",
+            name="ck_application_activities_schedule",
+        ),
+        sa.Index("ix_application_activities_application_id", "application_id"),
+        sa.Index("ix_application_activities_scheduled_at", "scheduled_at"),
+    )

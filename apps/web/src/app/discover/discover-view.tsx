@@ -101,6 +101,35 @@ export default function DiscoverView() {
           <p className="mt-1 text-sm text-ink-2">{t("discover.notLive")}</p>
         </header>
 
+        <nav
+          aria-label={t("discover.sections")}
+          className="flex flex-wrap gap-1 border-b border-border"
+        >
+          {(["all", "saved"] as const).map((view) => (
+            <button
+              key={view}
+              type="button"
+              onClick={() => setFilters((current) => ({ ...current, view }))}
+              aria-pressed={filters.view === view}
+              className={`-mb-px border-b-2 px-3 py-2 text-sm font-semibold ${
+                filters.view === view
+                  ? "border-accent text-accent"
+                  : "border-transparent text-ink-3 hover:text-ink-2"
+              }`}
+            >
+              {view === "all"
+                ? t("discover.sections.browse")
+                : t("discover.sections.saved")}
+            </button>
+          ))}
+          <a
+            href="#add-job"
+            className="-mb-px border-b-2 border-transparent px-3 py-2 text-sm font-semibold text-ink-3 hover:text-ink-2"
+          >
+            {t("discover.sections.add")}
+          </a>
+        </nav>
+
         <JobFilters
           filters={filters}
           setFilters={setFilters}

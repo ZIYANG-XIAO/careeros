@@ -1,7 +1,7 @@
 # CareerOS M14 Application Memory Contract
 
 > Status: Implemented domain and API
-> Last Updated: 2026-09-25
+> Last Updated: 2026-09-28
 
 ## 1. Purpose and boundary
 
@@ -48,10 +48,26 @@ sets `applied_at` from an explicit timezone-aware value or the server clock when
 it was previously unknown. Once recorded, `applied_at` is preserved across later
 status changes.
 
-M14 stores current status plus `status_updated_at`. A full status-history model
-is intentionally deferred until a concrete product requirement needs it.
+Current status remains on the Application for efficient workflow queries.
+`ApplicationStatusHistory` preserves the initial state and each real transition
+as insert-only history. Idempotent retries and no-op updates do not duplicate
+history rows.
 
-## 4. Application-specific answer history
+## 4. User-planned activities
+
+An Application may have user-authored activities of three explicit types:
+
+- `NOTE` — freeform context with no scheduled date;
+- `FOLLOW_UP` — a scheduled next action that may be completed or reopened; and
+- `INTERVIEW` — a scheduled interview record.
+
+Activities are owner-scoped through their parent Application. They store a
+short title, optional details, an applicable timezone-aware scheduled date,
+completion state, and timestamps. Creation is retry-safe through an
+Application-scoped idempotency key and request fingerprint. Activities are
+planning records and must not be presented as externally confirmed events.
+
+## 5. Application-specific answer history
 
 Create requests may include up to 200 ordered, user-confirmed answers. Stored
 answers are immutable and remain attached to that Application. They do not
@@ -68,7 +84,7 @@ Current persistence is deliberately narrow:
 Sensitive and consequential answers are not persisted until an explicit
 retention, access, and reuse policy is approved.
 
-## 5. Idempotency
+## 6. Idempotency
 
 Application creation requires a client-generated UUID idempotency key. Retrying
 the same normalized request returns the existing Application; reusing that key
@@ -78,7 +94,7 @@ Status updates also require UUID idempotency keys. A durable operation record
 prevents repeated or delayed retries from duplicating or reverting the update.
 Reusing an update key for another Application or payload returns a conflict.
 
-## 6. Ownership and historical stability
+## 7. Ownership and historical stability
 
 Job, Resume Version, Application, and nested update references are resolved
 under the authenticated owner. Foreign IDs return not found and never disclose
@@ -88,7 +104,7 @@ Application snapshots and answers do not follow later mutable Career Brain,
 Job, or answer changes. Resume history references the exact immutable Resume
 Version. There are no M14 endpoints that edit or delete historical answers.
 
-## 7. API
+## 8. API
 
 - `POST /applications` — idempotently create Application Memory.
 - `GET /applications` — list owned Application summaries without answer text,
@@ -98,6 +114,13 @@ Version. There are no M14 endpoints that edit or delete historical answers.
 - `POST /applications/{id}/submission` — idempotently record explicit user
   submission, preserve a previously unset exact Resume Version, and append
   approved answer history without regressing later status.
+- `GET /applications/{id}/status-history` — list immutable lifecycle history.
+- `GET/POST /applications/{id}/activities` — list or idempotently create notes,
+  follow-ups, and interviews.
+- `PATCH /applications/{id}/activities/{activity_id}` — update owned planning
+  details or complete/reopen a follow-up.
+- `GET /applications/activities/upcoming` — list owned incomplete follow-ups
+  and future interviews for the Home workspace.
 
 M15 consumes these APIs from Web and extension surfaces without duplicating
 Application truth. See `docs/APPLICATION_INTEGRATION.md`.

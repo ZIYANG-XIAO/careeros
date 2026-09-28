@@ -3,7 +3,7 @@
 import json
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from careeros_api.application_schemas import (
+    ApplicationActivityResponse,
     ApplicationAnswerResponse,
     ApplicationAssistantContextRequest,
     ApplicationAssistantContextResponse,
@@ -22,14 +23,17 @@ from careeros_api.application_schemas import (
     ApplicationResponse,
     ApplicationStatusHistoryEntryResponse,
     ApplicationSummaryResponse,
+    CreateApplicationActivityRequest,
     CreateApplicationRequest,
     RecordApplicationSubmissionRequest,
+    UpdateApplicationActivityRequest,
     UpdateApplicationStatusRequest,
 )
 from careeros_api.auth import get_current_user
 from careeros_api.db import get_db_session
 from careeros_api.models import (
     Application,
+    ApplicationActivity,
     ApplicationAnswer,
     ApplicationAnswerSource,
     ApplicationOperation,
@@ -133,6 +137,20 @@ def _response(application: Application) -> ApplicationResponse:
             )
             for answer in application.answers
         ],
+    )
+
+
+def _activity_response(activity: ApplicationActivity) -> ApplicationActivityResponse:
+    return ApplicationActivityResponse(
+        id=activity.id,
+        application_id=activity.application_id,
+        activity_type=cast(Literal["NOTE", "FOLLOW_UP", "INTERVIEW"], activity.activity_type),
+        title=activity.title,
+        body=activity.body,
+        scheduled_at=activity.scheduled_at,
+        completed_at=activity.completed_at,
+        created_at=activity.created_at,
+        updated_at=activity.updated_at,
     )
 
 
@@ -405,6 +423,40 @@ async def list_applications(
     return [_summary_response(application) for application in applications]
 
 
+@router.get("/activities/upcoming", response_model=list[ApplicationActivityResponse])
+async def list_upcoming_application_activities(
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+) -> list[ApplicationActivityResponse]:
+    now = datetime.now(UTC)
+    activities = (
+        (
+            await session.execute(
+                select(ApplicationActivity)
+                .join(Application)
+                .where(
+                    Application.user_id == user.id,
+                    ApplicationActivity.scheduled_at.is_not(None),
+                    (
+                        (ApplicationActivity.activity_type == "FOLLOW_UP")
+                        & ApplicationActivity.completed_at.is_(None)
+                    )
+                    | (
+                        (ApplicationActivity.activity_type == "INTERVIEW")
+                        & (ApplicationActivity.scheduled_at >= now)
+                    ),
+                )
+                .order_by(ApplicationActivity.scheduled_at)
+                .limit(limit)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return [_activity_response(activity) for activity in activities]
+
+
 @router.get("/{application_id}", response_model=ApplicationResponse)
 async def get_application(
     application_id: UUID,
@@ -448,6 +500,153 @@ async def get_application_status_history(
         )
         for entry in entries
     ]
+
+
+@router.get(
+    "/{application_id}/activities",
+    response_model=list[ApplicationActivityResponse],
+)
+async def list_application_activities(
+    application_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[ApplicationActivityResponse]:
+    application = await _owned_application(session, user.id, application_id)
+    if application is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+    activities = (
+        (
+            await session.execute(
+                select(ApplicationActivity)
+                .where(ApplicationActivity.application_id == application_id)
+                .order_by(
+                    ApplicationActivity.scheduled_at.asc().nulls_last(),
+                    ApplicationActivity.created_at.desc(),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return [_activity_response(activity) for activity in activities]
+
+
+@router.post(
+    "/{application_id}/activities",
+    response_model=ApplicationActivityResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_application_activity(
+    application_id: UUID,
+    body: CreateApplicationActivityRequest,
+    response: Response,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApplicationActivityResponse:
+    application = await _owned_application(session, user.id, application_id)
+    if application is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+    request_fingerprint = _fingerprint(body.model_dump(mode="json"))
+    existing = await session.scalar(
+        select(ApplicationActivity).where(
+            ApplicationActivity.application_id == application_id,
+            ApplicationActivity.idempotency_key == body.idempotency_key,
+        )
+    )
+    if existing is not None:
+        if existing.request_fingerprint != request_fingerprint:
+            raise _conflict("The activity idempotency key was already used differently")
+        response.status_code = status.HTTP_200_OK
+        return _activity_response(existing)
+
+    activity_id = uuid4()
+    inserted_id = (
+        await session.execute(
+            insert(ApplicationActivity)
+            .values(
+                id=activity_id,
+                application_id=application_id,
+                activity_type=body.activity_type,
+                title=body.title,
+                body=body.body,
+                scheduled_at=body.scheduled_at,
+                completed_at=None,
+                idempotency_key=body.idempotency_key,
+                request_fingerprint=request_fingerprint,
+            )
+            .on_conflict_do_nothing(
+                index_elements=[
+                    ApplicationActivity.application_id,
+                    ApplicationActivity.idempotency_key,
+                ]
+            )
+            .returning(ApplicationActivity.id)
+        )
+    ).scalar_one_or_none()
+    if inserted_id is None:
+        raced = await session.scalar(
+            select(ApplicationActivity).where(
+                ApplicationActivity.application_id == application_id,
+                ApplicationActivity.idempotency_key == body.idempotency_key,
+            )
+        )
+        if raced is None or raced.request_fingerprint != request_fingerprint:
+            raise _conflict("The activity idempotency key was already used differently")
+        response.status_code = status.HTTP_200_OK
+        return _activity_response(raced)
+
+    await session.flush()
+    activity = await session.get(ApplicationActivity, activity_id)
+    if activity is None:  # pragma: no cover - defensive invariant
+        raise RuntimeError("Created activity could not be loaded")
+    return _activity_response(activity)
+
+
+@router.patch(
+    "/{application_id}/activities/{activity_id}",
+    response_model=ApplicationActivityResponse,
+)
+async def update_application_activity(
+    application_id: UUID,
+    activity_id: UUID,
+    body: UpdateApplicationActivityRequest,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApplicationActivityResponse:
+    application = await _owned_application(session, user.id, application_id)
+    if application is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+    activity = await session.scalar(
+        select(ApplicationActivity).where(
+            ApplicationActivity.id == activity_id,
+            ApplicationActivity.application_id == application_id,
+        )
+    )
+    if activity is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found")
+
+    if body.title is not None:
+        activity.title = body.title
+    if "body" in body.model_fields_set:
+        activity.body = body.body
+    if body.scheduled_at is not None:
+        if activity.activity_type == "NOTE":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Notes cannot be scheduled",
+            )
+        activity.scheduled_at = body.scheduled_at
+    if body.completed is not None:
+        if activity.activity_type != "FOLLOW_UP":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Only follow-ups can be completed",
+            )
+        activity.completed_at = datetime.now(UTC) if body.completed else None
+    activity.updated_at = datetime.now(UTC)
+    await session.flush()
+    return _activity_response(activity)
 
 
 @router.patch("/{application_id}/status", response_model=ApplicationResponse)

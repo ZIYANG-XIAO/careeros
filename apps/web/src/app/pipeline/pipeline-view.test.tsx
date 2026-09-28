@@ -172,20 +172,14 @@ beforeEach(() => {
 });
 
 describe("PipelineView", () => {
-  it("presents a signed-in workspace before the full pipeline", async () => {
+  it("presents the application center before the full pipeline", async () => {
     renderPipeline();
 
     expect(
       await screen.findByRole("heading", {
-        name: "Make progress on your job search today.",
+        name: "Application center",
       }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /Find opportunities/i }),
-    ).toHaveAttribute("href", "/discover");
-    expect(
-      screen.getByRole("link", { name: /Strengthen your Career Brain/i }),
-    ).toHaveAttribute("href", "/me");
     expect(
       screen.getByRole("heading", { name: "Your next useful actions" }),
     ).toBeInTheDocument();
@@ -302,7 +296,9 @@ describe("PipelineView", () => {
     renderPipeline();
 
     expect(await screen.findByText(/Show lane/)).toBeInTheDocument();
-    expect(screen.queryByText("Closed")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Together AI · Backend Engineer"),
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByText(/Show lane/));
     expect(mockReplace).toHaveBeenCalledWith("/pipeline?closed=1");
@@ -314,7 +310,9 @@ describe("PipelineView", () => {
       makeApplication({ id: "rejected", status: "REJECTED" }),
     ]);
     renderPipeline();
-    expect(await screen.findByText("Closed")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Together AI · Backend Engineer"),
+    ).toBeInTheDocument();
   });
 
   it("pushes a focus query param when a card is opened", async () => {

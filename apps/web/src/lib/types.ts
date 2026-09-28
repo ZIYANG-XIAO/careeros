@@ -468,6 +468,35 @@ export type ApplicationStatusHistoryEntry = {
   changed_at: string;
 };
 
+export type ApplicationActivityType = "NOTE" | "FOLLOW_UP" | "INTERVIEW";
+
+export type ApplicationActivity = {
+  id: string;
+  application_id: string;
+  activity_type: ApplicationActivityType;
+  title: string;
+  body: string | null;
+  scheduled_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreateApplicationActivityRequest = {
+  idempotency_key: string;
+  activity_type: ApplicationActivityType;
+  title: string;
+  body?: string | null;
+  scheduled_at?: string | null;
+};
+
+export type UpdateApplicationActivityRequest = {
+  title?: string;
+  body?: string | null;
+  scheduled_at?: string;
+  completed?: boolean;
+};
+
 export type CreateApplicationRequest = {
   idempotency_key: string;
   origin: ApplicationOrigin;

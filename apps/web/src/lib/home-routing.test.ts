@@ -38,7 +38,7 @@ describe("resolveHomeRedirect", () => {
     );
   });
 
-  it("sends returning users with profile data to pipeline", async () => {
+  it("sends returning users with profile data to home", async () => {
     mockListResumes.mockResolvedValue([
       {
         id: "resume-1",
@@ -52,9 +52,7 @@ describe("resolveHomeRedirect", () => {
     ]);
 
     const { resolveHomeRedirect } = await import("./home-routing");
-    await expect(resolveHomeRedirect("token", "user-1")).resolves.toBe(
-      "/pipeline",
-    );
+    await expect(resolveHomeRedirect("token", "user-1")).resolves.toBe("/home");
   });
 
   it("falls back to start when profile lookup fails", async () => {
@@ -66,15 +64,13 @@ describe("resolveHomeRedirect", () => {
     );
   });
 
-  it("skips to pipeline when skip cookie matches current user", async () => {
+  it("skips to home when skip cookie matches current user", async () => {
     mockCookieGet.mockImplementation((name: string) =>
       name === ONBOARDING_SKIP_COOKIE ? { value: "user-1" } : undefined,
     );
 
     const { resolveHomeRedirect } = await import("./home-routing");
-    await expect(resolveHomeRedirect("token", "user-1")).resolves.toBe(
-      "/pipeline",
-    );
+    await expect(resolveHomeRedirect("token", "user-1")).resolves.toBe("/home");
     expect(mockListResumes).not.toHaveBeenCalled();
   });
 

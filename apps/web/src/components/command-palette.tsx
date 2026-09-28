@@ -41,8 +41,14 @@ function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   const navItems: PaletteItem[] = [
     {
+      id: "nav-home",
+      label: t("nav.home"),
+      sublabel: "",
+      href: "/home",
+    },
+    {
       id: "nav-pipeline",
-      label: t("nav.pipeline"),
+      label: t("nav.applications"),
       sublabel: "",
       href: "/pipeline",
     },
@@ -52,7 +58,12 @@ function CommandPalette({ open, onClose }: CommandPaletteProps) {
       sublabel: "",
       href: "/discover",
     },
-    { id: "nav-me", label: t("nav.me"), sublabel: "", href: "/me" },
+    {
+      id: "nav-me",
+      label: t("nav.careerBrain"),
+      sublabel: "",
+      href: "/me",
+    },
     {
       id: "nav-contact",
       label: t("nav.contactAnswers"),
@@ -84,7 +95,7 @@ function CommandPalette({ open, onClose }: CommandPaletteProps) {
           (application) => ({
             id: `application-${application.id}`,
             label: `${application.company} · ${application.role}`,
-            sublabel: t("nav.pipeline"),
+            sublabel: t("nav.applications"),
             href: `/pipeline?focus=${application.id}`,
           }),
         );

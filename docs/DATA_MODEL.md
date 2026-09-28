@@ -19,6 +19,10 @@ removes the duplicate Latin-script full name and generic name-order fields;
 `0016_skill_preferred` adds a `preferred` flag to `skills`. Migration
 `0017_native_name_parts` adds explicit native-script given and family names so
 split Chinese and Latin-script fields never share an ambiguous representation.
+Migration `0018_job_preferences` adds confirmed job-search preferences,
+`0019_application_status_history` adds immutable lifecycle transitions, and
+`0020_application_activities` adds user-planned notes, follow-ups, and
+interviews.
 
 The model supports:
 
@@ -64,7 +68,8 @@ User
 └── Application
     ├── selected Resume Version
     ├── application-specific answers
-    └── status and timestamps
+    ├── immutable status history
+    └── user-planned activities
 ```
 
 Identity, UserContactInfo, Career Brain, Career Evidence, Resume, Job, and
@@ -102,9 +107,11 @@ The current migrations define:
 - `applications`
 - `application_answers`
 - `application_operations`
+- `application_status_history`
+- `application_activities`
 - `user_contact_info`
 
-Current Alembic head: `0017_native_name_parts`.
+Current Alembic head: `0020_application_activities`.
 
 M12 adds a transient Answer Engine decision contract and no tables. Decisions
 reference owned canonical sources but are not persisted as Application or
@@ -138,12 +145,16 @@ stored. Migration `0016_skill_preferred` adds a `preferred` boolean to
 `Skill`, a plain user-set preference marker independent of Career Evidence;
 toggling it does not append an evidence revision. Migration
 `0017_native_name_parts` adds the explicit native-script given/family parts.
+Migration `0019_application_status_history` preserves one initial row and every
+real lifecycle transition. Migration `0020_application_activities` stores
+owner-scoped notes, follow-ups, and interviews under an Application. Scheduled
+activities remain distinct from immutable status history: they are user plans,
+not claims about external events.
 
 ### Planned, not implemented
 
 - Reusable Answer;
 - application preferences beyond currently approved fields;
-- status history;
 - raw persisted extension/form inspection records; and
 - Application Strategy and Resume Recommendation.
 
@@ -375,18 +386,27 @@ V1 API and database status values:
 - `OFFER`
 - `WITHDRAWN`
 
-The implemented schema stores current status and timestamps while preserving a
-path to future status history.
+The implemented schema stores current status and timestamps for efficient
+workflow queries and appends the initial state and every real transition to
+immutable `ApplicationStatusHistory` rows.
 
-### 15.2 Historical snapshot rule
+### 15.2 Application activities
+
+`ApplicationActivity` stores user-planned `NOTE`, `FOLLOW_UP`, and `INTERVIEW`
+records. Notes have no schedule. Follow-ups and interviews require a
+timezone-aware `scheduled_at`; follow-ups may also have `completed_at`.
+Activities are mutable planning context, not immutable proof that an external
+event occurred.
+
+### 15.3 Historical snapshot rule
 
 An Application preserves what was used at the time: exact Resume Version,
 relevant answers, captured job/application context, status, and timestamps.
 Current profile or reusable-answer changes do not rewrite history.
 
-Future strategy, tailored resumes, recruiter interactions, interviews,
-analytics, and outcomes may reference Application. They are not required in the
-initial Application schema.
+Future strategy, tailored resumes, recruiter relationship modeling, analytics,
+and outcomes may reference Application. They are not required in the current
+Application schema.
 
 ## 16. Information and answer boundaries
 

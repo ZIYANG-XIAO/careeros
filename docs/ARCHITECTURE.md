@@ -77,7 +77,7 @@ Implemented domains and workflows:
   Career Profile, and Job detail; and
 - refactored Jobs page, extension popup, messages, and API client modules.
 
-Current Alembic head: `0013_uci_answer_source`.
+Current Alembic head: `0020_application_activities`.
 
 Not implemented today:
 
@@ -193,15 +193,16 @@ Directories are introduced only when their approved milestone begins.
 Stack: Next.js, TypeScript, React, Tailwind CSS.
 
 Current routes cover landing, `/start` onboarding (empty-pipeline first-run
-state), `/setup` extension guide, and the three-destination shell below. A
+state), `/setup` extension guide, and the four-destination shell below. A
 shared `FocusPanel` component (opened via a `?focus=` query param) replaces
 separate detail routes for both jobs and applications.
 
 Implemented primary navigation:
 
-- Pipeline (merged Jobs + Applications Kanban board, `/pipeline`)
+- Home (owned next actions and factual recent state, `/home`)
 - Discover (job search, `/discover`)
-- Me (Career Brain, Resumes, Contact, `/me`)
+- Applications (action queue, board/list, history, and plans, `/pipeline`)
+- Career Brain (professional context, Resumes, Contact, and preferences, `/me`)
 
 Retired routes (`/jobs`, `/applications`, `/career`, `/resumes`, `/welcome`)
 permanently redirect to their replacements via `next.config.ts`.

@@ -9,6 +9,9 @@ import { FocusPanel } from "./focus-panel";
 
 const mockGetApplication = vi.fn();
 const mockGetApplicationStatusHistory = vi.fn();
+const mockListApplicationActivities = vi.fn();
+const mockCreateApplicationActivity = vi.fn();
+const mockUpdateApplicationActivity = vi.fn();
 const mockListResumes = vi.fn();
 const mockListJobAnalyses = vi.fn();
 const mockUpdateApplicationStatus = vi.fn();
@@ -28,6 +31,12 @@ vi.mock("@/lib/api", () => ({
   getApplication: (...args: unknown[]) => mockGetApplication(...args),
   getApplicationStatusHistory: (...args: unknown[]) =>
     mockGetApplicationStatusHistory(...args),
+  listApplicationActivities: (...args: unknown[]) =>
+    mockListApplicationActivities(...args),
+  createApplicationActivity: (...args: unknown[]) =>
+    mockCreateApplicationActivity(...args),
+  updateApplicationActivity: (...args: unknown[]) =>
+    mockUpdateApplicationActivity(...args),
   listResumes: (...args: unknown[]) => mockListResumes(...args),
   listJobAnalyses: (...args: unknown[]) => mockListJobAnalyses(...args),
   updateApplicationStatus: (...args: unknown[]) =>
@@ -165,6 +174,9 @@ describe("FocusPanel — application flavour", () => {
       },
     ]);
     mockListResumes.mockReset().mockResolvedValue([]);
+    mockListApplicationActivities.mockReset().mockResolvedValue([]);
+    mockCreateApplicationActivity.mockReset();
+    mockUpdateApplicationActivity.mockReset();
     mockListJobAnalyses.mockReset().mockResolvedValue([]);
     mockUpdateApplicationStatus.mockReset();
   });
@@ -180,6 +192,87 @@ describe("FocusPanel — application flavour", () => {
     expect(
       screen.getByText("No answers were recorded with this application."),
     ).toBeInTheDocument();
+  });
+
+  it("records a dated follow-up in the application plan", async () => {
+    mockCreateApplicationActivity.mockResolvedValue({
+      id: "activity-1",
+      application_id: "app-1",
+      activity_type: "FOLLOW_UP",
+      title: "Email the recruiter",
+      body: "Ask about the next round.",
+      scheduled_at: "2026-10-01T02:30:00Z",
+      completed_at: null,
+      created_at: "2026-09-28T00:00:00Z",
+      updated_at: "2026-09-28T00:00:00Z",
+    });
+    const user = userEvent.setup();
+    renderPanel({ kind: "application", id: "app-1" });
+    await screen.findByText("Platform Engineer");
+
+    await user.click(screen.getByText("Add an activity"));
+    await user.type(screen.getByLabelText("Title"), "Email the recruiter");
+    await user.type(screen.getByLabelText("Date and time"), "2026-10-01T10:30");
+    await user.type(
+      screen.getByLabelText("Details (optional)"),
+      "Ask about the next round.",
+    );
+    await user.click(screen.getByRole("button", { name: "Save activity" }));
+
+    expect(mockCreateApplicationActivity).toHaveBeenCalledWith(
+      "token",
+      "app-1",
+      expect.objectContaining({
+        activity_type: "FOLLOW_UP",
+        title: "Email the recruiter",
+      }),
+    );
+    expect(await screen.findByText("Email the recruiter")).toBeInTheDocument();
+  });
+
+  it("edits a planned follow-up without changing application history", async () => {
+    const activity = {
+      id: "activity-1",
+      application_id: "app-1",
+      activity_type: "FOLLOW_UP" as const,
+      title: "Email the recruiter",
+      body: "Ask about the next round.",
+      scheduled_at: "2026-10-01T02:30:00Z",
+      completed_at: null,
+      created_at: "2026-09-28T00:00:00Z",
+      updated_at: "2026-09-28T00:00:00Z",
+    };
+    mockListApplicationActivities.mockResolvedValue([activity]);
+    mockUpdateApplicationActivity.mockResolvedValue({
+      ...activity,
+      title: "Confirm the interview time",
+      updated_at: "2026-09-29T00:00:00Z",
+    });
+    const user = userEvent.setup();
+    renderPanel({ kind: "application", id: "app-1" });
+
+    const activityTitle = await screen.findByText("Email the recruiter");
+    const activityItem = activityTitle.closest("li");
+    expect(activityItem).not.toBeNull();
+    const activityView = within(activityItem!);
+    await user.click(activityView.getByText("Edit details"));
+    const titleInput = activityView.getByLabelText("Title");
+    await user.clear(titleInput);
+    await user.type(titleInput, "Confirm the interview time");
+    await user.click(
+      activityView.getByRole("button", { name: "Save changes" }),
+    );
+
+    expect(mockUpdateApplicationActivity).toHaveBeenCalledWith(
+      "token",
+      "app-1",
+      "activity-1",
+      expect.objectContaining({ title: "Confirm the interview time" }),
+    );
+    expect(
+      await screen.findByText("Confirm the interview time"),
+    ).toBeInTheDocument();
+    expect(mockGetApplicationStatusHistory).toHaveBeenCalledOnce();
   });
 
   it("shows a retry action when loading fails", async () => {

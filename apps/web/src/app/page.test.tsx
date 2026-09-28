@@ -81,17 +81,17 @@ describe("Home page", () => {
     expect(mockRedirect).toHaveBeenCalledWith("/start");
   });
 
-  it("redirects returning users with profile data to pipeline", async () => {
+  it("redirects returning users with profile data to home", async () => {
     mockAuth.mockResolvedValue({
       userId: "user-1",
       getToken: vi.fn().mockResolvedValue("token"),
     });
-    mockResolveHomeRedirect.mockResolvedValue("/pipeline");
+    mockResolveHomeRedirect.mockResolvedValue("/home");
 
     const Home = (await import("./page")).default;
 
-    await expect(Home()).rejects.toThrow("REDIRECT:/pipeline");
+    await expect(Home()).rejects.toThrow("REDIRECT:/home");
     expect(mockResolveHomeRedirect).toHaveBeenCalledWith("token", "user-1");
-    expect(mockRedirect).toHaveBeenCalledWith("/pipeline");
+    expect(mockRedirect).toHaveBeenCalledWith("/home");
   });
 });

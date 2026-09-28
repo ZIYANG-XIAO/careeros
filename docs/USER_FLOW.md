@@ -24,13 +24,16 @@ must remain fast.
 
 Primary navigation:
 
-- Jobs
+- Home
+- Discover
 - Applications
-- Resumes
-- Profile
+- Career Brain
 
-The Web application owns onboarding, profile and resume management, job
-browsing, application history, and detailed optional intelligence.
+Home aggregates the next useful actions and factual recent state. Discover owns
+job browsing and saved opportunities. Applications owns the action queue,
+board/list management, and history. Career Brain owns professional context,
+resumes, contact information, and preferences. The Web application also owns
+onboarding and detailed optional intelligence.
 
 ### Browser extension
 
@@ -60,6 +63,8 @@ It is not a second full CareerOS application.
 Implemented Web flows today:
 
 - system status and authentication entry;
+- a signed-in Home that aggregates owned action, opportunity, Application, and
+  Career Brain state without inventing deadlines or recommendations;
 - Career Profile editing;
 - resume upload, structured review, confirmation, library, and version detail;
 - manual Job creation;
@@ -76,6 +81,8 @@ Implemented Web flows today:
 - authenticated durable Application Memory APIs for CareerOS and externally
   found jobs;
 - Applications list/detail/status/manual recovery;
+- Application lifecycle history plus user-authored notes, follow-ups, and
+  interview records;
 - CareerOS Job handoff into Application Memory and explicit extension recording
   after user submission;
 - confirmation-page recovery from one recent reviewed Preparing Application;
@@ -173,6 +180,10 @@ analytics dashboard. Depending on implemented wave, it may surface:
 - recent applications;
 - resumes; and
 - profile completion or correction prompts.
+
+The implemented Home also surfaces incomplete follow-ups and future interviews
+that the user explicitly recorded. It does not infer external appointments or
+deadlines.
 
 Navigation labels should remain user-facing. Users should not need to understand
 internal concepts such as `CareerEvidenceRevision` or `JobSnapshot`.

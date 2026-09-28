@@ -1,10 +1,12 @@
 import type {
   Application,
+  ApplicationActivity,
   ApplicationStatus,
   ApplicationStatusHistoryEntry,
   ApplicationSummary,
   CareerBrain,
   ContactInfo,
+  CreateApplicationActivityRequest,
   CreateApplicationRequest,
   CreateEducationRequest,
   CreateExperienceRequest,
@@ -25,6 +27,7 @@ import type {
   ResumeVersion,
   Skill,
   UpdateEducationRequest,
+  UpdateApplicationActivityRequest,
   UpdateExperienceRequest,
   UpdateProjectRequest,
   UpdateSkillRequest,
@@ -559,6 +562,67 @@ export async function getApplicationStatusHistory(
     },
   );
   return handleResponse<ApplicationStatusHistoryEntry[]>(response);
+}
+
+export async function listApplicationActivities(
+  token: string,
+  applicationId: string,
+): Promise<ApplicationActivity[]> {
+  const response = await fetch(
+    `${apiBaseUrl()}/applications/${applicationId}/activities`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    },
+  );
+  return handleResponse<ApplicationActivity[]>(response);
+}
+
+export async function listUpcomingApplicationActivities(
+  token: string,
+  limit = 20,
+): Promise<ApplicationActivity[]> {
+  const response = await fetch(
+    `${apiBaseUrl()}/applications/activities/upcoming?limit=${limit}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    },
+  );
+  return handleResponse<ApplicationActivity[]>(response);
+}
+
+export async function createApplicationActivity(
+  token: string,
+  applicationId: string,
+  data: CreateApplicationActivityRequest,
+): Promise<ApplicationActivity> {
+  const response = await fetch(
+    `${apiBaseUrl()}/applications/${applicationId}/activities`,
+    {
+      method: "POST",
+      headers: authHeaders(token),
+      body: JSON.stringify(data),
+    },
+  );
+  return handleResponse<ApplicationActivity>(response);
+}
+
+export async function updateApplicationActivity(
+  token: string,
+  applicationId: string,
+  activityId: string,
+  data: UpdateApplicationActivityRequest,
+): Promise<ApplicationActivity> {
+  const response = await fetch(
+    `${apiBaseUrl()}/applications/${applicationId}/activities/${activityId}`,
+    {
+      method: "PATCH",
+      headers: authHeaders(token),
+      body: JSON.stringify(data),
+    },
+  );
+  return handleResponse<ApplicationActivity>(response);
 }
 
 export async function updateApplicationStatus(

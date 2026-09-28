@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ApplicationActivitySection } from "@/components/application-activity-section";
 import {
   createApplication,
   createJobAnalysis,
@@ -12,6 +13,7 @@ import {
   getApplicationStatusHistory,
   getJob,
   listApplications,
+  listApplicationActivities,
   listJobAnalyses,
   listResumes,
   saveJob,
@@ -29,6 +31,7 @@ import {
 import { jobSourceSummary } from "@/lib/job-source";
 import type {
   Application,
+  ApplicationActivity,
   ApplicationStatus,
   ApplicationStatusHistoryEntry,
   Job,
@@ -202,6 +205,7 @@ function ApplicationPanelBody({
   const [statusHistory, setStatusHistory] = useState<
     ApplicationStatusHistoryEntry[]
   >([]);
+  const [activities, setActivities] = useState<ApplicationActivity[]>([]);
   const [analysis, setAnalysis] = useState<JobAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -223,16 +227,18 @@ function ApplicationPanelBody({
       try {
         const token = await getToken();
         if (!token) throw new Error("Missing authentication token");
-        const [applicationResult, resumeResult, historyResult] =
+        const [applicationResult, resumeResult, historyResult, activityResult] =
           await Promise.all([
             getApplication(token, id),
             listResumes(token),
             getApplicationStatusHistory(token, id),
+            listApplicationActivities(token, id).catch(() => []),
           ]);
         if (cancelled) return;
         setApplication(applicationResult);
         setResumes(resumeResult);
         setStatusHistory(historyResult);
+        setActivities(activityResult);
         if (applicationResult.job_id) {
           const analyses = await listJobAnalyses(
             token,
@@ -375,6 +381,12 @@ function ApplicationPanelBody({
           </ol>
         </div>
       )}
+
+      <ApplicationActivitySection
+        key={id}
+        applicationId={id}
+        initialActivities={activities}
+      />
 
       <dl className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-rail p-3">
         <div>

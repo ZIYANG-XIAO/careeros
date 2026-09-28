@@ -12,9 +12,9 @@ import { type Theme, useTheme } from "@/lib/theme";
 
 const navItems = [
   {
-    label: "nav.pipeline" as const,
-    href: "/pipeline",
-    path: "M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2zm2 5h6m-6 4h6m-6 4h4",
+    label: "nav.home" as const,
+    href: "/home",
+    path: "M4 10.5L12 4l8 6.5V20H5V10.5zm5 9v-6h6v6",
   },
   {
     label: "nav.discover" as const,
@@ -22,7 +22,12 @@ const navItems = [
     path: "M11 4a7 7 0 100 14 7 7 0 000-14zm9 16l-5.2-5.2",
   },
   {
-    label: "nav.me" as const,
+    label: "nav.applications" as const,
+    href: "/pipeline",
+    path: "M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2zm2 5h6m-6 4h6m-6 4h4",
+  },
+  {
+    label: "nav.careerBrain" as const,
     href: "/me",
     path: "M12 12a4 4 0 100-8 4 4 0 000 8zm7 9a7 7 0 00-14 0",
   },
@@ -66,7 +71,7 @@ function AppShell({ children }: { children: ReactNode }) {
       >
         <div className="flex h-20 items-center justify-between px-5">
           <Link
-            href="/pipeline"
+            href="/home"
             className="group"
             onClick={() => setSidebarOpen(false)}
           >
@@ -272,7 +277,7 @@ function AppShell({ children }: { children: ReactNode }) {
             </svg>
           </button>
           <Link
-            href="/pipeline"
+            href="/home"
             className="ml-3 text-sm font-bold tracking-tight text-ink"
           >
             Career<span className="text-accent">OS</span>

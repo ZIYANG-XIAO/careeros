@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useRef, useState } from "react";
 
@@ -313,66 +312,62 @@ export default function PipelineView() {
   return (
     <div className="flex h-full">
       <div className="min-w-0 flex-1 space-y-5">
-        <header className="overflow-hidden rounded-2xl border border-border bg-surface shadow-raised">
-          <div className="px-5 py-5 sm:px-6 sm:py-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
-              {t("pipeline.home.eyebrow")}
-            </p>
-            <h1 className="mt-2 max-w-2xl text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
-              {t("pipeline.home.title")}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-2">
-              {t("pipeline.home.intro")}
-            </p>
-          </div>
-          <nav
-            aria-label={t("pipeline.home.quickActions")}
-            className="grid border-t border-border sm:grid-cols-3"
-          >
-            <Link
-              href="/discover"
-              className="group border-b border-border px-5 py-4 hover:bg-rail sm:border-b-0 sm:border-r sm:px-6"
-            >
-              <span className="block text-sm font-semibold text-ink">
-                {t("pipeline.home.discover")}
-                <span className="ml-1 text-accent transition-transform group-hover:translate-x-0.5">
-                  →
-                </span>
-              </span>
-              <span className="mt-1 block text-xs leading-5 text-ink-3">
-                {t("pipeline.home.discoverHint")}
-              </span>
-            </Link>
-            <Link
-              href="/me"
-              className="group border-b border-border px-5 py-4 hover:bg-rail sm:border-b-0 sm:border-r sm:px-6"
-            >
-              <span className="block text-sm font-semibold text-ink">
-                {t("pipeline.home.brain")}
-                <span className="ml-1 text-accent transition-transform group-hover:translate-x-0.5">
-                  →
-                </span>
-              </span>
-              <span className="mt-1 block text-xs leading-5 text-ink-3">
-                {t("pipeline.home.brainHint")}
-              </span>
-            </Link>
-            <Link
-              href="/setup"
-              className="group px-5 py-4 hover:bg-rail sm:px-6"
-            >
-              <span className="block text-sm font-semibold text-ink">
-                {t("pipeline.home.assistant")}
-                <span className="ml-1 text-accent transition-transform group-hover:translate-x-0.5">
-                  →
-                </span>
-              </span>
-              <span className="mt-1 block text-xs leading-5 text-ink-3">
-                {t("pipeline.home.assistantHint")}
-              </span>
-            </Link>
-          </nav>
+        <header>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
+            {t("nav.applications")}
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+            {t("pipeline.title")}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-2">
+            {t("pipeline.intro")}
+          </p>
         </header>
+
+        <nav
+          aria-label={t("pipeline.sections")}
+          className="flex flex-wrap gap-1 border-b border-border"
+        >
+          <a
+            href="#action-center-heading"
+            className="-mb-px border-b-2 border-accent px-3 py-2 text-sm font-semibold text-accent"
+          >
+            {t("pipeline.sections.actions")}
+          </a>
+          <button
+            type="button"
+            onClick={() => pushQuery({ view: null })}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-semibold ${
+              view === "board"
+                ? "border-accent text-accent"
+                : "border-transparent text-ink-3 hover:text-ink-2"
+            }`}
+          >
+            {t("pipeline.view.board")}
+          </button>
+          <button
+            type="button"
+            onClick={() => pushQuery({ view: "list" })}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-semibold ${
+              view === "list"
+                ? "border-accent text-accent"
+                : "border-transparent text-ink-3 hover:text-ink-2"
+            }`}
+          >
+            {t("pipeline.view.list")}
+          </button>
+          <button
+            type="button"
+            onClick={() => pushQuery({ closed: "1" })}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-semibold ${
+              showClosed
+                ? "border-accent text-accent"
+                : "border-transparent text-ink-3 hover:text-ink-2"
+            }`}
+          >
+            {t("nav.closed")}
+          </button>
+        </nav>
 
         <PipelineActionCenter
           applications={applications}

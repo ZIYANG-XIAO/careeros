@@ -716,10 +716,12 @@ more visible before adding another domain or recommendation system.
   suggest considering a follow-up. It does not claim an external deadline or
   event that CareerOS cannot observe. The board scrolls within its own surface
   rather than forcing the whole workspace wider than the viewport.
-- the signed-in Pipeline entry now behaves as a daily workspace rather than
-  opening on board controls: it leads with orientation and real quick links,
-  then the Action Center, and keeps the full board/list and CSV tools in a
-  clearly labelled `All opportunities` section.
+- returning users now enter a dedicated `/home` daily workspace that aggregates
+  only owned Application, saved Job, Resume, and Career Brain state. Pipeline
+  returns to a focused Applications role with its action queue, board/list,
+  closed lane, and CSV tools. The primary navigation is now Home, Discover,
+  Applications, and Career Brain, with honest second-level entry points inside
+  those domains.
 - Career Brain now has an overview before its editing sections, showing factual
   entity counts, confirmed evidence count, preferred skills, and the context
   CareerOS can safely reuse. It deliberately avoids an invented profile score.
@@ -734,6 +736,24 @@ more visible before adding another domain or recommendation system.
   neutral setup link.
 
 No schema, API, answer-policy, or submission behavior changed in this phase.
+
+### Phase P — Application planning workspace — implementation complete
+
+Approved as the first functional expansion under the four-workspace shell.
+
+- migration `0020_application_activities` adds Application-owned notes,
+  follow-ups, and interviews with explicit scheduling rules, idempotent create,
+  ownership through the parent Application, and non-destructive downgrade;
+- Application detail combines immutable status history with a user-controlled
+  plan where dated follow-ups can be completed/reopened and interview records
+  remain explicit user entries;
+- Home surfaces real incomplete follow-ups and future interviews without
+  claiming CareerOS observed an external event; and
+- API and Web contracts include loading, empty, validation, ownership, retry,
+  and completion behavior.
+
+This phase does not add calendar synchronization, notifications, inferred
+deadlines, email ingestion, or autonomous follow-up communication.
 
 ### Product-direction backlog from the 2026-09 review (not yet scheduled)
 
@@ -755,8 +775,6 @@ review rather than treating them as implemented behavior:
   generated, user-edited, and confirmed answer history;
 - **Career Goals and Preference Fit**, initially extending the existing
   JobPreferences domain rather than introducing a generic strategy agent;
-- **real follow-up dates, notes, interview events, and reminders**, which need
-  explicit Application subdomains rather than age-based inference; and
 - **outcome-informed learning, skill graphs, company intelligence, and career
   strategy**, deferred until representative usage and sufficient owned outcome
   data exist.

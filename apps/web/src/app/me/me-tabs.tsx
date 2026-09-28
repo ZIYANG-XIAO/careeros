@@ -7,6 +7,9 @@ import { useI18n } from "@/lib/i18n";
 
 const TABS = [
   { href: "/me", key: "nav.careerBrain" as const },
+  { href: "/me#experience", key: "me.section.experience" as const },
+  { href: "/me#projects", key: "me.section.projects" as const },
+  { href: "/me#skills", key: "me.section.skills" as const },
   { href: "/me/resumes", key: "nav.resumes" as const },
   { href: "/me/contact", key: "nav.contactAnswers" as const },
 ];
@@ -21,7 +24,9 @@ function MeTabs() {
         const active =
           tab.href === "/me"
             ? pathname === "/me"
-            : pathname.startsWith(tab.href);
+            : tab.href.startsWith("/me#")
+              ? false
+              : pathname.startsWith(tab.href);
         return (
           <Link
             key={tab.href}

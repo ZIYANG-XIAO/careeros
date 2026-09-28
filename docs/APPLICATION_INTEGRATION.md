@@ -63,7 +63,10 @@ The Web surface provides:
 - detail with retained answer history;
 - retry-safe status updates; and
 - manual **Mark as applied** recovery for unsupported detection or applications
-  completed outside CareerOS.
+  completed outside CareerOS;
+- immutable lifecycle history; and
+- user-planned notes, follow-ups, and interviews, with upcoming dated items
+  surfaced on Home.
 
 ## 6. Trust and recovery
 
