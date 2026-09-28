@@ -22,7 +22,7 @@ the user through the Career Brain.
 M0–M17 and the post-M17 implementation wave are implemented at repository
 level. M16 automated hardening is implemented; representative unpacked-Chrome
 validation remains pending. Current Alembic head:
-`0017_native_name_parts`.
+`0021_job_search_goals`.
 Today the repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
@@ -30,10 +30,10 @@ Today the repository supports:
 - Career Profile management backed by the Career Brain;
 - stable Career Evidence with immutable revisions;
 - PDF and DOCX resume upload, parsing, review, confirmation, and versioning;
-- a three-destination product shell — Pipeline (merged jobs + applications
-  Kanban board), Discover (job search), and Me (Career Brain, Resumes,
-  Contact) — with a shared FocusPanel detail view opened via a `?focus=`
-  query param;
+- a four-destination product shell — Home, Discover, Applications, and Career
+  Brain — with a shared FocusPanel detail view opened via a `?focus=` query
+  parameter;
+- multiple China/North America Job Search Goals with one explicit active goal;
 - manual job capture, server-owned search/location filters, detail, durable
   per-user saved state, and safe direct-apply links;
 - a provider-neutral job-source contract, canonical source attribution,
@@ -185,6 +185,7 @@ The `docs/` directory is the product and engineering source of truth:
 - `docs/VALIDATION_M15.md` — M15 automated results and deferred browser gate
 - `docs/VALIDATION_M16.md` — M16 hardening results and remaining browser gate
 - `docs/JOB_SOURCE_DECISION.md` — approved process for the next job-data source
+- `docs/WORKSTATION_SETUP.md` — complete setup checklist for a new development computer
 
 ## Repository structure
 
@@ -235,7 +236,7 @@ docker compose --env-file .env -f infra/compose.yaml up -d postgres
 .venv/bin/alembic -c apps/api/alembic.ini upgrade head
 ```
 
-The current migration head is `0017_native_name_parts`.
+The current migration head is `0021_job_search_goals`.
 
 ### Start the API
 
@@ -256,7 +257,7 @@ npm run web:dev
 
 Open `http://localhost:3000`. Implemented routes include `/`, `/start`,
 `/setup`, `/pipeline`, `/discover`, and `/me` (with `/me/resumes` and
-`/me/contact` tabs). The old `/jobs`, `/applications`, `/career`, `/resumes`,
+`/me/goals` and `/me/contact` tabs). The old `/jobs`, `/applications`, `/career`, `/resumes`,
 and `/welcome` routes permanently redirect to their replacements.
 
 ### Build the browser extension

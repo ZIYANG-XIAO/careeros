@@ -65,11 +65,39 @@ check_tool "docker" "docker"
 
 section "Environment files"
 
+env_has_value() {
+  local file=$1
+  local key=$2
+  grep -Eq "^${key}=.+" "$file" 2>/dev/null
+}
+
 if [[ -f "$REPO_ROOT/.env" ]]; then
   note_ready ".env present at repository root"
 else
   note_attention ".env missing. Copy .env.example to .env and fill in Clerk values."
 fi
+
+if [[ -f "$REPO_ROOT/apps/web/.env.local" ]]; then
+  note_ready "apps/web/.env.local present"
+else
+  note_attention "apps/web/.env.local missing. Copy apps/web/.env.example and fill in Clerk values."
+fi
+
+for key in DATABASE_URL WEB_ORIGIN CLERK_ISSUER_URL; do
+  if [[ -f "$REPO_ROOT/.env" ]] && env_has_value "$REPO_ROOT/.env" "$key"; then
+    note_ready "$key configured in .env"
+  else
+    note_attention "$key is missing or empty in .env"
+  fi
+done
+
+for key in NEXT_PUBLIC_API_URL NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY CLERK_SECRET_KEY; do
+  if [[ -f "$REPO_ROOT/apps/web/.env.local" ]] && env_has_value "$REPO_ROOT/apps/web/.env.local" "$key"; then
+    note_ready "$key configured in apps/web/.env.local"
+  else
+    note_attention "$key is missing or empty in apps/web/.env.local"
+  fi
+done
 
 section "PostgreSQL"
 
