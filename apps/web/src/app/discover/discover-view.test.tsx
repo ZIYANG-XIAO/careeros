@@ -142,9 +142,10 @@ describe("DiscoverView", () => {
     );
   });
 
-  it("shows a nothing-selected placeholder without a focus param", async () => {
+  it("renders no focus panel without a focus param", async () => {
     renderDiscover();
-    expect(await screen.findByText("Nothing selected")).toBeInTheDocument();
+    await screen.findByText("Platform Engineer");
+    expect(screen.queryByTestId("focus-panel")).not.toBeInTheDocument();
   });
 
   it("opens the focus panel for a newly created job", async () => {

@@ -238,7 +238,7 @@ export default function DiscoverView() {
           </div>
         ) : (
           <div
-            className={`flex-1 divide-y divide-row-divider overflow-y-auto rounded-2xl border border-border bg-surface ${isRefreshing ? "opacity-60" : ""}`}
+            className={`max-h-[60vh] divide-y divide-row-divider overflow-y-auto rounded-2xl border border-border bg-surface ${isRefreshing ? "opacity-60" : ""}`}
           >
             {jobs.map((job) => (
               <DiscoverRow
@@ -261,21 +261,12 @@ export default function DiscoverView() {
         <CreateJobForm creating={creating} onCreate={handleCreate} t={t} />
       </div>
 
-      <div className="hidden w-[520px] shrink-0 lg:block">
-        {focusId ? (
-          <FocusPanel
-            target={{ kind: "job", id: focusId }}
-            onClose={closeFocus}
-          />
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 rounded-lg border border-border bg-rail p-8 text-center">
-            <p className="text-sm font-semibold text-ink">
-              {t("panel.nothingSelected")}
-            </p>
-            <p className="text-sm text-ink-3">{t("panel.nothingHint")}</p>
-          </div>
-        )}
-      </div>
+      {focusId && (
+        <FocusPanel
+          target={{ kind: "job", id: focusId }}
+          onClose={closeFocus}
+        />
+      )}
     </div>
   );
 }
