@@ -338,8 +338,8 @@ depends on it.
 
 ## 14. Current implementation boundary
 
-Implemented through M17 plus the post-M17 wave (M16 automated hardening included;
-representative browser gate still pending):
+Implemented through M17 plus the post-M17 wave (M16 complete, including its
+representative browser gate):
 
 - project foundation;
 - Career Brain/Profile;

@@ -2,7 +2,7 @@
 
 > Version: 0.2
 > Status: Approved V1 re-baseline
-> Last Updated: 2026-09-26
+> Last Updated: 2026-09-28
 
 ## 1. Purpose and authority
 
@@ -437,7 +437,7 @@ recording, and retry-safe submission completion with approved answer history.
 Final submission remains entirely user-controlled. See
 `docs/APPLICATION_INTEGRATION.md` and `docs/VALIDATION_M15.md`.
 
-## 8. M16 — V1 Hardening and End-to-End Validation
+## 8. M16 — V1 Hardening and End-to-End Validation — completed
 
 ### Goal
 
@@ -482,7 +482,7 @@ Resume → Career Brain → job found elsewhere
 - Application Memory is historically accurate; and
 - critical failures have recovery behavior.
 
-### Automated hardening delivered; representative gate pending
+### Automated hardening and representative gate — both delivered
 
 Implemented a data-minimized server-owned Application Assistant context API,
 ambiguous-URL fail-closed behavior, concurrent create/status idempotency
@@ -491,8 +491,15 @@ boundaries, keyboard focus visibility, and automated contracts for both V1
 paths. Full M0–M15 regression and production builds pass. See
 `docs/VALIDATION_M16.md`.
 
-M16 is not marked complete because the previously deferred unpacked-Chrome
-validation of both representative scenarios has not been executed.
+The previously deferred unpacked-Chrome gate was executed manually by the user
+on 2026-09-28. Both representative scenarios passed with a signed-in extension:
+CareerOS never clicked Submit, unresolved and sensitive fields stayed under user
+control, retries created no duplicate Application, and a tracking failure still
+permitted manual submission and Mark as applied. M16 is therefore complete.
+
+That gate's evidence is the user's reported manual execution, not a recorded
+automated artifact — the gate exists precisely to observe browser behavior the
+automated suite cannot assert.
 
 ## 9. Parallel/separate job-data acquisition track
 
@@ -946,17 +953,17 @@ After a milestone:
 
 ## 16. Immediate next step
 
-M17 and the post-M17 wave are implemented and automated validation passes at
-repository level. M16 automated hardening is also complete, but its
-unpacked-extension Chrome setup and representative browser validation remain
-deferred. The next required V1 gate is still:
+M16 is complete: automated hardening, repository-level validation, and the
+representative unpacked-Chrome gate for both scenarios have all passed. M17 and
+the post-M17 wave (Phases A–Q) are implemented.
 
-> Run both M16 representative scenarios in unpacked Chrome
+The remaining V1 gate is no longer a validation run. Before production job
+acquisition, complete an approved one-source-at-a-time review using
+`docs/JOB_SOURCE_DECISION.md`.
 
-Before production job acquisition, complete an approved one-source-at-a-time
-review using `docs/JOB_SOURCE_DECISION.md`.
-
-Do not mark M16 or V1 complete, and do not begin Application Strategy, resume
-tailoring, production job ingestion, or automatic final submission, until the
-M16 browser gate is explicitly resumed and passed and any chosen job source is
-approved separately.
+Do not begin Application Strategy, resume tailoring, production job ingestion,
+or automatic final submission until each is scoped and approved on its own. The
+items under "Product-direction backlog from the 2026-09 review" and "Candidate
+backlog from the simplify.jobs review" remain unapproved and still need their own
+scoping passes; the sensitive/demographic answer bank additionally needs explicit
+product and compliance sign-off before implementation.

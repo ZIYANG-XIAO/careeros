@@ -14,9 +14,9 @@ KNOW ME → DISCOVER → APPLY ANYWHERE → REMEMBER
                        ENHANCE (optional)
 ```
 
-It preserves working M0–M17 behavior, the implemented M16 automated hardening,
-and the post-M17 wave while defining minimal extension points for Jobs
-discovery. The M16 representative browser gate remains pending.
+It preserves working M0–M17 behavior, completed M16 hardening, and the
+post-M17 wave while defining minimal extension points for Jobs discovery.
+The M16 representative browser gate passed on 2026-09-28.
 
 The architectural principle is:
 

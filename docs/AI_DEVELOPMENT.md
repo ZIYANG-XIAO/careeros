@@ -119,8 +119,8 @@ npm run e2e
 
 The current smoke test opens the checked-in generic application fixture in a
 real browser. It proves the browser harness, fixture server, and accessible form
-selectors work. It intentionally does not claim to complete the pending M16
-signed-in, unpacked-Chrome scenarios.
+selectors work. It is not a substitute for the M16 signed-in, unpacked-Chrome
+scenarios, which were validated manually rather than in this suite.
 
 Extend Playwright only for stable cross-surface journeys that cannot be covered
 more cheaply by Pytest or Vitest. Keep auth secrets out of tests and prefer

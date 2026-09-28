@@ -1,14 +1,16 @@
 # M16 V1 Hardening and End-to-End Validation
 
-> Status: Automated hardening passed; representative Chrome gate pending
-> Validated: 2026-09-25
+> Status: Complete — automated hardening and representative Chrome gate both passed
+> Validated: 2026-09-25 (automated); 2026-09-28 (representative browser gate)
 
 ## Scope
 
 This validation covers automated hardening for both V1 application paths,
 authorization and data minimization, answer/form execution boundaries,
 idempotent recovery, Application Memory accuracy, production builds, and prior
-milestone regression. It does not claim live browser or live ATS validation.
+milestone regression, plus the representative unpacked-Chrome execution of both
+required scenarios. It does not claim live third-party ATS validation beyond the
+pages actually exercised in that run.
 
 ## Automated results
 
@@ -45,21 +47,28 @@ milestone regression. It does not claim live browser or live ATS validation.
 
 ## Representative browser gate
 
-The user previously chose to defer unpacked-extension setup. M16 therefore
-remains incomplete until both scenarios are run with a signed-in extension:
+Executed manually by the user on 2026-09-28 with a signed-in extension loaded
+unpacked in Chrome. Both required scenarios passed:
 
 1. CareerOS Job → tracked Apply → external form → fill/review → user Submit →
    confirmation-page recovery → visible Application detail with exact resume.
 2. Independently found job → external form → reviewed context → fill/review →
    user Submit → confirmation-page recovery → visible external Application.
 
-For each scenario verify that CareerOS never clicks Submit, unresolved and
-sensitive fields remain under user control, retries create no duplicate, and a
-tracking failure still permits manual submission and Mark as applied.
+For both scenarios the user confirmed that CareerOS never clicked Submit,
+unresolved and sensitive fields stayed under user control, retries created no
+duplicate Application, and a tracking failure still permitted manual submission
+and Mark as applied.
+
+Evidence for this gate is the user's own reported manual execution rather than a
+recorded automated artifact; it is observational by design, since the gate exists
+to check real browser behavior that the automated suite cannot assert.
 
 ## Known limitations
 
 - Automatic file upload and broader custom widgets remain unimplemented.
+- The browser gate covered the pages exercised in that session; Workday and
+  universal ATS coverage were not part of it.
 - Recent redirect recovery intentionally fails closed when more than one
   Preparing candidate exists.
 - Workday and universal ATS support are not V1 exit requirements.

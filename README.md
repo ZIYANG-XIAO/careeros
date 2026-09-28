@@ -20,9 +20,9 @@ the user through the Career Brain.
 ## Current implementation
 
 M0–M17 and the post-M17 implementation wave are implemented at repository
-level. M16 automated hardening is implemented; representative unpacked-Chrome
-validation remains pending. Current Alembic head:
-`0021_job_search_goals`.
+level. M16 is complete: automated hardening plus the representative
+unpacked-Chrome validation of both scenarios, run manually on 2026-09-28.
+Current Alembic head: `0021_job_search_goals`.
 Today the repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
@@ -183,7 +183,7 @@ The `docs/` directory is the product and engineering source of truth:
 - `docs/APPLICATION_MEMORY.md` — M14 durable Application domain/API contract
 - `docs/APPLICATION_INTEGRATION.md` — M15 Web/extension integration contract
 - `docs/VALIDATION_M15.md` — M15 automated results and deferred browser gate
-- `docs/VALIDATION_M16.md` — M16 hardening results and remaining browser gate
+- `docs/VALIDATION_M16.md` — M16 hardening results and the passed browser gate
 - `docs/JOB_SOURCE_DECISION.md` — approved process for the next job-data source
 - `docs/WORKSTATION_SETUP.md` — complete setup checklist for a new development computer
 
