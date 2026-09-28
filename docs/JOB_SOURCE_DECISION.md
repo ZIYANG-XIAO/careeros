@@ -87,3 +87,49 @@ Production job acquisition is **not implemented**. Jobs today come from manual
 entry and seed/demo/test ingestion through the existing source boundary. The next
 engineering step after V1 browser validation is to complete this decision
 process for one approved source, not to integrate many sources at once.
+
+The first candidate source is **guopin (国聘)**, a Chinese state-owned-enterprise
+recruitment platform, via a collaborator with access to it. The field mapping is
+implemented against two real sample rows the collaborator provided on
+2026-09-28, so plumbing is no longer the blocker — this decision process is:
+
+- `apps/api/src/careeros_api/job_source_guopin.py` maps a guopin row to
+  `NormalizedJobCandidate`. `market`/`country_code` are hardcoded to China, on
+  the unconfirmed assumption that the whole source is China-only.
+- `apps/api/src/careeros_api/job_source_file_adapter.py` is the reusable,
+  source-agnostic part (JSON/JSONL row loading, limits, error reporting) — not
+  guopin-specific, and shared with whatever file-export-based source comes
+  next; CareerOS expects more than one job source over time.
+- `scripts/ingest_jobs.py` resolves one owning user, reports the worst-case
+  job-parser call count, and ingests. `--dry-run` maps and validates rows
+  without PostgreSQL or an OpenAI key, and already works against real sample
+  rows. It is currently wired to guopin's mapper specifically; a second source
+  needs a `--source` flag added there to pick between mappers.
+
+Against the evaluation criteria above, still unconfirmed for guopin:
+
+1. **Legal and terms permission** — not reviewed. Blocks real ingestion
+   regardless of code readiness.
+2. **Stable identifiers** — `job_id` is assumed stable across re-crawls of the
+   same posting (deduplication depends on this); not yet confirmed over more
+   than one crawl.
+3. **Freshness** — `start_time`/`end_time` are given but without a UTC offset
+   (unlike `crawl_time`, which has one); timezone unconfirmed, so
+   `availability_status`/`freshness_status` stay `UNKNOWN` rather than derived
+   from them. No explicit removal signal exists beyond `end_time`.
+4. **Market priority** — China, by inspection of the two samples (Beijing,
+   state-owned employers, Chinese-language postings). Not yet confirmed that
+   the source carries no other market.
+5. **Employment/workplace type** — confirmed: `job_nature` "社招" (experienced
+   hire) and "校招" (campus/new-graduate) both map to `FULL_TIME`; candidate
+   seniority is a separate axis (`is_graduates`) the canonical contract does
+   not carry. Any other `job_nature` value stays `UNKNOWN`. No workplace-type
+   signal exists in the sample rows, so it stays `UNKNOWN`.
+
+Rich fields the sample rows carry but the canonical Job contract intentionally
+excludes today — salary, education, experience, major, industry, tags — are not
+touched by the mapping; see `docs/JOB_DATA_CONTRACT.md`.
+
+The skeleton can validate and map real rows in `--dry-run`, but does not itself
+authorize the source — item 1 above is a separate approval this document does
+not grant.
