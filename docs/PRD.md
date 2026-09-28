@@ -65,6 +65,9 @@ directly to application assistance.
 - browser-persisted English/Simplified Chinese locale, independent North
   America/China market selection, canonical market/country/workplace/employment
   metadata, and server-owned filtering/sorting;
+- multiple user-owned China/North America Job Search Goals with one explicit
+  active goal, market-compatible countries, salary currency, optional default
+  Resume, Home context, and opt-in Discover filter application;
 - partial English/Simplified Chinese localization for Applications, Resumes,
   Career Profile, and Job detail;
 - mutually exclusive loading/error/empty states and consistent API error

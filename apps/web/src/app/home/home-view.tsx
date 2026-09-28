@@ -11,6 +11,7 @@ import { Spinner } from "@/components/ui/spinner";
 import {
   getCareerBrain,
   listApplications,
+  listJobSearchGoals,
   listUpcomingApplicationActivities,
   listJobs,
   listResumes,
@@ -22,6 +23,7 @@ import type {
   ApplicationActivity,
   CareerBrain,
   Job,
+  JobSearchGoal,
   ResumeSummary,
 } from "@/lib/types";
 import { useDataFetch } from "@/lib/use-data-fetch";
@@ -32,6 +34,7 @@ type HomeData = {
   resumes: ResumeSummary[];
   brain: CareerBrain;
   upcomingActivities: ApplicationActivity[];
+  goals: JobSearchGoal[];
 };
 
 function HomeView() {
@@ -43,15 +46,23 @@ function HomeView() {
   const fetchHome = useCallback(async (): Promise<HomeData> => {
     const token = await getToken();
     if (!token) throw new Error("Missing authentication token");
-    const [applications, savedJobs, resumes, brain, upcomingActivities] =
+    const [applications, savedJobs, resumes, brain, upcomingActivities, goals] =
       await Promise.all([
         listApplications(token),
         listJobs(token, { savedOnly: true }),
         listResumes(token),
         getCareerBrain(token),
         listUpcomingApplicationActivities(token, 8).catch(() => []),
+        listJobSearchGoals(token).catch(() => []),
       ]);
-    return { applications, savedJobs, resumes, brain, upcomingActivities };
+    return {
+      applications,
+      savedJobs,
+      resumes,
+      brain,
+      upcomingActivities,
+      goals,
+    };
   }, [getToken]);
 
   const { data, isInitialLoading, loadError, refreshError, retry } =
@@ -71,6 +82,7 @@ function HomeView() {
           skills: [],
         },
         upcomingActivities: [],
+        goals: [],
       },
       fetch: fetchHome,
       deps: [getToken, isLoaded, isSignedIn],
@@ -94,6 +106,7 @@ function HomeView() {
     data.applications.map((application) => [application.id, application]),
   );
   const displayName = user?.firstName || user?.username || "";
+  const activeGoal = data.goals.find((goal) => goal.is_active) ?? null;
 
   if (!isLoaded || (isInitialLoading && isSignedIn)) return <Spinner />;
   if (!isSignedIn) {
@@ -132,6 +145,43 @@ function HomeView() {
           t={t}
         />
       )}
+
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm">
+        {activeGoal ? (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
+              {t("home.goal.eyebrow")}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-ink">
+              {activeGoal.name}
+              {activeGoal.target_roles.length > 0
+                ? ` · ${activeGoal.target_roles.join(", ")}`
+                : ""}
+            </p>
+            <p className="mt-1 text-xs text-ink-3">
+              {t(`goals.market.${activeGoal.market}` as never)}
+              {activeGoal.cities.length > 0
+                ? ` · ${activeGoal.cities.join(", ")}`
+                : ""}
+            </p>
+          </div>
+        ) : (
+          <div>
+            <p className="text-sm font-semibold text-ink">
+              {t("home.goal.empty")}
+            </p>
+            <p className="mt-1 text-xs text-ink-3">
+              {t("home.goal.emptyHint")}
+            </p>
+          </div>
+        )}
+        <Link
+          href="/me/goals"
+          className="text-sm font-semibold text-accent hover:underline"
+        >
+          {activeGoal ? t("home.goal.manage") : t("home.goal.create")} →
+        </Link>
+      </section>
 
       <section
         aria-label={t("home.quickActions")}

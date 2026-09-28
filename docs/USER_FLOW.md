@@ -65,6 +65,8 @@ Implemented Web flows today:
 - system status and authentication entry;
 - a signed-in Home that aggregates owned action, opportunity, Application, and
   Career Brain state without inventing deadlines or recommendations;
+- multiple China/North America Job Search Goals with one explicit active goal
+  shown on Home and applicable to Discover filters;
 - Career Profile editing;
 - resume upload, structured review, confirmation, library, and version detail;
 - manual Job creation;
@@ -185,6 +187,10 @@ The implemented Home also surfaces incomplete follow-ups and future interviews
 that the user explicitly recorded. It does not infer external appointments or
 deadlines.
 
+Home also shows the user's active Job Search Goal. A user without one receives
+a direct setup action rather than fabricated personalization. The active goal
+is an explicit user choice, not an inferred career recommendation.
+
 Navigation labels should remain user-facing. Users should not need to understand
 internal concepts such as `CareerEvidenceRevision` or `JobSnapshot`.
 
@@ -194,7 +200,8 @@ This flow is implemented for current user-owned Job data.
 
 ```text
 Jobs overview
-→ Choose market independently from interface language
+→ Optionally apply the active Job Search Goal
+→ Choose or refine market independently from interface language
 → Search/filter/browse
 → Job detail
 → Save or Apply
@@ -207,6 +214,10 @@ or China market, country, workplace, employment type, recent/title sorting, and
 clear empty/loading/error states. English/Simplified Chinese UI selection is
 independent from market selection. Seed or demo data may support product
 formation before real job-source acquisition.
+
+Users may apply the active goal to populate compatible market, country, first
+role, first city, workplace, and employment filters; they can then change any
+filter without rewriting the saved goal.
 
 ### 6.2 Job detail
 

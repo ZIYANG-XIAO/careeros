@@ -4,11 +4,10 @@ import { useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 
 import { ContactInfoSection } from "@/components/contact-info-section";
-import { JobPreferencesSection } from "@/components/job-preferences-section";
 import { Spinner } from "@/components/ui/spinner";
-import { getContactInfo, getJobPreferences } from "@/lib/api";
+import { getContactInfo } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import type { ContactInfo, JobPreferences } from "@/lib/types";
+import type { ContactInfo } from "@/lib/types";
 
 import { MeTabs } from "../me-tabs";
 
@@ -35,24 +34,10 @@ const EMPTY_CONTACT_INFO: ContactInfo = {
   confirmed_at: null,
 };
 
-const EMPTY_JOB_PREFERENCES: JobPreferences = {
-  target_roles: [],
-  cities: [],
-  company_sizes: [],
-  industries_include: [],
-  industries_exclude: [],
-  company_blocklist: [],
-  minimum_salary: null,
-  security_clearance_interest: false,
-};
-
 export default function MeContactPage() {
   const { isLoaded, isSignedIn, getToken, userId } = useAuth();
   const { t } = useI18n();
   const [contactInfo, setContactInfo] = useState<ContactInfo | null>(null);
-  const [jobPreferences, setJobPreferences] = useState<JobPreferences | null>(
-    null,
-  );
   const [error, setError] = useState<string | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
 
@@ -60,7 +45,6 @@ export default function MeContactPage() {
   if (userId !== prevUserId) {
     setPrevUserId(userId);
     setContactInfo(null);
-    setJobPreferences(null);
     setError(null);
   }
 
@@ -71,13 +55,9 @@ export default function MeContactPage() {
       try {
         const token = await getToken();
         if (!token) throw new Error("Missing authentication token");
-        const [contact, preferences] = await Promise.all([
-          getContactInfo(token),
-          getJobPreferences(token),
-        ]);
+        const contact = await getContactInfo(token);
         if (!cancelled) {
           setContactInfo(contact);
-          setJobPreferences(preferences);
           setError(null);
         }
       } catch {
@@ -89,10 +69,7 @@ export default function MeContactPage() {
     };
   }, [isLoaded, isSignedIn, getToken, userId, fetchKey, t]);
 
-  if (
-    !isLoaded ||
-    (isLoaded && isSignedIn && !contactInfo && !jobPreferences && !error)
-  ) {
+  if (!isLoaded || (isLoaded && isSignedIn && !contactInfo && !error)) {
     return <Spinner />;
   }
   if (!isSignedIn) {
@@ -102,7 +79,7 @@ export default function MeContactPage() {
       </p>
     );
   }
-  if (error || !contactInfo || !jobPreferences) {
+  if (error || !contactInfo) {
     return (
       <div className="rounded-xl border border-evidence-gap-border bg-evidence-gap-bg p-6 text-center">
         <p className="text-sm font-medium text-[#6F3627]">
@@ -124,10 +101,6 @@ export default function MeContactPage() {
       <ContactInfoSection
         contactInfo={contactInfo ?? EMPTY_CONTACT_INFO}
         onSaved={setContactInfo}
-      />
-      <JobPreferencesSection
-        jobPreferences={jobPreferences ?? EMPTY_JOB_PREFERENCES}
-        onSaved={setJobPreferences}
       />
     </div>
   );

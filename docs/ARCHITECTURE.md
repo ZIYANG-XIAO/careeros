@@ -77,7 +77,7 @@ Implemented domains and workflows:
   Career Profile, and Job detail; and
 - refactored Jobs page, extension popup, messages, and API client modules.
 
-Current Alembic head: `0020_application_activities`.
+Current Alembic head: `0021_job_search_goals`.
 
 Not implemented today:
 

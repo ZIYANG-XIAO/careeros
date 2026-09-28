@@ -10,6 +10,7 @@ const mockListJobs = vi.fn();
 const mockListResumes = vi.fn();
 const mockGetCareerBrain = vi.fn();
 const mockListUpcomingApplicationActivities = vi.fn();
+const mockListJobSearchGoals = vi.fn();
 const mockGetToken = vi.fn().mockResolvedValue("token");
 
 vi.mock("@clerk/nextjs", () => ({
@@ -33,6 +34,7 @@ vi.mock("@/lib/api", () => ({
   getCareerBrain: (...args: unknown[]) => mockGetCareerBrain(...args),
   listUpcomingApplicationActivities: (...args: unknown[]) =>
     mockListUpcomingApplicationActivities(...args),
+  listJobSearchGoals: (...args: unknown[]) => mockListJobSearchGoals(...args),
 }));
 
 beforeEach(() => {
@@ -94,6 +96,29 @@ beforeEach(() => {
       updated_at: "2026-09-28T00:00:00Z",
     },
   ]);
+  mockListJobSearchGoals.mockReset().mockResolvedValue([
+    {
+      id: "goal-1",
+      name: "Canada backend",
+      market: "NORTH_AMERICA",
+      country_codes: ["CA"],
+      target_roles: ["Backend Engineer"],
+      cities: ["Toronto"],
+      workplace_types: ["HYBRID"],
+      employment_types: ["FULL_TIME"],
+      company_sizes: [],
+      industries_include: [],
+      industries_exclude: [],
+      company_blocklist: [],
+      minimum_salary: 130000,
+      salary_currency: "CAD",
+      default_resume_id: null,
+      security_clearance_interest: false,
+      is_active: true,
+      created_at: "2026-09-28T00:00:00Z",
+      updated_at: "2026-09-28T00:00:00Z",
+    },
+  ]);
 });
 
 describe("HomeView", () => {
@@ -115,6 +140,9 @@ describe("HomeView", () => {
     expect(screen.getByText("Acme · Backend Engineer")).toBeInTheDocument();
     expect(screen.getByText("TypeScript")).toBeInTheDocument();
     expect(screen.getByText("Technical interview")).toBeInTheDocument();
+    expect(
+      screen.getByText("Canada backend · Backend Engineer"),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /Open applications/i }),
     ).toHaveAttribute("href", "/pipeline");

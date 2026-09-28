@@ -8,14 +8,14 @@ import { FocusPanel } from "@/components/focus-panel";
 import { LoadErrorBanner } from "@/components/load-error-banner";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { listApplications } from "@/lib/api";
+import { listApplications, listJobSearchGoals } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useDataFetch } from "@/lib/use-data-fetch";
-import type { ApplicationStatus } from "@/lib/types";
+import type { ApplicationStatus, JobSearchGoal } from "@/lib/types";
 
 import { CreateJobForm } from "./create-job-form";
 import { DiscoverRow } from "./discover-row";
-import { JobFilters } from "./job-filters";
+import { JobFilters, type Filters } from "./job-filters";
 import { useJobs } from "./use-jobs";
 
 export default function DiscoverView() {
@@ -62,27 +62,56 @@ export default function DiscoverView() {
     hasFilters,
   } = useJobs((job) => openFocus(job.id));
 
-  const fetchApplications = useCallback(async () => {
+  const fetchContext = useCallback(async () => {
     const token = await getToken();
     if (!token) throw new Error("Missing authentication token");
-    return listApplications(token);
+    const [applications, goals] = await Promise.all([
+      listApplications(token),
+      listJobSearchGoals(token).catch(() => []),
+    ]);
+    return { applications, goals };
   }, [getToken]);
 
-  const { data: applications } = useDataFetch({
+  const { data: context } = useDataFetch({
     enabled: isLoaded && isSignedIn,
     resetKey: userId ?? undefined,
-    initialData: [] as { job_id: string | null; status: ApplicationStatus }[],
-    fetch: fetchApplications,
+    initialData: {
+      applications: [] as {
+        job_id: string | null;
+        status: ApplicationStatus;
+      }[],
+      goals: [] as JobSearchGoal[],
+    },
+    fetch: fetchContext,
     deps: [getToken, isLoaded, isSignedIn],
   });
+  const activeGoal = context.goals.find((goal) => goal.is_active) ?? null;
 
   const linkedStatusByJobId = useMemo(() => {
     const map = new Map<string, ApplicationStatus>();
-    for (const application of applications) {
+    for (const application of context.applications) {
       if (application.job_id) map.set(application.job_id, application.status);
     }
     return map;
-  }, [applications]);
+  }, [context.applications]);
+
+  function applyActiveGoal(goal: JobSearchGoal) {
+    const nextSearch = goal.target_roles[0] ?? "";
+    const nextLocation = goal.cities[0] ?? "";
+    setSearch(nextSearch);
+    setLocation(nextLocation);
+    setFilters((current) => ({
+      ...current,
+      search: nextSearch,
+      location: nextLocation,
+      market: goal.market === "UNKNOWN" ? "" : goal.market,
+      countryCode: (goal.country_codes[0] ?? "") as Filters["countryCode"],
+      workplaceType: (goal.workplace_types[0] ??
+        "") as Filters["workplaceType"],
+      employmentType: (goal.employment_types[0] ??
+        "") as Filters["employmentType"],
+    }));
+  }
 
   if (!isLoaded || (isInitialLoading && isSignedIn)) return <Spinner />;
   if (!isSignedIn)
@@ -91,14 +120,28 @@ export default function DiscoverView() {
   return (
     <div className="flex h-full gap-5">
       <div className="flex min-w-0 flex-1 flex-col gap-5">
-        <header>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-3">
-            {t("nav.discover")}
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-ink">
-            {t("jobs.title")}
-          </h1>
-          <p className="mt-1 text-sm text-ink-2">{t("discover.notLive")}</p>
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-3">
+              {t("nav.discover")}
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold text-ink">
+              {t("jobs.title")}
+            </h1>
+            <p className="mt-1 text-sm text-ink-2">{t("discover.notLive")}</p>
+          </div>
+          {activeGoal && (
+            <button
+              type="button"
+              onClick={() => applyActiveGoal(activeGoal)}
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-left text-xs hover:bg-rail"
+            >
+              <span className="block font-semibold text-accent">
+                {t("discover.useGoal")}
+              </span>
+              <span className="mt-0.5 block text-ink-2">{activeGoal.name}</span>
+            </button>
+          )}
         </header>
 
         <nav

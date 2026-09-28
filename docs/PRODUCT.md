@@ -251,6 +251,10 @@ other consequential answers from indirect signals.
 
 Services should reuse canonical Career Brain, Resume, Job, and Application data.
 
+Job Search Goals are also shared context: users may keep separate China and
+North America targets, while the underlying Career Brain remains one confirmed
+professional truth. Interface language and target market are independent.
+
 ### Evidence before generation
 
 Generated professional claims must be supported by user-provided or

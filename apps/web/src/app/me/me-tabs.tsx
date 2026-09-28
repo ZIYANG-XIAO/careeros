@@ -11,6 +11,7 @@ const TABS = [
   { href: "/me#projects", key: "me.section.projects" as const },
   { href: "/me#skills", key: "me.section.skills" as const },
   { href: "/me/resumes", key: "nav.resumes" as const },
+  { href: "/me/goals", key: "nav.goals" as const },
   { href: "/me/contact", key: "nav.contactAnswers" as const },
 ];
 

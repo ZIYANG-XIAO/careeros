@@ -12,6 +12,7 @@ from careeros_api.health import router as health_router
 from careeros_api.job import router as job_router
 from careeros_api.job_intelligence import router as job_intelligence_router
 from careeros_api.job_preferences import router as job_preferences_router
+from careeros_api.job_search_goals import router as job_search_goals_router
 from careeros_api.project import router as project_router
 from careeros_api.resume import router as resume_router
 from careeros_api.skill import router as skill_router
@@ -32,6 +33,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(user_router)
     application.include_router(contact_info_router)
     application.include_router(job_preferences_router)
+    application.include_router(job_search_goals_router)
     application.include_router(career_brain_router)
     application.include_router(education_router)
     application.include_router(experience_router)

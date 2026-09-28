@@ -19,6 +19,9 @@ import type {
   Job,
   JobAnalysis,
   JobPreferences,
+  JobSearchGoal,
+  CreateJobSearchGoalRequest,
+  UpdateJobSearchGoalRequest,
   Project,
   ProjectDetailResponse,
   ResumeDraftItem,
@@ -247,6 +250,40 @@ export async function updateJobPreferences(
     body: JSON.stringify(data),
   });
   return handleResponse<JobPreferences>(response);
+}
+
+export async function listJobSearchGoals(
+  token: string,
+): Promise<JobSearchGoal[]> {
+  const response = await fetch(`${apiBaseUrl()}/job-search-goals`, {
+    headers: authHeaders(token),
+  });
+  return handleResponse<JobSearchGoal[]>(response);
+}
+
+export async function createJobSearchGoal(
+  token: string,
+  data: CreateJobSearchGoalRequest,
+): Promise<JobSearchGoal> {
+  const response = await fetch(`${apiBaseUrl()}/job-search-goals`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<JobSearchGoal>(response);
+}
+
+export async function updateJobSearchGoal(
+  token: string,
+  goalId: string,
+  data: UpdateJobSearchGoalRequest,
+): Promise<JobSearchGoal> {
+  const response = await fetch(`${apiBaseUrl()}/job-search-goals/${goalId}`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<JobSearchGoal>(response);
 }
 
 // ---------------------------------------------------------------------------

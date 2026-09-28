@@ -227,6 +227,9 @@ class User(Base):
     job_preferences: Mapped["JobPreferences | None"] = relationship(
         back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
+    job_search_goals: Mapped[list["JobSearchGoal"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (sa.UniqueConstraint("auth_provider", "auth_subject"),)
 
@@ -298,6 +301,59 @@ class JobPreferences(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="job_preferences")
+
+
+class JobSearchGoal(Base):
+    """One explicit, market-aware target in a user's job search."""
+
+    __tablename__ = "job_search_goals"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(sa.String(100))
+    market: Mapped[str] = mapped_column(sa.String(50), default="UNKNOWN")
+    country_codes: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    target_roles: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    cities: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    workplace_types: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    employment_types: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    company_sizes: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    industries_include: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    industries_exclude: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    company_blocklist: Mapped[list[str]] = mapped_column(sa.JSON, default=list)
+    minimum_salary: Mapped[int | None] = mapped_column(sa.Integer)
+    salary_currency: Mapped[str | None] = mapped_column(sa.String(3))
+    default_resume_id: Mapped[UUID | None] = mapped_column(
+        sa.ForeignKey("resumes.id", ondelete="SET NULL")
+    )
+    security_clearance_interest: Mapped[bool] = mapped_column(sa.Boolean, default=False)
+    is_active: Mapped[bool] = mapped_column(sa.Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+    user: Mapped["User"] = relationship(back_populates="job_search_goals")
+    default_resume: Mapped["Resume | None"] = relationship()
+
+    __table_args__ = (
+        sa.CheckConstraint(
+            "market IN ('UNKNOWN', 'NORTH_AMERICA', 'CHINA')",
+            name="ck_job_search_goals_market",
+        ),
+        sa.CheckConstraint(
+            "minimum_salary IS NULL OR minimum_salary >= 0",
+            name="ck_job_search_goals_minimum_salary",
+        ),
+        sa.Index(
+            "uq_job_search_goals_one_active_per_user",
+            "user_id",
+            unique=True,
+            postgresql_where=sa.text("is_active"),
+        ),
+    )
 
 
 class CareerBrain(Base):

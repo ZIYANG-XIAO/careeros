@@ -22,7 +22,9 @@ split Chinese and Latin-script fields never share an ambiguous representation.
 Migration `0018_job_preferences` adds confirmed job-search preferences,
 `0019_application_status_history` adds immutable lifecycle transitions, and
 `0020_application_activities` adds user-planned notes, follow-ups, and
-interviews.
+interviews. Migration `0021_job_search_goals` adds multiple explicit,
+market-aware Job Search Goals and safely copies an existing single
+`JobPreferences` record into an active default goal.
 
 The model supports:
 
@@ -63,6 +65,7 @@ User
 │   ├── Skill
 │   └── Career Evidence → immutable revisions
 ├── Resume → immutable Resume Versions
+├── Job Search Goal (multiple; at most one active)
 ├── Job → snapshots → requirements → analyses/matches
 │   └── Saved Job (per-user interest state)
 └── Application
@@ -109,9 +112,10 @@ The current migrations define:
 - `application_operations`
 - `application_status_history`
 - `application_activities`
+- `job_search_goals`
 - `user_contact_info`
 
-Current Alembic head: `0020_application_activities`.
+Current Alembic head: `0021_job_search_goals`.
 
 M12 adds a transient Answer Engine decision contract and no tables. Decisions
 reference owned canonical sources but are not persisted as Application or
@@ -150,6 +154,15 @@ real lifecycle transition. Migration `0020_application_activities` stores
 owner-scoped notes, follow-ups, and interviews under an Application. Scheduled
 activities remain distinct from immutable status history: they are user plans,
 not claims about external events.
+
+Migration `0021_job_search_goals` introduces an owner-scoped collection of
+search goals. Each goal has an explicit market (`NORTH_AMERICA`, `CHINA`, or
+`UNKNOWN`), compatible country codes, roles, cities, workplace/employment
+preferences, salary amount/currency, and an optional owned default Resume.
+A partial unique index permits at most one active goal per user. Market is
+independent of interface language. The old `job_preferences` table remains
+temporarily available for rollout compatibility but is no longer the Web
+editing surface.
 
 ### Planned, not implemented
 

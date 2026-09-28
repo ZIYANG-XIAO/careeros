@@ -100,6 +100,39 @@ export type JobPreferences = {
   security_clearance_interest: boolean;
 };
 
+export type JobSearchGoalMarket = "UNKNOWN" | "NORTH_AMERICA" | "CHINA";
+
+export type JobSearchGoal = {
+  id: string;
+  name: string;
+  market: JobSearchGoalMarket;
+  country_codes: string[];
+  target_roles: string[];
+  cities: string[];
+  workplace_types: Array<"ONSITE" | "HYBRID" | "REMOTE">;
+  employment_types: Array<
+    "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERNSHIP"
+  >;
+  company_sizes: string[];
+  industries_include: string[];
+  industries_exclude: string[];
+  company_blocklist: string[];
+  minimum_salary: number | null;
+  salary_currency: string | null;
+  default_resume_id: string | null;
+  security_clearance_interest: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreateJobSearchGoalRequest = Omit<
+  JobSearchGoal,
+  "id" | "created_at" | "updated_at"
+>;
+
+export type UpdateJobSearchGoalRequest = Partial<CreateJobSearchGoalRequest>;
+
 // ---------------------------------------------------------------------------
 // CRUD endpoint response types (full entity shapes with timestamps).
 // ---------------------------------------------------------------------------

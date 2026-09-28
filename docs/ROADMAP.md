@@ -755,6 +755,25 @@ Approved as the first functional expansion under the four-workspace shell.
 This phase does not add calendar synchronization, notifications, inferred
 deadlines, email ingestion, or autonomous follow-up communication.
 
+### Phase Q — Multi-market Job Search Goals — implementation complete
+
+Approved as the first shared core capability for China and North America.
+
+- migration `0021_job_search_goals` adds multiple user-owned, market-aware
+  search goals while preserving existing single-preference data as an active
+  default goal;
+- users can create, edit, and activate distinct China or North America goals
+  with compatible countries, roles, cities, workplace/employment types,
+  salary currency, and an optional owned default Resume;
+- at most one goal is active per user, enforced in PostgreSQL as well as the
+  authenticated API;
+- signed-in Home exposes the active direction and Discover can explicitly
+  apply it to canonical server-owned filters; and
+- interface language remains independent from target market.
+
+This phase does not claim live recommendations, production job supply, salary
+normalization, work-authorization inference, or automated application strategy.
+
 ### Product-direction backlog from the 2026-09 review (not yet scheduled)
 
 Not approved work. Preserve these candidates for a later scoping and policy
@@ -773,8 +792,8 @@ review rather than treating them as implemented behavior:
   recurring job-lifecycle monitoring;
 - **Application Ledger expansion** to pin the exact Job Snapshot and distinguish
   generated, user-edited, and confirmed answer history;
-- **Career Goals and Preference Fit**, initially extending the existing
-  JobPreferences domain rather than introducing a generic strategy agent;
+- **Preference Fit**, consuming the implemented Job Search Goals without
+  introducing a generic strategy agent;
 - **outcome-informed learning, skill graphs, company intelligence, and career
   strategy**, deferred until representative usage and sufficient owned outcome
   data exist.
