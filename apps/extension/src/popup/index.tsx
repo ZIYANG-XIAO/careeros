@@ -2,13 +2,17 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { AnswerSection } from "./answer-section";
+import { AttachResumeSection } from "./attach-resume-section";
 import { AuthSection } from "./auth-section";
+import { ClipSection } from "./clip-section";
 import { ConnectionDiagnostic } from "./connection-diagnostic";
 import { DetectionSection } from "./detection-section";
 import { FillSection } from "./fill-section";
 import { PopupFooter } from "./footer";
 import { MemorySection } from "./memory-section";
+import { SaveAnswersSection } from "./save-answers-section";
 import { usePopupState } from "./use-popup-state";
+import { t } from "../shared/i18n";
 
 function App() {
   const {
@@ -36,6 +40,8 @@ function App() {
     openingAssistant,
     assistantError,
     hasPinnedTab,
+    pinnedTab,
+    detection,
     approvedFields,
     hasReviewPlan,
     shouldPrepareForRecovery,
@@ -50,7 +56,7 @@ function App() {
   return (
     <main>
       <header>
-        <span className="eyebrow">APPLY ANYWHERE</span>
+        <span className="eyebrow">{t("APPLY ANYWHERE")}</span>
         <h1>CareerOS</h1>
       </header>
 
@@ -76,6 +82,15 @@ function App() {
         onApply={() => void applyApprovedAnswers()}
       />
 
+      {authenticated && detection && applicationContext?.state === "ready" ? (
+        <AttachResumeSection
+          tab={pinnedTab}
+          detection={detection}
+          resumeVersionId={resumeVersionId}
+          resumeVersions={applicationContext.value.resumeVersions}
+        />
+      ) : null}
+
       {applicationContext ? (
         <MemorySection
           applicationContext={applicationContext}
@@ -97,6 +112,12 @@ function App() {
         />
       ) : null}
 
+      {authenticated && applicationContext ? (
+        <SaveAnswersSection tab={pinnedTab} />
+      ) : null}
+
+      {authenticated ? <ClipSection tab={pinnedTab} /> : null}
+
       {auth.state === "error" ? (
         <ConnectionDiagnostic
           onOpenSetupGuide={() =>
@@ -111,8 +132,8 @@ function App() {
         onClick={() => void openPageAssistant()}
       >
         {openingAssistant
-          ? "Opening assistant on page…"
-          : "Open assistant on page"}
+          ? t("Opening assistant on page…")
+          : t("Open assistant on page")}
       </button>
       {assistantError ? <p className="memory-error">{assistantError}</p> : null}
 
@@ -121,7 +142,7 @@ function App() {
           type="button"
           onClick={() => chrome.tabs.create({ url: __CAREEROS_WEB_URL__ })}
         >
-          Open CareerOS to sign in
+          {t("Open CareerOS to sign in")}
         </button>
       ) : null}
 

@@ -303,6 +303,37 @@ class JobPreferences(Base):
     user: Mapped["User"] = relationship(back_populates="job_preferences")
 
 
+class ReusableAnswer(Base):
+    """A user-approved answer to a custom, non-sensitive application question.
+
+    Rows are never edited in place: saving a new answer to the same question
+    revokes the previous row, so history of what was approved stays intact.
+    """
+
+    __tablename__ = "reusable_answers"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"))
+    question_text: Mapped[str] = mapped_column(sa.String(500))
+    question_key: Mapped[str] = mapped_column(sa.String(500))
+    answer_text: Mapped[str] = mapped_column(sa.String(2000))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+
+    __table_args__ = (
+        sa.Index("ix_reusable_answers_user_id", "user_id"),
+        sa.Index(
+            "uq_reusable_answers_active_question",
+            "user_id",
+            "question_key",
+            unique=True,
+            postgresql_where=sa.text("revoked_at IS NULL"),
+        ),
+    )
+
+
 class JobSearchGoal(Base):
     """One explicit, market-aware target in a user's job search."""
 
@@ -736,10 +767,19 @@ class ResumeDraftItem(Base):
 
 
 class Job(Base):
+    """A job opening.
+
+    ``user_id`` set: a private job the user captured or clipped.
+    ``user_id`` NULL: a shared catalog job from an approved source, visible to
+    every user; per-user state (saves, analyses, applications) lives elsewhere.
+    """
+
     __tablename__ = "jobs"
 
     id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
-    user_id: Mapped[UUID] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"))
+    user_id: Mapped[UUID | None] = mapped_column(
+        sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
     company: Mapped[str] = mapped_column(sa.String(500))
     title: Mapped[str] = mapped_column(sa.String(500))
     location: Mapped[str | None] = mapped_column(sa.String(500))
@@ -767,7 +807,7 @@ class Job(Base):
         sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
     )
 
-    user: Mapped["User"] = relationship(back_populates="jobs")
+    user: Mapped["User | None"] = relationship(back_populates="jobs")
     snapshots: Mapped[list["JobSnapshot"]] = relationship(
         back_populates="job", cascade="all, delete-orphan"
     )
@@ -807,14 +847,27 @@ class Job(Base):
             "source_key",
             "external_job_id",
             unique=True,
-            postgresql_where=sa.text("external_job_id IS NOT NULL"),
+            postgresql_where=sa.text("external_job_id IS NOT NULL AND user_id IS NOT NULL"),
         ),
         sa.Index(
             "uq_jobs_user_canonical_url",
             "user_id",
             "canonical_url",
             unique=True,
-            postgresql_where=sa.text("canonical_url IS NOT NULL"),
+            postgresql_where=sa.text("canonical_url IS NOT NULL AND user_id IS NOT NULL"),
+        ),
+        sa.Index(
+            "uq_jobs_catalog_source_external_id",
+            "source_key",
+            "external_job_id",
+            unique=True,
+            postgresql_where=sa.text("external_job_id IS NOT NULL AND user_id IS NULL"),
+        ),
+        sa.Index(
+            "uq_jobs_catalog_canonical_url",
+            "canonical_url",
+            unique=True,
+            postgresql_where=sa.text("canonical_url IS NOT NULL AND user_id IS NULL"),
         ),
     )
 
@@ -850,6 +903,9 @@ class JobSnapshot(Base):
     content_sha256: Mapped[str] = mapped_column(sa.String(64))
     parser_version: Mapped[str] = mapped_column(sa.String(100))
     parser_model: Mapped[str] = mapped_column(sa.String(100))
+    # PENDING: requirements not extracted yet (catalog jobs are parsed on first
+    # use, once, for everyone). PARSED: requirements present.
+    requirements_status: Mapped[str] = mapped_column(sa.String(20), default="PARSED")
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=sa.func.now()
     )
@@ -861,7 +917,12 @@ class JobSnapshot(Base):
 
     __table_args__ = (
         sa.UniqueConstraint("job_id", "version_number"),
+        sa.CheckConstraint(
+            "requirements_status IN ('PENDING', 'PARSED')",
+            name="ck_job_snapshots_requirements_status",
+        ),
         sa.Index("ix_job_snapshots_job_id", "job_id"),
+        sa.Index("ix_job_snapshots_content_sha256", "content_sha256"),
     )
 
 
@@ -927,7 +988,7 @@ class JobAnalysis(Base):
     )
 
     __table_args__ = (
-        sa.UniqueConstraint("job_id", "analysis_version"),
+        sa.UniqueConstraint("job_id", "user_id", "analysis_version"),
         sa.Index("ix_job_analyses_user_id", "user_id"),
         sa.Index("ix_job_analyses_job_id", "job_id"),
     )
@@ -1193,4 +1254,38 @@ class ApplicationActivity(Base):
         ),
         sa.Index("ix_application_activities_application_id", "application_id"),
         sa.Index("ix_application_activities_scheduled_at", "scheduled_at"),
+    )
+
+
+class ApplicationContact(Base):
+    """A person the user deals with for one application, entered by the user.
+
+    Only what the user typed is stored; CareerOS never looks people up.
+    """
+
+    __tablename__ = "application_contacts"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    application_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("applications.id", ondelete="CASCADE")
+    )
+    name: Mapped[str] = mapped_column(sa.String(200))
+    relationship_type: Mapped[str] = mapped_column(sa.String(50))
+    email: Mapped[str | None] = mapped_column(sa.String(320))
+    profile_url: Mapped[str | None] = mapped_column(sa.String(2000))
+    notes: Mapped[str | None] = mapped_column(sa.Text)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+    __table_args__ = (
+        sa.CheckConstraint(
+            "relationship_type IN "
+            "('RECRUITER', 'HIRING_MANAGER', 'INTERVIEWER', 'REFERRER', 'OTHER')",
+            name="ck_application_contacts_relationship_type",
+        ),
+        sa.Index("ix_application_contacts_application_id", "application_id"),
     )

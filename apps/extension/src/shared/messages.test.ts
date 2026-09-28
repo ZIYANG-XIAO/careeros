@@ -318,3 +318,109 @@ describe("extension message validation", () => {
     ).toBeNull();
   });
 });
+
+describe("job clip requests", () => {
+  const clip = {
+    type: "CAREEROS_CLIP_JOB",
+    title: "Engineer",
+    company: "Acme",
+    location: null,
+    description: "A description that is long enough.",
+    market: "UNKNOWN",
+    countryCode: "UNKNOWN",
+    workplaceType: "UNKNOWN",
+    employmentType: "UNKNOWN",
+    expectedPageUrl: "https://example.com/jobs/1",
+    expectedTabId: 3,
+  };
+
+  it("accepts a well-formed clip and tab-bound extraction", () => {
+    expect(parsePopupRequest(clip)).toEqual(clip);
+    expect(
+      parsePopupRequest({
+        type: "CAREEROS_EXTRACT_JOB",
+        expectedTabId: 3,
+        expectedPageUrl: "https://example.com/jobs/1",
+      }),
+    ).not.toBeNull();
+    expect(parseContentRequest({ type: "CAREEROS_EXTRACT_JOB" })).toEqual({
+      type: "CAREEROS_EXTRACT_JOB",
+    });
+  });
+
+  it("rejects extra keys, bad enums, and short descriptions", () => {
+    expect(parsePopupRequest({ ...clip, sourceUrl: "https://x" })).toBeNull();
+    expect(parsePopupRequest({ ...clip, market: "EUROPE" })).toBeNull();
+    expect(parsePopupRequest({ ...clip, description: "short" })).toBeNull();
+    expect(parsePopupRequest({ ...clip, title: "  " })).toBeNull();
+    expect(
+      parsePopupRequest({ type: "CAREEROS_OPEN_JOB", jobId: "nope" }),
+    ).toBeNull();
+  });
+});
+
+describe("reusable answer requests", () => {
+  it("accepts bounded save batches and tab-bound reads", () => {
+    const save = {
+      type: "CAREEROS_SAVE_REUSABLE_ANSWERS",
+      answers: [{ question: "How did you hear about us?", answer: "A friend" }],
+    };
+    expect(parsePopupRequest(save)).toEqual(save);
+    expect(parsePopupRequest({ ...save, answers: [] })).toBeNull();
+    expect(
+      parsePopupRequest({
+        ...save,
+        answers: [{ question: "Q", answer: "A", extra: 1 }],
+      }),
+    ).toBeNull();
+    expect(
+      parseContentRequest({ type: "CAREEROS_READ_CUSTOM_ANSWERS" }),
+    ).toEqual({ type: "CAREEROS_READ_CUSTOM_ANSWERS" });
+  });
+
+  it("allows FILL on a custom radio group but not on a canonical one", () => {
+    const plan = (canonicalKey: string | null) => ({
+      type: "CAREEROS_APPLY_FILL_PLAN",
+      fields: [
+        {
+          fieldId: "f",
+          canonicalKey,
+          controlType: "RADIO_GROUP",
+          action: "FILL",
+          proposedAnswer: "Yes",
+        },
+      ],
+      expectedPageUrl: "https://example.com/apply",
+    });
+    expect(parsePopupRequest(plan(null))).not.toBeNull();
+    expect(parsePopupRequest(plan("CONTACT_EMAIL"))).toBeNull();
+  });
+});
+
+describe("attach resume requests", () => {
+  it("validates popup and content attach messages", () => {
+    const popup = {
+      type: "CAREEROS_ATTACH_RESUME",
+      fieldId: "field-0-3",
+      resumeVersionId: "0b6f7a9e-3f5c-4e63-9d8e-1a2b3c4d5e6f",
+      expectedPageUrl: "https://example.com/apply",
+    };
+    expect(parsePopupRequest(popup)).toEqual(popup);
+    expect(
+      parsePopupRequest({ ...popup, resumeVersionId: "../etc" }),
+    ).toBeNull();
+
+    const content = {
+      type: "CAREEROS_ATTACH_RESUME",
+      fieldId: "field-0-3",
+      expectedPageUrl: "https://example.com/apply",
+      fileName: "resume.pdf",
+      contentType: "application/pdf",
+      base64: "JVBERg==",
+    };
+    expect(parseContentRequest(content)).toEqual(content);
+    expect(
+      parseContentRequest({ ...content, base64: "not base64!" }),
+    ).toBeNull();
+  });
+});

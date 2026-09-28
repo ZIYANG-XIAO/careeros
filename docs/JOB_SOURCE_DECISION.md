@@ -83,10 +83,99 @@ and a technical spike are complete.
 
 ## Current state
 
-Production job acquisition is **not implemented**. Jobs today come from manual
-entry and seed/demo/test ingestion through the existing source boundary. The next
-engineering step after V1 browser validation is to complete this decision
-process for one approved source, not to integrate many sources at once.
+Jobs come from three places: the user's own manual entries and extension clips
+(private), and a **shared catalog** synced from approved public sources. The
+catalog (Phase T) is jobs with no owner, visible to every user; saves,
+analyses, and applications stay per user. See `docs/DATA_MODEL.md` section 11.
+
+## Source record: Greenhouse public Job Board API — North America pilot
+
+**Status: implemented and run locally; production use awaits owner sign-off
+on item 1 below.**
+
+- **What**: `GET https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true`,
+  the endpoint Greenhouse provides for employers to embed their open postings
+  on their own career sites. No authentication, no scraping of HTML pages.
+- **Code**: `careeros_api/job_source_greenhouse.py` (mapping and fetch) on
+  top of the shared `careeros_api/job_source_boards.py`,
+  `apps/api/job_sources/greenhouse_north_america.json` (seed of 52 employers
+  whose boards were verified to exist on 2026-09-28), and
+  `scripts/sync_job_sources.py` (daily sync CLI, `--dry-run` supported).
+- **Evaluation**:
+  1. *Legal and terms* — the endpoint is publicly documented for career-site
+     embedding and requires no key. We display title, company, location, the
+     description, and always link back to the employer's own posting for
+     applying. **Owner/legal must still confirm Greenhouse's and each
+     employer's terms allow this reuse before a public launch.**
+  2. *Source quality* — structured title, location, offices, HTML description.
+  3. *Freshness* — each sync re-reads every board; a posting that disappears
+     from a successfully fetched board is marked `UNAVAILABLE`/`STALE`. A failed
+     fetch never closes anything.
+  4. *Market* — North America only: a posting is kept only when its own
+     location (or, failing that, its office names) explicitly names a US/Canada
+     place. Pieces naming a place elsewhere are ignored, so "Berlin, DE" is not
+     read as Delaware. Ambiguous "Remote" is skipped.
+  5. *Stable identifiers* — `external_job_id = "{board}:{greenhouse id}"`, and
+     the canonicalized posting URL; both unique within the catalog.
+  6. *Application URLs* — the employer's own `absolute_url`.
+  7. *Removal behavior* — see 3.
+  8. *Cost* — no fees; one request per board per day with a 1 s pause between
+     boards. Requirement extraction is deferred to first use and shared, so a
+     sync makes no AI calls (first local run: 7,135 postings, ~2.5 minutes).
+  9. *Localization* — English postings; UI locale remains independent.
+  10. *Rate limits/reliability* — per-board failures are isolated and reported;
+      the CLI exits non-zero if any board failed.
+  11. *Provider isolation* — Greenhouse fields never leave the adapter.
+- **Schedule**: run daily, for example
+  `15 6 * * * cd /path/to/careeros && .venv/bin/python scripts/sync_job_sources.py`,
+  or as a long-running process with `--every-hours 24`.
+
+## Source record: Lever public Postings API — North America
+
+**Status: implemented and run locally (owner approved 2026-09-28); public
+launch shares the terms sign-off noted for Greenhouse.**
+
+- **What**: `GET https://api.lever.co/v0/postings/{site}?mode=json`, Lever's
+  public endpoint for employer career sites. No key.
+- **Code**: `careeros_api/job_source_lever.py`,
+  `apps/api/job_sources/lever_north_america.json` (7 employers verified on
+  2026-09-28; boards that returned 404 or had no postings were left out).
+- **Differences from Greenhouse**: each posting carries an ISO `country`, which
+  decides placement (the text rule runs only when it is missing);
+  `workplaceType` and `categories.commitment` map to workplace and employment
+  type; the description is Lever's intro, headed lists, and closing section
+  combined. Postings link to `hostedUrl` and apply via `applyUrl`.
+- **First local sync**: 617 North American postings.
+
+## Source record: Ashby public Job Posting API — North America
+
+**Status: implemented and run locally (owner approved 2026-09-28); public
+launch shares the terms sign-off noted for Greenhouse.**
+
+- **What**: `GET https://api.ashbyhq.com/posting-api/job-board/{board}`,
+  Ashby's public endpoint for employer career sites. No key.
+- **Code**: `careeros_api/job_source_ashby.py`,
+  `apps/api/job_sources/ashby_north_america.json` (27 employers verified on
+  2026-09-28).
+- **Differences**: placement is decided per location — the structured postal
+  address country when present, otherwise the conservative text rule on that
+  location's label — across the primary and secondary locations; the displayed
+  location lists all of them. `employmentType` and `workplaceType` (or
+  `isRemote`) map directly. Postings with `isListed: false` are treated as
+  absent, so a sync closes them.
+- **First local sync**: 2,441 North American postings.
+
+The three sources use separate `source_key`s, so closing postings for one
+source's board never touches another source's jobs.
+
+## China-market sources
+
+On hold by owner decision (2026-09-28): China-market sources will be adapted
+later. `scripts/ingest_jobs.py --catalog [--close-missing]` can already load a
+file-export source into the shared catalog without parser cost when one is
+approved.
+
+## Earlier candidate: guopin (国聘)
 
 The first candidate source is **guopin (国聘)**, a Chinese state-owned-enterprise
 recruitment platform, via a collaborator with access to it. The field mapping is

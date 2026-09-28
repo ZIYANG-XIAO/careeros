@@ -27,7 +27,7 @@ Untrusted application page
 Each normalized form contains:
 
 - a deterministic inspection-local form ID;
-- adapter identity: `generic`, `greenhouse`, `lever`, or `ashby`;
+- adapter identity: `generic`, `greenhouse`, `lever`, `ashby`, or `workday`;
 - support state: `SUPPORTED`, `PARTIALLY_SUPPORTED`, or `UNSUPPORTED`; and
 - bounded normalized fields.
 
@@ -89,13 +89,24 @@ and M13 executes only approved `FILL` decisions after user action.
 
 ## 6. Adapter boundary
 
-Adapter selection order is Greenhouse, Lever, Ashby, then generic. Specific
+Adapter selection order is Greenhouse, Lever, Ashby, Workday, then generic. Specific
 adapters contain only their host and form-location knowledge. All adapters reuse
 the same normalizer, so provider DOM does not leak into the canonical model.
 
 The ATS adapters are fixture-validated formation boundaries, not a claim of
 universal or permanent compatibility. Provider DOM changes may require an
-isolated adapter update. Workday is not an M11 target.
+isolated adapter update. Workday was not an M11 target; a fixture-validated
+Workday adapter was added later (Phase R). It locates Workday's formless apply
+step by `data-automation-id` and reuses the shared normalization, which also
+reads `data-automation-id` as a field hint. Workday's custom button/listbox
+dropdowns remain unsupported.
+
+Adapters return form-like containers (`HTMLElement`), not only `<form>`
+elements. When a page has no `<form>` at all, the generic adapter treats the
+smallest element holding all fields as one form, but only when there are at
+least three fields, at least one personal field (file upload, email, phone, or
+a name/email/tel `autocomplete`), and an English or Chinese application signal.
+This targets formless single-page ATSs without host-specific guesses.
 
 ## 7. Untrusted input and limits
 

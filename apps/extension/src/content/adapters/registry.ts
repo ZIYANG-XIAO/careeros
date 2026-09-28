@@ -2,12 +2,14 @@ import { ashbyFormAdapter } from "./ashby";
 import { genericFormAdapter } from "./generic";
 import { greenhouseFormAdapter } from "./greenhouse";
 import { leverFormAdapter } from "./lever";
+import { workdayFormAdapter } from "./workday";
 import type { FormAdapter } from "./types";
 
 const adapters: readonly FormAdapter[] = [
   greenhouseFormAdapter,
   leverFormAdapter,
   ashbyFormAdapter,
+  workdayFormAdapter,
   genericFormAdapter,
 ];
 

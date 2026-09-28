@@ -16,6 +16,9 @@ import type {
 
 import type { Filters } from "./job-filters";
 
+/** Discover pages through the shared catalog instead of loading it whole. */
+export const PAGE_SIZE = 50;
+
 const initialFilters: Filters = {
   search: "",
   location: "",
@@ -37,20 +40,38 @@ export function useJobs(onCreated?: (job: Job) => void) {
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const pageQuery = useCallback(
+    (offset: number) => {
+      const paged = filters.view !== "saved";
+      return {
+        search: filters.search,
+        location: filters.location,
+        savedOnly: filters.view === "saved",
+        source: filters.view === "mine" ? ("mine" as const) : ("all" as const),
+        market: filters.market || undefined,
+        countryCode: filters.countryCode || undefined,
+        workplaceType: filters.workplaceType || undefined,
+        employmentType: filters.employmentType || undefined,
+        sort: filters.sort,
+        limit: paged ? PAGE_SIZE : undefined,
+        offset: paged ? offset : undefined,
+        compact: true,
+        collapse: true,
+      };
+    },
+    [filters],
+  );
+
   const fetchJobs = useCallback(async () => {
     const token = await getToken();
     if (!token) throw new Error("Missing authentication token");
-    return listJobs(token, {
-      search: filters.search,
-      location: filters.location,
-      savedOnly: filters.view === "saved",
-      market: filters.market || undefined,
-      countryCode: filters.countryCode || undefined,
-      workplaceType: filters.workplaceType || undefined,
-      employmentType: filters.employmentType || undefined,
-      sort: filters.sort,
-    });
-  }, [filters, getToken]);
+    const page = await listJobs(token, pageQuery(0));
+    setHasMore(filters.view !== "saved" && page.length === PAGE_SIZE);
+    return page;
+  }, [filters.view, getToken, pageQuery]);
 
   const {
     data: jobs,
@@ -67,6 +88,26 @@ export function useJobs(onCreated?: (job: Job) => void) {
     fetch: fetchJobs,
     deps: [filters, getToken, isLoaded, isSignedIn],
   });
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Missing authentication token");
+      const page = await listJobs(token, pageQuery(jobs.length));
+      const known = new Set(jobs.map((job) => job.id));
+      setJobs((current) => [
+        ...current,
+        ...page.filter((job) => !known.has(job.id)),
+      ]);
+      setHasMore(page.length === PAGE_SIZE);
+      setActionError(null);
+    } catch {
+      setActionError(t("jobs.loadMoreError"));
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   function handleFilter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -168,9 +209,24 @@ export function useJobs(onCreated?: (job: Job) => void) {
     filters.sort !== "recent",
   );
 
+  function replaceJob(updated: Job) {
+    setJobs((current) =>
+      current.map((item) => (item.id === updated.id ? updated : item)),
+    );
+  }
+
+  function removeJob(jobId: string) {
+    setJobs((current) => current.filter((item) => item.id !== jobId));
+  }
+
   return {
     isLoaded,
     isSignedIn,
+    replaceJob,
+    removeJob,
+    hasMore,
+    loadingMore,
+    loadMore,
     filters,
     setFilters,
     search,

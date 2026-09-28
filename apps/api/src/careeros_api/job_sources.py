@@ -14,6 +14,11 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import ColumnElement
 
 from careeros_api.job_parser import JOB_PARSER_VERSION, JobParser, JobParsingError
+from careeros_api.job_requirements import (
+    REQUIREMENTS_PARSED,
+    REQUIREMENTS_PENDING,
+    UNPARSED_VERSION,
+)
 from careeros_api.job_schemas import ParsedJobDescription, validate_job_grounding
 from careeros_api.models import (
     Job,
@@ -108,7 +113,9 @@ def _normalize_description(value: str) -> str:
     return "\n".join(line.strip() for line in value.replace("\r\n", "\n").split("\n")).strip()
 
 
-async def _parse_description(parser: JobParser, description: str) -> ParsedJobDescription:
+async def _parse_description(parser: JobParser | None, description: str) -> ParsedJobDescription:
+    if parser is None:
+        raise JobSourceIngestionError("A job parser is required unless requirements are deferred")
     try:
         raw_output = await parser.parse_job_description(description)
         parsed = ParsedJobDescription.model_validate(raw_output)
@@ -122,22 +129,25 @@ async def _append_snapshot(
     session: AsyncSession,
     job: Job,
     candidate: NormalizedJobCandidate,
-    parser: JobParser,
+    parser: JobParser | None,
+    *,
+    defer_requirements: bool,
 ) -> JobSnapshot:
-    parsed = await _parse_description(parser, candidate.description)
     normalized = _normalize_description(candidate.description)
+    parsed = None if defer_requirements else await _parse_description(parser, candidate.description)
     snapshot = JobSnapshot(
         job_id=job.id,
         version_number=max((item.version_number for item in job.snapshots), default=0) + 1,
         raw_description=candidate.description,
         normalized_description=normalized,
         content_sha256=sha256(normalized.encode()).hexdigest(),
-        parser_version=JOB_PARSER_VERSION,
-        parser_model=str(getattr(parser, "model", "unknown-provider")),
+        parser_version=JOB_PARSER_VERSION if parsed else UNPARSED_VERSION,
+        parser_model=str(getattr(parser, "model", "unknown-provider")) if parsed else "none",
+        requirements_status=REQUIREMENTS_PARSED if parsed else REQUIREMENTS_PENDING,
     )
     session.add(snapshot)
     await session.flush()
-    for position, requirement in enumerate(parsed.requirements):
+    for position, requirement in enumerate(parsed.requirements if parsed else []):
         session.add(
             JobRequirement(
                 job_snapshot_id=snapshot.id,
@@ -157,7 +167,7 @@ async def _append_snapshot(
 async def _find_existing_job(
     session: AsyncSession,
     *,
-    user_id: UUID,
+    user_id: UUID | None,
     source_key: str,
     candidate: NormalizedJobCandidate,
 ) -> Job | None:
@@ -171,7 +181,10 @@ async def _find_existing_job(
     result = await session.scalars(
         select(Job)
         .options(selectinload(Job.snapshots).selectinload(JobSnapshot.requirements))
-        .where(Job.user_id == user_id, or_(*identities))
+        .where(
+            Job.user_id.is_(None) if user_id is None else Job.user_id == user_id,
+            or_(*identities),
+        )
     )
     matches = result.unique().all()
     if len(matches) > 1:
@@ -182,11 +195,17 @@ async def _find_existing_job(
 async def ingest_job_source(
     session: AsyncSession,
     *,
-    user_id: UUID,
+    user_id: UUID | None,
     adapter: JobSourceAdapter,
-    parser: JobParser,
+    parser: JobParser | None,
+    defer_requirements: bool = False,
 ) -> JobSourceIngestionResult:
-    """Normalize one source into user-owned canonical Jobs, safely retryable."""
+    """Normalize one source into canonical Jobs, safely retryable.
+
+    ``user_id=None`` ingests into the shared catalog. ``defer_requirements``
+    stores snapshots as PENDING so requirement extraction happens on first use
+    (see ``careeros_api.job_requirements``) instead of once per posting here.
+    """
 
     source_key = adapter.source_key.strip().lower()
     if not source_key or len(source_key) > 100 or not source_key.replace("-", "").isalnum():
@@ -237,7 +256,9 @@ async def ingest_job_source(
         normalized_hash = sha256(_normalize_description(candidate.description).encode()).hexdigest()
         latest = max(job.snapshots, key=lambda item: item.version_number, default=None)
         if latest is None or latest.content_sha256 != normalized_hash:
-            snapshot = await _append_snapshot(session, job, candidate, parser)
+            snapshot = await _append_snapshot(
+                session, job, candidate, parser, defer_requirements=defer_requirements
+            )
             job.snapshots.append(snapshot)
 
         jobs.append(job)
@@ -250,3 +271,33 @@ async def ingest_job_source(
         created_count=created_count,
         updated_count=updated_count,
     )
+
+
+async def mark_unseen_catalog_jobs_unavailable(
+    session: AsyncSession,
+    *,
+    source_key: str,
+    external_id_prefix: str,
+    seen_external_ids: set[str],
+) -> int:
+    """Mark catalog postings from one fully fetched feed that are gone as UNAVAILABLE.
+
+    Call only after the feed was fetched and parsed successfully; a failed or
+    partial fetch must never close postings. Returns how many were closed.
+    """
+    rows = await session.scalars(
+        select(Job).where(
+            Job.user_id.is_(None),
+            Job.source_key == source_key,
+            Job.external_job_id.startswith(external_id_prefix, autoescape=True),
+            Job.availability_status != JobAvailabilityStatus.UNAVAILABLE.value,
+        )
+    )
+    closed = 0
+    for job in rows:
+        if job.external_job_id not in seen_external_ids:
+            job.availability_status = JobAvailabilityStatus.UNAVAILABLE.value
+            job.freshness_status = JobFreshnessStatus.STALE.value
+            closed += 1
+    await session.flush()
+    return closed

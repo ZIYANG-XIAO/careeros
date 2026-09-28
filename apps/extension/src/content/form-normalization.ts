@@ -103,6 +103,7 @@ function labelText(control: SupportedControl): string | null {
     cleanText(control.getAttribute("placeholder")) ??
     humanizeIdentifier(control.getAttribute("name")) ??
     humanizeIdentifier(control.id) ??
+    humanizeIdentifier(control.getAttribute("data-automation-id")) ??
     null
   );
 }
@@ -112,6 +113,7 @@ function hintText(control: SupportedControl, question: string | null): string {
     question ?? "",
     humanizeIdentifier(control.getAttribute("name")) ?? "",
     humanizeIdentifier(control.id) ?? "",
+    humanizeIdentifier(control.getAttribute("data-automation-id")) ?? "",
     control.getAttribute("autocomplete") ?? "",
     control.getAttribute("type") ?? "",
   ]
@@ -338,7 +340,7 @@ function normalizedField(
 }
 
 export function inspectFormTargets(
-  form: HTMLFormElement,
+  form: HTMLElement,
   formIndex: number,
 ): NormalizedFieldTarget[] {
   const controls = Array.from(
@@ -382,7 +384,7 @@ export function inspectFormTargets(
 }
 
 function inspectForm(
-  form: HTMLFormElement,
+  form: HTMLElement,
   formIndex: number,
   adapter: FormAdapterId,
 ): NormalizedApplicationForm {
@@ -407,7 +409,7 @@ function inspectForm(
 }
 
 export function normalizeForms(
-  forms: HTMLFormElement[],
+  forms: HTMLElement[],
   adapter: FormAdapterId,
 ): NormalizedApplicationForm[] {
   return forms

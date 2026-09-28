@@ -54,9 +54,16 @@ if (/Authorization|Bearer|CLERK|session.?token/i.test(contentScript)) {
     "Privileged authentication material leaked into the content script.",
   );
 }
-if (/\.files\b|innerHTML|outerHTML/.test(contentScript)) {
+// The resume-attach flow may assign the user's chosen CareerOS resume to an
+// empty file input and check whether one is already chosen, but content code
+// must never open or read a file the user selected, nor raw page HTML.
+if (
+  /\.files\s*\??\.?\[|FileReader|readAsDataURL|readAsArrayBuffer|readAsText|innerHTML|outerHTML/.test(
+    contentScript,
+  )
+) {
   throw new Error(
-    "M13 content execution must not read selected files or raw page HTML.",
+    "Content execution must not read selected files or raw page HTML.",
   );
 }
 if (

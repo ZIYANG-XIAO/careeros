@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { listApplications, listJobSearchGoals } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { preferenceFit } from "@/lib/preference-fit";
 import { useDataFetch } from "@/lib/use-data-fetch";
 import type { ApplicationStatus, JobSearchGoal } from "@/lib/types";
 
@@ -60,6 +61,11 @@ export default function DiscoverView() {
     clearFilters,
     handleCreate,
     hasFilters,
+    replaceJob,
+    removeJob,
+    hasMore,
+    loadingMore,
+    loadMore,
   } = useJobs((job) => openFocus(job.id));
 
   const fetchContext = useCallback(async () => {
@@ -148,7 +154,7 @@ export default function DiscoverView() {
           aria-label={t("discover.sections")}
           className="flex flex-wrap gap-1 border-b border-border"
         >
-          {(["all", "saved"] as const).map((view) => (
+          {(["all", "saved", "mine"] as const).map((view) => (
             <button
               key={view}
               type="button"
@@ -162,7 +168,9 @@ export default function DiscoverView() {
             >
               {view === "all"
                 ? t("discover.sections.browse")
-                : t("discover.sections.saved")}
+                : view === "saved"
+                  ? t("discover.sections.saved")
+                  : t("discover.sections.mine")}
             </button>
           ))}
           <a
@@ -246,16 +254,28 @@ export default function DiscoverView() {
                 job={job}
                 selected={focusId === job.id}
                 linkedStatus={linkedStatusByJobId.get(job.id) ?? null}
+                fit={preferenceFit(job, activeGoal)}
                 onSelect={() => openFocus(job.id)}
               />
             ))}
+            {hasMore && (
+              <div className="p-3 text-center">
+                <Button
+                  variant="secondary"
+                  loading={loadingMore}
+                  onClick={() => void loadMore()}
+                >
+                  {t("jobs.loadMore")}
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
         <p className="text-xs text-ink-3">
           {locale === "zh-CN"
-            ? `${jobs.length} ${t("jobs.jobs")}`
-            : `${jobs.length} ${jobs.length === 1 ? t("jobs.job") : t("jobs.jobs")}`}
+            ? `${jobs.length}${hasMore ? "+" : ""} ${t("jobs.jobs")}`
+            : `${jobs.length}${hasMore ? "+" : ""} ${jobs.length === 1 ? t("jobs.job") : t("jobs.jobs")}`}
         </p>
 
         <CreateJobForm creating={creating} onCreate={handleCreate} t={t} />
@@ -265,6 +285,11 @@ export default function DiscoverView() {
         <FocusPanel
           target={{ kind: "job", id: focusId }}
           onClose={closeFocus}
+          onJobChanged={replaceJob}
+          onDeleted={(deleted) => {
+            removeJob(deleted.id);
+            closeFocus();
+          }}
         />
       )}
     </div>

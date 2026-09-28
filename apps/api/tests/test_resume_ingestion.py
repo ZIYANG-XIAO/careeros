@@ -423,3 +423,26 @@ async def test_resume_rows_are_owned_and_version_identity_is_stable(tmp_path: Pa
             assert asset.user_id == resume.user_id
             assert version.version_number == 1
         await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_resume_version_file_download_is_exact_and_owner_scoped(tmp_path: Path) -> None:
+    parser = FakeResumeParser(parsed_resume())
+    original = make_resume_docx()
+    async with make_integration_client(uuid4(), uuid4(), parser, str(tmp_path / "owner")) as owner:
+        upload = await owner.post(
+            "/resume-imports",
+            files={"file": ("Ada Résumé.docx", original, "application/octet-stream")},
+        )
+        version_id = upload.json()["resume_version_id"]
+
+        response = await owner.get(f"/resume-versions/{version_id}/file")
+        assert response.status_code == 200
+        assert response.content == original
+        assert response.headers["cache-control"] == "no-store"
+        assert response.headers["x-resume-filename"] == "Ada%20R%C3%A9sum%C3%A9.docx"
+
+        async with make_integration_client(
+            resume_parser=parser, resume_storage_dir=str(tmp_path / "owner")
+        ) as other:
+            assert (await other.get(f"/resume-versions/{version_id}/file")).status_code == 404

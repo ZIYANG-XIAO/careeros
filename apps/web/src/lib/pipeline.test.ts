@@ -38,6 +38,9 @@ function makeJob(overrides: Partial<Job> = {}): Job {
     updated_at: "2026-09-01T00:00:00Z",
     is_saved: true,
     saved_at: "2026-09-01T00:00:00Z",
+    is_catalog: false,
+    similar_count: 0,
+    other_locations: [],
     latest_snapshot: {
       id: "snap-1",
       version_number: 1,
@@ -46,6 +49,7 @@ function makeJob(overrides: Partial<Job> = {}): Job {
       content_sha256: "x",
       parser_version: "v1",
       parser_model: "test",
+      requirements_status: "PARSED",
       created_at: "2026-09-01T00:00:00Z",
       requirements: [],
     },

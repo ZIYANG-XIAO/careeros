@@ -4,6 +4,7 @@ import type {
   TrackedApplication,
 } from "../shared/messages";
 import { selectedApplicationFields } from "./application-memory";
+import { t } from "../shared/i18n";
 
 export function MemorySection({
   applicationContext,
@@ -42,15 +43,15 @@ export function MemorySection({
 }) {
   return (
     <section className="page-card application-memory" aria-live="polite">
-      <span className="eyebrow">APPLICATION MEMORY</span>
+      <span className="eyebrow">{t("APPLICATION MEMORY")}</span>
       <h2>
         {applicationContext.state === "loading"
-          ? "Looking for tracked context…"
+          ? t("Looking for tracked context…")
           : applicationContext.state === "error"
             ? applicationContext.message
             : recordedApplication
-              ? "Application recorded"
-              : "Record after you submit"}
+              ? t("Application recorded")
+              : t("Record after you submit")}
       </h2>
       {applicationContext.state === "ready" ? (
         <>
@@ -58,16 +59,23 @@ export function MemorySection({
             {recordedApplication
               ? `${recordedApplication.company} · ${recordedApplication.role}`
               : applicationContext.value.matchKind === "EXACT_URL"
-                ? "CareerOS matched the application you started. Confirm after you submit the form."
+                ? t(
+                    "CareerOS matched the application you started. Confirm after you submit the form.",
+                  )
                 : applicationContext.value.matchKind === "RECENT_PREPARING"
-                  ? "CareerOS found one recent application. Review the company and role before confirming."
-                  : "No tracked job matched this page. Review the suggested context before confirming."}
+                  ? t(
+                      "CareerOS found one recent application. Review the company and role before confirming.",
+                    )
+                  : t(
+                      "No tracked job matched this page. Review the suggested context before confirming.",
+                    )}
           </p>
           {!recordedApplication &&
           applicationContext.value.matchKind === "NONE" ? (
             <p className="memory-note">
-              Choosing fill saves this reviewed context as Preparing so it can
-              be recovered after a submit redirect.
+              {t(
+                "Choosing fill saves this reviewed context as Preparing so it can be recovered after a submit redirect.",
+              )}
             </p>
           ) : null}
 
@@ -99,7 +107,7 @@ export function MemorySection({
                 </label>
               ) : null}
               <label>
-                Company
+                {t("Company")}
                 <input
                   value={company}
                   maxLength={500}
@@ -115,7 +123,7 @@ export function MemorySection({
                 />
               </label>
               <label>
-                Role
+                {t("Role")}
                 <input
                   value={role}
                   maxLength={500}
@@ -131,7 +139,7 @@ export function MemorySection({
                 />
               </label>
               <label>
-                Resume used
+                {t("Resume used")}
                 <select
                   value={resumeVersionId}
                   disabled={Boolean(
@@ -145,7 +153,7 @@ export function MemorySection({
                     onResolveForResume(event.target.value);
                   }}
                 >
-                  <option value="">No resume recorded</option>
+                  <option value="">{t("No resume recorded")}</option>
                   {applicationContext.value.resumeVersions.map((resume) => (
                     <option key={resume.id} value={resume.id}>
                       {resume.label}
@@ -159,12 +167,13 @@ export function MemorySection({
                 onClick={onRecord}
               >
                 {recording
-                  ? "Recording application…"
-                  : "I submitted · Record application"}
+                  ? t("Recording application…")
+                  : t("I submitted · Record application")}
               </button>
               <p className="memory-note">
-                Click only after you submit the form yourself. CareerOS never
-                clicks Submit.
+                {t(
+                  "Click only after you submit the form yourself. CareerOS never clicks Submit.",
+                )}
               </p>
             </div>
           ) : (
@@ -176,14 +185,16 @@ export function MemorySection({
                 })
               }
             >
-              View in CareerOS
+              {t("View in CareerOS")}
             </button>
           )}
           {recordError ? <p className="memory-error">{recordError}</p> : null}
         </>
       ) : (
         <p>
-          Sign in and keep this application page open to save durable context.
+          {t(
+            "Sign in and keep this application page open to save durable context.",
+          )}
         </p>
       )}
     </section>

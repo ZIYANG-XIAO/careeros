@@ -85,6 +85,23 @@ ambiguous option match also remain manual.
 Resume selection and upload may be expanded only through a separately validated
 user-controlled flow that preserves the exact owned Resume Version.
 
+Phase R adds that flow. When a page has a `RESUME_FILE` control and the user has
+chosen a Resume Version in the popup, an explicit "Attach resume" action has the
+background worker download the exact owned file
+(`GET /resume-versions/{id}/file`) and hand it to the content script, which
+assigns it to that one empty file input with `DataTransfer` and dispatches
+input/change events. It never replaces a file the user already chose
+(`SKIPPED_EXISTING`), respects the input's `accept` list, reports `FAILED`
+honestly when a site rejects programmatic files, and still never submits.
+The build validator now forbids indexing `.files` or using `FileReader` in the
+content script instead of forbidding every `.files` access: content code may
+assign a file and check whether one is chosen, but must never read a file the
+user selected.
+
+Custom questions (no canonical key) may be filled only from an answer the user
+explicitly saved for reuse (`REUSABLE_CONFIRMED_ANSWER`); see
+`docs/ANSWER_ENGINE.md` section 7.
+
 ## 7. Trust boundary
 
 API credentials remain in the background service worker. Proposed answers enter

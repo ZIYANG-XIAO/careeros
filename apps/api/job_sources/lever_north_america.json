@@ -1,0 +1,34 @@
+{
+  "source_key": "lever",
+  "description": "North America: employers whose public Lever job boards were verified to exist on 2026-09-28. Only postings located in the US or Canada are kept.",
+  "boards": [
+    {
+      "token": "palantir",
+      "company": "Palantir"
+    },
+    {
+      "token": "spotify",
+      "company": "Spotify"
+    },
+    {
+      "token": "outreach",
+      "company": "Outreach"
+    },
+    {
+      "token": "zoox",
+      "company": "Zoox"
+    },
+    {
+      "token": "wealthfront",
+      "company": "Wealthfront"
+    },
+    {
+      "token": "ro",
+      "company": "Ro"
+    },
+    {
+      "token": "jumpcloud",
+      "company": "JumpCloud"
+    }
+  ]
+}

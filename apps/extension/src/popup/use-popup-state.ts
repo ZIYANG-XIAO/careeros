@@ -20,6 +20,7 @@ import { answerCopy } from "./answer-copy";
 import { detectionCopy } from "./detection-copy";
 import { fillCopy } from "./fill-copy";
 import { approvedFillCount, buildFillPlan } from "./fill-plan";
+import { t } from "../shared/i18n";
 
 export type LoadState<T> =
   | { state: "loading" }
@@ -64,11 +65,11 @@ export function usePopupState() {
         setAuth(
           response.ok
             ? { state: "ready", value: response.data }
-            : { state: "error", message: "CareerOS is unavailable." },
+            : { state: "error", message: t("CareerOS is unavailable.") },
         );
       })
       .catch(() =>
-        setAuth({ state: "error", message: "CareerOS is unavailable." }),
+        setAuth({ state: "error", message: t("CareerOS is unavailable.") }),
       );
 
     void (async () => {
@@ -85,8 +86,9 @@ export function usePopupState() {
         ) {
           setDetection({
             state: "error",
-            message:
+            message: t(
               "Could not identify the active tab. Close and reopen the popup.",
+            ),
           });
           return;
         }
@@ -96,8 +98,9 @@ export function usePopupState() {
       } catch {
         setDetection({
           state: "error",
-          message:
+          message: t(
             "Could not identify the active tab. Close and reopen the popup.",
+          ),
         });
         return;
       }
@@ -113,10 +116,10 @@ export function usePopupState() {
             state: "error",
             message:
               response.error === "UNSUPPORTED_PAGE"
-                ? "Open a normal web page to use CareerOS."
+                ? t("Open a normal web page to use CareerOS.")
                 : response.error === "STALE_PAGE"
-                  ? "This tab changed. Close and reopen the popup."
-                  : "This page could not be inspected.",
+                  ? t("This tab changed. Close and reopen the popup.")
+                  : t("This page could not be inspected."),
           });
           return;
         }
@@ -165,17 +168,17 @@ export function usePopupState() {
               state: "error",
               message:
                 contextResponse.error === "UNAUTHENTICATED"
-                  ? "Sign in to record this application."
+                  ? t("Sign in to record this application.")
                   : contextResponse.error === "STALE_PAGE"
-                    ? "This tab changed. Close and reopen the popup."
-                    : "Application context is unavailable.",
+                    ? t("This tab changed. Close and reopen the popup.")
+                    : t("Application context is unavailable."),
             });
           }
         } catch {
           if (isApplicationPage) {
             setApplicationContext({
               state: "error",
-              message: "Application context is unavailable.",
+              message: t("Application context is unavailable."),
             });
           }
         }
@@ -209,20 +212,20 @@ export function usePopupState() {
                   state: "error",
                   message:
                     answerResponse.error === "UNAUTHENTICATED"
-                      ? "Sign in to preview safe answers."
-                      : "Answer decisions are unavailable.",
+                      ? t("Sign in to preview safe answers.")
+                      : t("Answer decisions are unavailable."),
                 },
           );
         } catch {
           setAnswers({
             state: "error",
-            message: "Answer decisions are unavailable.",
+            message: t("Answer decisions are unavailable."),
           });
         }
       } catch {
         setDetection({
           state: "error",
-          message: "This page could not be inspected.",
+          message: t("This page could not be inspected."),
         });
       }
     })();
@@ -233,14 +236,14 @@ export function usePopupState() {
     detection.state === "ready" ? detectionCopy(detection.value) : null;
   const detectionTitle =
     detection.state === "loading"
-      ? "Checking this page…"
+      ? t("Checking this page…")
       : detection.state === "ready"
         ? copy!.title
         : detection.message;
   const detectionBody =
     detection.state === "ready"
       ? copy!.body
-      : "CareerOS only inspects the active tab when you open it.";
+      : t("CareerOS only inspects the active tab when you open it.");
   const resolvedAnswerCopy =
     answers?.state === "ready" ? answerCopy(answers.value) : null;
   const fillPlan =
@@ -265,7 +268,9 @@ export function usePopupState() {
     if (!tab?.tabUrl) {
       setFillResult({
         state: "error",
-        message: "Page context is unavailable. Close the popup and try again.",
+        message: t(
+          "Page context is unavailable. Close the popup and try again.",
+        ),
       });
       return;
     }
@@ -285,7 +290,9 @@ export function usePopupState() {
         if (!prepared.ok) {
           if (prepared.error === "STALE_PAGE") {
             setRecordError(
-              "This page changed. Close the popup and reopen on the application page.",
+              t(
+                "This page changed. Close the popup and reopen on the application page.",
+              ),
             );
             return;
           }
@@ -302,7 +309,9 @@ export function usePopupState() {
         setUseTrackedApplication(true);
       } catch {
         setRecordError(
-          "CareerOS could not save recovery context, but you can still fill and submit manually.",
+          t(
+            "CareerOS could not save recovery context, but you can still fill and submit manually.",
+          ),
         );
       } finally {
         setPreparingApplication(false);
@@ -323,14 +332,16 @@ export function usePopupState() {
               state: "error",
               message:
                 response.error === "STALE_PAGE"
-                  ? "This page changed before fill could finish. Close the popup and try again."
-                  : "The page could not be updated.",
+                  ? t(
+                      "This page changed before fill could finish. Close the popup and try again.",
+                    )
+                  : t("The page could not be updated."),
             },
       );
     } catch {
       setFillResult({
         state: "error",
-        message: "The page could not be updated.",
+        message: t("The page could not be updated."),
       });
     }
   }
@@ -371,12 +382,12 @@ export function usePopupState() {
       setAnswers(
         response.ok
           ? { state: "ready", value: response.data }
-          : { state: "error", message: "Answer decisions are unavailable." },
+          : { state: "error", message: t("Answer decisions are unavailable.") },
       );
     } catch {
       setAnswers({
         state: "error",
-        message: "Answer decisions are unavailable.",
+        message: t("Answer decisions are unavailable."),
       });
     }
   }
@@ -385,7 +396,7 @@ export function usePopupState() {
     const tab = pinnedTab.current;
     if (!tab) {
       setAssistantError(
-        "No active tab identified. Close and reopen the popup.",
+        t("No active tab identified. Close and reopen the popup."),
       );
       return;
     }
@@ -400,12 +411,12 @@ export function usePopupState() {
       if (!response.ok) {
         setAssistantError(
           response.error === "UNSUPPORTED_PAGE"
-            ? "Open a normal web page first."
-            : "The in-page assistant could not be opened.",
+            ? t("Open a normal web page first.")
+            : t("The in-page assistant could not be opened."),
         );
       }
     } catch {
-      setAssistantError("The in-page assistant could not be opened.");
+      setAssistantError(t("The in-page assistant could not be opened."));
     } finally {
       setOpeningAssistant(false);
     }
@@ -424,11 +435,12 @@ export function usePopupState() {
     const retainedAnswers = confirmedApplicationAnswers(
       answers?.state === "ready" ? answers.value : null,
       fillResult?.state === "ready" ? fillResult.value : null,
+      detection.state === "ready" ? detection.value : null,
     );
     const tab = pinnedTab.current;
     if (!tab?.tabUrl) {
       setRecordError(
-        "Page context is unavailable. Close the popup and try again.",
+        t("Page context is unavailable. Close the popup and try again."),
       );
       setRecording(false);
       return;
@@ -450,7 +462,9 @@ export function usePopupState() {
       if (!response.ok) {
         if (response.error === "STALE_PAGE") {
           setRecordError(
-            "This page changed. Close the popup and reopen on the application page.",
+            t(
+              "This page changed. Close the popup and reopen on the application page.",
+            ),
           );
           return;
         }
@@ -459,7 +473,9 @@ export function usePopupState() {
       setRecordedApplication(response.data);
     } catch {
       setRecordError(
-        "CareerOS could not record this application. Your details remain here so you can retry.",
+        t(
+          "CareerOS could not record this application. Your details remain here so you can retry.",
+        ),
       );
     } finally {
       setRecording(false);
@@ -499,6 +515,8 @@ export function usePopupState() {
     openingAssistant,
     assistantError,
     hasPinnedTab,
+    pinnedTab: hasPinnedTab ? pinnedTab.current : null,
+    detection: detection.state === "ready" ? detection.value : null,
     approvedFields,
     hasReviewPlan,
     shouldPrepareForRecovery,

@@ -1,5 +1,7 @@
 import type {
   Application,
+  ApplicationContact,
+  ReusableAnswer,
   ApplicationActivity,
   ApplicationStatus,
   ApplicationStatusHistoryEntry,
@@ -286,6 +288,38 @@ export async function updateJobSearchGoal(
   return handleResponse<JobSearchGoal>(response);
 }
 
+export async function listReusableAnswers(
+  token: string,
+): Promise<ReusableAnswer[]> {
+  const response = await fetch(`${apiBaseUrl()}/reusable-answers`, {
+    headers: authHeaders(token),
+  });
+  return handleResponse<ReusableAnswer[]>(response);
+}
+
+export async function saveReusableAnswer(
+  token: string,
+  data: { question_text: string; answer_text: string },
+): Promise<ReusableAnswer> {
+  const response = await fetch(`${apiBaseUrl()}/reusable-answers`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<ReusableAnswer>(response);
+}
+
+export async function revokeReusableAnswer(
+  token: string,
+  answerId: string,
+): Promise<void> {
+  const response = await fetch(`${apiBaseUrl()}/reusable-answers/${answerId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  await handleEmptyResponse(response);
+}
+
 // ---------------------------------------------------------------------------
 // Education
 // ---------------------------------------------------------------------------
@@ -472,6 +506,14 @@ export type JobListFilters = {
   workplaceType?: string;
   employmentType?: string;
   sort?: "recent" | "title";
+  /** "mine" = jobs the user added; "catalog" = shared career-site jobs. */
+  source?: "all" | "mine" | "catalog";
+  limit?: number;
+  offset?: number;
+  /** Omit descriptions/requirements; list rows never show them. */
+  compact?: boolean;
+  /** One row per company+title; the row reports how many others it stands for. */
+  collapse?: boolean;
 };
 
 export async function listJobs(
@@ -489,6 +531,12 @@ export async function listJobs(
     query.set("employment_type", filters.employmentType);
   if (filters.sort && filters.sort !== "recent")
     query.set("sort", filters.sort);
+  if (filters.source && filters.source !== "all")
+    query.set("source", filters.source);
+  if (filters.limit !== undefined) query.set("limit", String(filters.limit));
+  if (filters.offset) query.set("offset", String(filters.offset));
+  if (filters.compact) query.set("compact", "true");
+  if (filters.collapse) query.set("collapse", "true");
   const suffix = query.size ? `?${query.toString()}` : "";
   const response = await fetch(`${apiBaseUrl()}/jobs${suffix}`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -511,6 +559,141 @@ export async function saveJob(token: string, jobId: string): Promise<Job> {
     headers: { Authorization: `Bearer ${token}` },
   });
   return handleResponse<Job>(response);
+}
+
+export async function updateJob(
+  token: string,
+  jobId: string,
+  data: Partial<
+    Pick<
+      Job,
+      | "company"
+      | "title"
+      | "location"
+      | "application_url"
+      | "market"
+      | "country_code"
+      | "workplace_type"
+      | "employment_type"
+    >
+  >,
+): Promise<Job> {
+  const response = await fetch(`${apiBaseUrl()}/jobs/${jobId}`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<Job>(response);
+}
+
+/** Extracts requirements for a job whose latest snapshot is still pending. */
+export async function extractJobRequirements(
+  token: string,
+  jobId: string,
+): Promise<Job> {
+  const response = await fetch(`${apiBaseUrl()}/jobs/${jobId}/requirements`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleResponse<Job>(response);
+}
+
+export async function deleteJob(token: string, jobId: string): Promise<void> {
+  const response = await fetch(`${apiBaseUrl()}/jobs/${jobId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  await handleEmptyResponse(response);
+}
+
+export async function deleteApplication(
+  token: string,
+  applicationId: string,
+): Promise<void> {
+  const response = await fetch(
+    `${apiBaseUrl()}/applications/${applicationId}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  await handleEmptyResponse(response);
+}
+
+export async function deleteResume(
+  token: string,
+  resumeId: string,
+): Promise<void> {
+  const response = await fetch(`${apiBaseUrl()}/resumes/${resumeId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  await handleEmptyResponse(response);
+}
+
+export async function listApplicationContacts(
+  token: string,
+  applicationId: string,
+): Promise<ApplicationContact[]> {
+  const response = await fetch(
+    `${apiBaseUrl()}/applications/${applicationId}/contacts`,
+    { headers: authHeaders(token) },
+  );
+  return handleResponse<ApplicationContact[]>(response);
+}
+
+export async function createApplicationContact(
+  token: string,
+  applicationId: string,
+  data: Pick<
+    ApplicationContact,
+    "name" | "relationship_type" | "email" | "profile_url" | "notes"
+  >,
+): Promise<ApplicationContact> {
+  const response = await fetch(
+    `${apiBaseUrl()}/applications/${applicationId}/contacts`,
+    { method: "POST", headers: authHeaders(token), body: JSON.stringify(data) },
+  );
+  return handleResponse<ApplicationContact>(response);
+}
+
+export async function deleteApplicationContact(
+  token: string,
+  applicationId: string,
+  contactId: string,
+): Promise<void> {
+  const response = await fetch(
+    `${apiBaseUrl()}/applications/${applicationId}/contacts/${contactId}`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${token}` } },
+  );
+  await handleEmptyResponse(response);
+}
+
+/** Open follow-ups and interviews as an iCalendar file. */
+export async function downloadActivityCalendar(token: string): Promise<Blob> {
+  const response = await fetch(`${apiBaseUrl()}/calendar/activities.ics`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) await handleEmptyResponse(response);
+  return response.blob();
+}
+
+/** Downloads every record the user owns as one JSON blob. */
+export async function exportAccountData(token: string): Promise<Blob> {
+  const response = await fetch(`${apiBaseUrl()}/me/export`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) await handleEmptyResponse(response);
+  return response.blob();
+}
+
+export async function deleteAccount(token: string): Promise<void> {
+  const response = await fetch(`${apiBaseUrl()}/me`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+    body: JSON.stringify({ confirm: "DELETE" }),
+  });
+  await handleEmptyResponse(response);
 }
 
 export async function unsaveJob(token: string, jobId: string): Promise<void> {

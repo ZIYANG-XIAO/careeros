@@ -781,26 +781,158 @@ Approved as the first shared core capability for China and North America.
 This phase does not claim live recommendations, production job supply, salary
 normalization, work-authorization inference, or automated application strategy.
 
+### Phase R — Capability-gap wave after the 2026-09-28 competitive review — implementation complete
+
+Approved by the owner ("do everything that can be done now") after comparing
+CareerOS with Simplify, Jobright, Teal, and Huntr. Covers only items needing
+no external approval, credentials, or compliance sign-off.
+
+- **Job Clipper**: the popup's "Save this job" reads the active page only on
+  request — schema.org `JobPosting` JSON-LD first, else visible page text —
+  and shows an editable draft. Saving calls `POST /jobs/clip`, which uses the
+  verified tab URL (never the draft) as identity, canonicalizes it (lowercase
+  host, no fragment, tracking params such as `utm_*`/`gh_src` dropped, job IDs
+  in the query kept), returns the existing Job when the page was clipped
+  before, and marks the Job saved. Clipped Jobs are `MANUAL_ENTRY` with
+  `source_key = "extension_clip"`.
+- **Preference Fit**: Discover rows show "Goal fit n/m" against the active Job
+  Search Goal, or a blocklist warning. It is a deterministic client-side
+  comparison (`apps/web/src/lib/preference-fit.ts`) that judges a criterion only
+  when both the goal and the job state it; nothing is inferred or persisted.
+- **Reusable Answers**: see `docs/ANSWER_ENGINE.md` section 7 and
+  `docs/DATA_MODEL.md` 16.4. Saved from the popup or Me → Contact & answers,
+  used to fill matching custom questions, sensitive questions refused.
+- **Resume attach**: explicit "Attach resume" fills an empty resume upload
+  control with the exact owned Resume Version file; see
+  `docs/FORM_EXECUTION.md` section 6.
+- **Workday adapter** and **formless generic detection** for single-page ATSs
+  (including common China-market systems); see `docs/FORM_MODEL.md`.
+- **Extension localization**: popup, in-page assistant, and on-page field
+  markers are available in Simplified Chinese, following the browser UI
+  language (`apps/extension/src/shared/i18n.ts`, English fallback). The Web
+  app was already fully localized; the earlier "partial" wording was stale.
+
+Remaining limitations after this wave:
+
+- custom JavaScript widgets (react-select comboboxes, Workday listboxes) are
+  still not filled — they need real-site validation before simulating clicks;
+- Reusable Answers are not yet copied into an Application's recorded answer
+  history, and Clip/Save-answers/Attach live in the popup only, not the
+  in-page assistant;
+- Resume attach and Workday/formless detection are fixture-validated only and
+  still need a representative unpacked-Chrome pass on real sites;
+- still blocked on others: production job sources (guopin terms/answers,
+  a North America ATS source), the sensitive/demographic answer bank
+  (compliance sign-off), email digests (no outbound email), billing, a
+  production deployment, and Chrome Web Store listing and privacy policy.
+
+### Phase S — Data rights, calendar, contacts, assistant parity, and ops basics — implementation complete
+
+Second owner-approved "do everything possible" pass, closing gaps found after
+Phase R. None needed external approval.
+
+- **Delete/edit and data rights**: Job edit (listing fields) and delete;
+  Application delete; Resume delete (refused while an Application recorded
+  it); full JSON account export and confirmed account deletion under
+  Me → Account & data. Rules in `docs/DATA_MODEL.md` section 19.
+- **Calendar**: open follow-ups and interviews download as `.ics` from Home.
+- **Application contacts**: recruiters, hiring managers, interviewers, and
+  referrers per application in the Pipeline panel (`docs/DATA_MODEL.md` 15.2a).
+- **Reusable answers in application history**: answers filled from a saved
+  reusable answer are recorded as `USER_PROVIDED` under the form's question.
+- **In-page assistant parity**: Save this job, Remember my answers, and Attach
+  resume are also available in the in-page assistant; popup and assistant
+  share framework-free checks and copy (`apps/extension/src/popup/tool-copy.ts`).
+- **Multi-step forms**: a change of Workday's step heading is treated like
+  navigation, discarding stale inspection and fill state (no automatic
+  re-scan, consistent with "inspect only when asked").
+- **Ops basics**: request IDs, structured access logs, and per-user limits on
+  AI-backed endpoints (`docs/ARCHITECTURE.md` section 24).
+
+Remaining limitations: sign-in identity deletion still happens in the auth
+provider's account settings; the rate limiter is single-process; no error
+tracking provider; calendar is a download, not a live subscription (that needs
+a per-user secret feed URL).
+
+### Phase T — Shared job catalog and the Greenhouse North America pilot — implementation complete
+
+Approved by the owner after the 2026-09-28 data-strategy discussion
+("North America first, via public employer ATS feeds; no scraping of job
+boards").
+
+- Data model split into private jobs and a shared catalog, with per-user saves,
+  analyses, and applications (`docs/DATA_MODEL.md` 11.0).
+- Deferred, shared requirement extraction: syncing costs no AI calls; each
+  posting is parsed at most once, on first use.
+- Greenhouse public Job Board API adapter, a verified 52-employer seed, a daily
+  sync CLI with per-board isolation and closure detection
+  (`docs/JOB_SOURCE_DECISION.md`).
+- Discover pages through the catalog (50 per page, compact rows), adds an
+  "Added by me" view, marks catalog jobs read-only, and extracts requirements
+  when a catalog job is opened.
+- First local sync: 7,135 North American postings from 52 boards.
+
+Awaiting the owner: terms sign-off for public launch, a scheduler in whatever
+environment runs production, and approval of the next sources (Lever, Ashby,
+guopin with written authorization).
+
+### Phase U — Lever and Ashby sources, shared board plumbing, scheduling — implementation complete
+
+- Shared ATS board plumbing (`careeros_api/job_source_boards.py`); Greenhouse,
+  Lever, and Ashby are thin adapters over it.
+- Lever (7 employers) and Ashby (27 employers) North America seeds, verified
+  against the live APIs; source records in `docs/JOB_SOURCE_DECISION.md`.
+- `scripts/sync_job_sources.py --source greenhouse|lever|ashby|all`, plus
+  `--every-hours N` for environments without cron.
+- `scripts/ingest_jobs.py --catalog [--close-missing]` loads a file-export
+  source into the shared catalog with deferred parsing.
+- Local catalog after this phase: 10,193 North American postings
+  (Greenhouse 7,135, Ashby 2,441, Lever 617).
+- China-market sources are on hold by owner decision.
+
+### Phase V — Catalog quality: tighter location rules, standing-interest filter, collapsed listing — implementation complete
+
+- Location placement, shared across all three sources
+  (`careeros_api/job_source_boards.py`): recognizes US state names and major
+  city names beyond ZIP-style codes (avoiding false positives like "Berlin,
+  DE" reading as Delaware), a `is_generic_location` check so Greenhouse's
+  office-name fallback only fires for placeless labels ("Remote", "Hybrid",
+  "N/A") and never overrides an explicit non-NA location, and explicit
+  "North America" / "NAMER" / "US & Canada" phrasing.
+- Standing-interest postings (talent pools, "future opportunities", "don't
+  see your role" pages) are recognized by title across all three sources and
+  excluded from the catalog rather than kept as if they were open roles.
+- `BoardMapping.seen_external_ids` now reflects only *kept* postings, so a
+  posting that stops meeting these rules on a later sync — not just one that
+  disappeared from the board — is closed like any other departure.
+- `GET /jobs?collapse=true`: one row per company + title, with `similar_count`
+  and up to 20 `other_locations` on the representative row (the user's saved
+  posting in the group is preferred as representative). Used by Discover by
+  default. Employers routinely post the identical role once per office; this
+  keeps a scan of the list from being dominated by one role repeated a dozen
+  times.
+- Local catalog after this phase: ~10,128 kept North American postings after
+  re-sync with the tightened rules (from ~10,193; the drop is closed
+  postings, not lost coverage — talent-pool listings and previously
+  mis-placed non-NA postings).
+
 ### Product-direction backlog from the 2026-09 review (not yet scheduled)
 
 Not approved work. Preserve these candidates for a later scoping and policy
 review rather than treating them as implemented behavior:
 
-- **Reusable non-sensitive Answer Memory** with explicit save/revoke intent,
-  separate from Career Evidence and application-specific immutable answers;
+- ~~**Reusable non-sensitive Answer Memory**~~ — implemented in Phase R;
 - **Eligibility profile and decision layer** with explicit user-provided data,
   `PASS` / `BLOCKED` / `UNKNOWN` / `REVIEW` outcomes, field-level permissions,
   and no inference of work authorization, sponsorship, citizenship, salary, or
   protected traits;
-- **explicit-action Job Clipper** that captures and confirms the active job
-  page through the existing least-privilege extension boundary;
-- **one approved ATS job source**, reviewed through
-  `docs/JOB_SOURCE_DECISION.md`, before any Opportunity Radar, Watchlists, or
-  recurring job-lifecycle monitoring;
+- ~~**explicit-action Job Clipper**~~ — implemented in Phase R;
+- ~~**one approved ATS job source**~~ — Greenhouse pilot implemented in
+  Phase T (launch pending terms sign-off);
 - **Application Ledger expansion** to pin the exact Job Snapshot and distinguish
   generated, user-edited, and confirmed answer history;
-- **Preference Fit**, consuming the implemented Job Search Goals without
-  introducing a generic strategy agent;
+- ~~**Preference Fit**~~ — implemented in Phase R as a deterministic
+  goal comparison;
 - **outcome-informed learning, skill graphs, company intelligence, and career
   strategy**, deferred until representative usage and sufficient owned outcome
   data exist.
@@ -878,9 +1010,12 @@ feature.
 Remaining limitations after this wave:
 
 - no production job acquisition;
-- no automatic resume/file upload or broader custom-widget execution;
-- incomplete localization of remaining Web surfaces and the extension; and
-- M16 representative unpacked-Chrome validation still pending.
+- no automatic resume/file upload or broader custom-widget execution
+  (resume attach added in Phase R; custom widgets still open);
+- incomplete localization of remaining Web surfaces and the extension
+  (completed in Phase R); and
+- M16 representative unpacked-Chrome validation still pending (completed
+  2026-09-28).
 
 See `docs/JOB_SOURCE_DECISION.md` for the next approved job-data source decision
 process.
@@ -905,13 +1040,12 @@ domains. They must not become mandatory for every application.
 Do not make these blockers for V1 formation:
 
 - real multi-market job ingestion;
-- universal ATS support or Workday;
+- universal ATS support (a Workday adapter exists since Phase R);
 - auto-submit or mass apply;
 - Application Strategy and resume tailoring;
 - cover letters and interview preparation;
 - sophisticated recommendations or outcome learning;
 - advanced analytics;
-- complete localization of remaining Web surfaces and the extension;
 - career planning or autonomous agents; and
 - microservices, Kafka, Kubernetes, Neo4j, standalone vector database, or generic
   plugin/event infrastructure.
@@ -955,7 +1089,9 @@ After a milestone:
 
 M16 is complete: automated hardening, repository-level validation, and the
 representative unpacked-Chrome gate for both scenarios have all passed. M17 and
-the post-M17 wave (Phases A–Q) are implemented.
+the post-M17 wave (Phases A–V) are implemented. Phase R's resume attach,
+Workday adapter, and formless detection still need a representative
+unpacked-Chrome pass on real sites.
 
 The remaining V1 gate is no longer a validation run. Before production job
 acquisition, complete an approved one-source-at-a-time review using

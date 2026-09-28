@@ -127,6 +127,25 @@ M12 creates no answer table and persists no decision. A normal custom question
 may report `ELIGIBLE_WITH_EXPLICIT_CONSENT`, but `save_intent_required` remains
 true. This is a proposal for a future user action, not permission to save.
 
+Phase R implements that user action as Reusable Answers (`reusable_answers`,
+migration `0022_reusable_answers`):
+
+- saving is always explicit — from the extension popup ("Remember my answers
+  on this page", nothing pre-selected) or Me → Contact & answers — via
+  `POST /reusable-answers`; `GET` lists active answers and `DELETE` revokes one;
+- the server refuses any question that `classify_sensitive_question` flags
+  (`422 SENSITIVE_QUESTION`), so sensitive/consequential answers stay
+  `PROHIBITED`;
+- questions are matched by a normalized key (NFKC, case-folded, whitespace
+  collapsed, required markers and trailing punctuation removed); saving again
+  revokes the previous active row rather than editing it, and at most one
+  active answer exists per user and key;
+- the engine consults saved answers only for fields with no canonical key, not
+  sensitive, and of a text/textarea/select/radio/number control. A saved
+  choice for a select or radio group is reused only when it exactly matches an
+  offered option. A hit returns `FILL` with source `REUSABLE_CONFIRMED_ANSWER`
+  and the answer's ID as `source_reference_id`.
+
 Sensitive/consequential answers are `PROHIBITED`. Known Career Brain, identity,
 contact-info, and Resume sources are `NOT_APPLICABLE` because they remain
 canonical domain data rather than duplicate reusable-answer records.

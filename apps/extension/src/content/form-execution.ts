@@ -3,6 +3,7 @@ import type {
   FillFieldState,
   FillPlanField,
 } from "../shared/messages";
+import { t } from "../shared/i18n";
 import { selectFormAdapter } from "./adapters/registry";
 import {
   inspectFormTargets,
@@ -71,7 +72,7 @@ function markTarget(
   const marker = document.createElement("span");
   marker.setAttribute(MARKER_ATTRIBUTE, "true");
   marker.setAttribute("role", "status");
-  marker.textContent = STATE_LABELS[state];
+  marker.textContent = t(STATE_LABELS[state]);
   visualTarget.insertAdjacentElement("afterend", marker);
 }
 

@@ -1102,3 +1102,86 @@ describe("in-page assistant", () => {
     vi.useRealTimers();
   });
 });
+
+describe("in-page assistant tools", () => {
+  afterEach(() => {
+    destroyAssistant();
+    vi.unstubAllGlobals();
+  });
+
+  it("clips the current job from structured data after the user confirms", async () => {
+    document.body.innerHTML = `
+      <script type="application/ld+json">${JSON.stringify({
+        "@type": "JobPosting",
+        title: "Backend Engineer",
+        hiringOrganization: { name: "Acme" },
+        description: "<p>Build reliable APIs with Python and PostgreSQL.</p>",
+      })}</script>
+      <h1>Backend Engineer</h1>`;
+    const sent: Array<{ type: string } & Record<string, unknown>> = [];
+    mockChrome({
+      sendMessage: async (message) => {
+        const request = message as { type: string } & Record<string, unknown>;
+        sent.push(request);
+        if (request.type === "CAREEROS_GET_AUTH_STATUS") {
+          return { ok: true, data: { authenticated: true } };
+        }
+        if (request.type === "CAREEROS_CLIP_JOB") {
+          return {
+            ok: true,
+            data: {
+              jobId: "0b6f7a9e-3f5c-4e63-9d8e-1a2b3c4d5e6f",
+              created: true,
+            },
+          };
+        }
+        return {
+          ok: true,
+          data: {
+            status: "NOT_APPLICATION_PAGE",
+            forms: [],
+            reasons: [],
+            adapter: null,
+          },
+        };
+      },
+    });
+    mountAssistant();
+    const host = assistantHost();
+    (host.shadowRoot.querySelector(".launcher") as HTMLButtonElement).click();
+    const buttonNamed = (name: string) =>
+      Array.from(host.shadowRoot.querySelectorAll("button")).find(
+        (button) => button.textContent === name,
+      );
+
+    await vi.waitFor(() => expect(buttonNamed("Save this job")).toBeTruthy());
+    buttonNamed("Save this job")!.click();
+    await vi.waitFor(() =>
+      expect(buttonNamed("Save to CareerOS")).toBeTruthy(),
+    );
+    expect(sent.some((request) => request.type === "CAREEROS_CLIP_JOB")).toBe(
+      false,
+    );
+
+    buttonNamed("Save to CareerOS")!.click();
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.textContent).toContain("Saved to CareerOS"),
+    );
+    const clip = sent.find((request) => request.type === "CAREEROS_CLIP_JOB")!;
+    expect(clip).toMatchObject({
+      title: "Backend Engineer",
+      company: "Acme",
+      expectedPageUrl: window.location.href,
+    });
+  });
+});
+
+describe("applicationStepSignature", () => {
+  it("reads the Workday step heading and is empty elsewhere", async () => {
+    const { applicationStepSignature } = await import("./assistant");
+    document.body.innerHTML = `<h2 data-automation-id="pageHeaderText">  My   Experience </h2>`;
+    expect(applicationStepSignature(document)).toBe("My Experience");
+    document.body.innerHTML = `<h2>Apply</h2>`;
+    expect(applicationStepSignature(document)).toBe("");
+  });
+});

@@ -5,6 +5,11 @@ import {
   type AnswerResolution,
   type ApplicationPageContext,
   type AuthStatus,
+  type AttachResumeResult,
+  type ClippedJob,
+  type JobDraft,
+  type SavedReusableAnswers,
+  type TypedCustomAnswer,
   type ExtensionResponse,
   type FillExecutionResult,
   type PageDetection,
@@ -220,6 +225,102 @@ async function prepareApplication(
     : { ok: false, error: "UNAUTHENTICATED" };
 }
 
+async function extractJobFromPage(
+  tabId: number,
+  tabUrl: string,
+): Promise<ExtensionResponse<JobDraft>> {
+  if (!isSupportedPageUrl(tabUrl)) {
+    return { ok: false, error: "UNSUPPORTED_PAGE" };
+  }
+  const ready = await ensureContentScript(tabId);
+  if (!ready) return { ok: false, error: "UNAVAILABLE" };
+  try {
+    const response = (await chrome.tabs.sendMessage(tabId, {
+      type: "CAREEROS_EXTRACT_JOB",
+    })) as ExtensionResponse<JobDraft>;
+    if (response.ok && response.data.pageUrl !== tabUrl) {
+      return { ok: false, error: "STALE_PAGE" };
+    }
+    return response;
+  } catch {
+    return { ok: false, error: "UNAVAILABLE" };
+  }
+}
+
+async function readCustomAnswers(
+  tabId: number,
+  tabUrl: string,
+): Promise<ExtensionResponse<TypedCustomAnswer[]>> {
+  if (!isSupportedPageUrl(tabUrl)) {
+    return { ok: false, error: "UNSUPPORTED_PAGE" };
+  }
+  const ready = await ensureContentScript(tabId);
+  if (!ready) return { ok: false, error: "UNAVAILABLE" };
+  try {
+    return (await chrome.tabs.sendMessage(tabId, {
+      type: "CAREEROS_READ_CUSTOM_ANSWERS",
+    })) as ExtensionResponse<TypedCustomAnswer[]>;
+  } catch {
+    return { ok: false, error: "UNAVAILABLE" };
+  }
+}
+
+async function attachResume(
+  tabId: number,
+  tabUrl: string,
+  request: Extract<
+    ReturnType<typeof parsePopupRequest>,
+    { type: "CAREEROS_ATTACH_RESUME" }
+  >,
+): Promise<ExtensionResponse<AttachResumeResult>> {
+  if (!isSupportedPageUrl(tabUrl)) {
+    return { ok: false, error: "UNSUPPORTED_PAGE" };
+  }
+  if (
+    request.expectedPageUrl !== tabUrl ||
+    (await isStalePage(tabId, request.expectedPageUrl))
+  ) {
+    return { ok: false, error: "STALE_PAGE" };
+  }
+  const file = await api.downloadResumeVersion(request.resumeVersionId);
+  if (!file) return { ok: false, error: "UNAUTHENTICATED" };
+  const ready = await ensureContentScript(tabId);
+  if (!ready) return { ok: false, error: "UNAVAILABLE" };
+  try {
+    return (await chrome.tabs.sendMessage(tabId, {
+      type: "CAREEROS_ATTACH_RESUME",
+      fieldId: request.fieldId,
+      expectedPageUrl: request.expectedPageUrl,
+      ...file,
+    })) as ExtensionResponse<AttachResumeResult>;
+  } catch {
+    return { ok: false, error: "UNAVAILABLE" };
+  }
+}
+
+async function clipJob(
+  tabId: number,
+  tabUrl: string,
+  request: Extract<
+    ReturnType<typeof parsePopupRequest>,
+    { type: "CAREEROS_CLIP_JOB" }
+  >,
+): Promise<ExtensionResponse<ClippedJob>> {
+  if (!isSupportedPageUrl(tabUrl)) {
+    return { ok: false, error: "UNSUPPORTED_PAGE" };
+  }
+  if (request.expectedPageUrl !== tabUrl) {
+    return { ok: false, error: "STALE_PAGE" };
+  }
+  if (await isStalePage(tabId, request.expectedPageUrl)) {
+    return { ok: false, error: "STALE_PAGE" };
+  }
+  const clipped = await api.clipJob(request, tabUrl);
+  return clipped
+    ? { ok: true, data: clipped }
+    : { ok: false, error: "UNAUTHENTICATED" };
+}
+
 function handlePopupRequest(
   request: NonNullable<ReturnType<typeof parsePopupRequest>>,
   sendResponse: (response: unknown) => void,
@@ -262,6 +363,33 @@ function handlePopupRequest(
     chrome.tabs
       .create({
         url: `${__CAREEROS_WEB_URL__}/applications/${request.applicationId}`,
+      })
+      .then(() => sendResponse({ ok: true, data: { opened: true } }))
+      .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
+    return true;
+  }
+
+  if (request.type === "CAREEROS_SAVE_REUSABLE_ANSWERS") {
+    api
+      .saveReusableAnswers(request.answers)
+      .then((data) =>
+        sendResponse(
+          data
+            ? ({
+                ok: true,
+                data,
+              } satisfies ExtensionResponse<SavedReusableAnswers>)
+            : { ok: false, error: "UNAUTHENTICATED" },
+        ),
+      )
+      .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
+    return true;
+  }
+
+  if (request.type === "CAREEROS_OPEN_JOB") {
+    chrome.tabs
+      .create({
+        url: `${__CAREEROS_WEB_URL__}/discover?focus=${request.jobId}`,
       })
       .then(() => sendResponse({ ok: true, data: { opened: true } }))
       .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
@@ -348,6 +476,26 @@ function handlePopupRequest(
 
       if (request.type === "CAREEROS_ACTIVATE_ASSISTANT") {
         sendResponse(await activateAssistantOnPinnedTab(tab.tabId, tab.tabUrl));
+        return;
+      }
+
+      if (request.type === "CAREEROS_EXTRACT_JOB") {
+        sendResponse(await extractJobFromPage(tab.tabId, tab.tabUrl));
+        return;
+      }
+
+      if (request.type === "CAREEROS_READ_CUSTOM_ANSWERS") {
+        sendResponse(await readCustomAnswers(tab.tabId, tab.tabUrl));
+        return;
+      }
+
+      if (request.type === "CAREEROS_ATTACH_RESUME") {
+        sendResponse(await attachResume(tab.tabId, tab.tabUrl, request));
+        return;
+      }
+
+      if (request.type === "CAREEROS_CLIP_JOB") {
+        sendResponse(await clipJob(tab.tabId, tab.tabUrl, request));
         return;
       }
 

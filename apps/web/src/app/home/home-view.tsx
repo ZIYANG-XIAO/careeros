@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 
+import { CalendarDownloadButton } from "@/components/calendar-download-button";
 import { LoadErrorBanner } from "@/components/load-error-banner";
 import { PipelineActionCenter } from "@/components/pipeline-action-center";
 import { Spinner } from "@/components/ui/spinner";
@@ -230,12 +231,15 @@ function HomeView() {
                 {t("home.schedule.title")}
               </h2>
             </div>
-            <Link
-              href="/pipeline"
-              className="text-sm font-semibold text-accent hover:underline"
-            >
-              {t("home.schedule.manage")} →
-            </Link>
+            <div className="flex flex-col items-end gap-1">
+              <Link
+                href="/pipeline"
+                className="text-sm font-semibold text-accent hover:underline"
+              >
+                {t("home.schedule.manage")} →
+              </Link>
+              <CalendarDownloadButton />
+            </div>
           </div>
           <div className="grid divide-y divide-row-divider sm:grid-cols-2 sm:divide-x sm:divide-y-0">
             {data.upcomingActivities.slice(0, 2).map((activity) => {

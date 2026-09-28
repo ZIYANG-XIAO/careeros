@@ -1,0 +1,214 @@
+{
+  "source_key": "greenhouse",
+  "description": "North America pilot: employers whose public Greenhouse job boards were verified to exist on 2026-09-28. Only postings located in the US or Canada are kept.",
+  "boards": [
+    {
+      "token": "stripe",
+      "company": "Stripe"
+    },
+    {
+      "token": "airbnb",
+      "company": "Airbnb"
+    },
+    {
+      "token": "doordashusa",
+      "company": "DoorDash"
+    },
+    {
+      "token": "dropbox",
+      "company": "Dropbox"
+    },
+    {
+      "token": "figma",
+      "company": "Figma"
+    },
+    {
+      "token": "databricks",
+      "company": "Databricks"
+    },
+    {
+      "token": "robinhood",
+      "company": "Robinhood"
+    },
+    {
+      "token": "reddit",
+      "company": "Reddit"
+    },
+    {
+      "token": "pinterest",
+      "company": "Pinterest"
+    },
+    {
+      "token": "lyft",
+      "company": "Lyft"
+    },
+    {
+      "token": "coinbase",
+      "company": "Coinbase"
+    },
+    {
+      "token": "instacart",
+      "company": "Instacart"
+    },
+    {
+      "token": "gitlab",
+      "company": "GitLab"
+    },
+    {
+      "token": "discord",
+      "company": "Discord"
+    },
+    {
+      "token": "twitch",
+      "company": "Twitch"
+    },
+    {
+      "token": "cloudflare",
+      "company": "Cloudflare"
+    },
+    {
+      "token": "datadog",
+      "company": "Datadog"
+    },
+    {
+      "token": "duolingo",
+      "company": "Duolingo"
+    },
+    {
+      "token": "asana",
+      "company": "Asana"
+    },
+    {
+      "token": "affirm",
+      "company": "Affirm"
+    },
+    {
+      "token": "brex",
+      "company": "Brex"
+    },
+    {
+      "token": "scaleai",
+      "company": "Scale AI"
+    },
+    {
+      "token": "anthropic",
+      "company": "Anthropic"
+    },
+    {
+      "token": "mongodb",
+      "company": "MongoDB"
+    },
+    {
+      "token": "elastic",
+      "company": "Elastic"
+    },
+    {
+      "token": "samsara",
+      "company": "Samsara"
+    },
+    {
+      "token": "gusto",
+      "company": "Gusto"
+    },
+    {
+      "token": "squarespace",
+      "company": "Squarespace"
+    },
+    {
+      "token": "twilio",
+      "company": "Twilio"
+    },
+    {
+      "token": "okta",
+      "company": "Okta"
+    },
+    {
+      "token": "zscaler",
+      "company": "Zscaler"
+    },
+    {
+      "token": "pagerduty",
+      "company": "PagerDuty"
+    },
+    {
+      "token": "carta",
+      "company": "Carta"
+    },
+    {
+      "token": "chime",
+      "company": "Chime"
+    },
+    {
+      "token": "roblox",
+      "company": "Roblox"
+    },
+    {
+      "token": "faire",
+      "company": "Faire"
+    },
+    {
+      "token": "flexport",
+      "company": "Flexport"
+    },
+    {
+      "token": "vercel",
+      "company": "Vercel"
+    },
+    {
+      "token": "webflow",
+      "company": "Webflow"
+    },
+    {
+      "token": "airtable",
+      "company": "Airtable"
+    },
+    {
+      "token": "nuro",
+      "company": "Nuro"
+    },
+    {
+      "token": "waymo",
+      "company": "Waymo"
+    },
+    {
+      "token": "intercom",
+      "company": "Intercom"
+    },
+    {
+      "token": "amplitude",
+      "company": "Amplitude"
+    },
+    {
+      "token": "mixpanel",
+      "company": "Mixpanel"
+    },
+    {
+      "token": "sofi",
+      "company": "SoFi"
+    },
+    {
+      "token": "toast",
+      "company": "Toast"
+    },
+    {
+      "token": "klaviyo",
+      "company": "Klaviyo"
+    },
+    {
+      "token": "lattice",
+      "company": "Lattice"
+    },
+    {
+      "token": "gemini",
+      "company": "Gemini"
+    },
+    {
+      "token": "block",
+      "company": "Block"
+    },
+    {
+      "token": "hootsuite",
+      "company": "Hootsuite"
+    }
+  ]
+}

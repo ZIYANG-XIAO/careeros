@@ -20,14 +20,15 @@ Run it with the project virtualenv, which has careeros_api installed:
 
 Two properties of the existing model drive this script's shape:
 
-- Jobs are user-owned (`jobs.user_id` is NOT NULL), so there is no shared job
-  pool. Ingestion always targets one named user.
+- This script ingests into one named user's private jobs. Approved public
+  sources go into the shared catalog instead, via `scripts/sync_job_sources.py`.
 - Every new or changed description costs one job-parser call, so the script
   reports the worst-case call count and asks before spending it.
 
 Examples:
 
     .venv/bin/python scripts/ingest_jobs.py --file sample.jsonl --dry-run
+    .venv/bin/python scripts/ingest_jobs.py --file full_export.jsonl --catalog --close-missing
     .venv/bin/python scripts/ingest_jobs.py --file sample.jsonl \
         --user-email you@example.com --limit 20
     .venv/bin/python scripts/ingest_jobs.py --file sample.jsonl \
@@ -55,7 +56,11 @@ from careeros_api.job_source_file_adapter import (
     load_rows,
 )
 from careeros_api.job_source_guopin import GUOPIN_SOURCE_KEY, map_row
-from careeros_api.job_sources import JobSourceIngestionError, ingest_job_source
+from careeros_api.job_sources import (
+    JobSourceIngestionError,
+    ingest_job_source,
+    mark_unseen_catalog_jobs_unavailable,
+)
 from careeros_api.models import User
 from sqlalchemy import select
 
@@ -86,6 +91,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--limit", type=int, help="Read at most this many rows")
     parser.add_argument(
+        "--catalog",
+        action="store_true",
+        help="Ingest into the shared catalog (visible to every user) instead of one "
+        "user's private jobs. Requirement extraction is deferred to first use, so "
+        "this makes no parser calls and needs no OpenAI key.",
+    )
+    parser.add_argument(
+        "--close-missing",
+        action="store_true",
+        help="With --catalog: the file is a COMPLETE export, so catalog jobs from this "
+        "source that are not in it are marked unavailable. Never use with a partial "
+        "file or --limit.",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Map and validate only; no database, no parser",
@@ -101,6 +120,45 @@ def confirm(prompt: str) -> bool:
         return input(f"{prompt} [y/N] ").strip().lower() in {"y", "yes"}
     except EOFError:
         return False
+
+
+async def ingest_catalog(
+    args: argparse.Namespace, adapter: FileJobSourceAdapter
+) -> int:
+    settings = get_settings()
+    factory = get_session_factory(settings.database_url)
+    async with factory() as session:
+        try:
+            result = await ingest_job_source(
+                session,
+                user_id=None,
+                adapter=adapter,
+                parser=None,
+                defer_requirements=True,
+            )
+            closed = 0
+            if args.close_missing:
+                closed = await mark_unseen_catalog_jobs_unavailable(
+                    session,
+                    source_key=args.source_key,
+                    external_id_prefix="",
+                    seen_external_ids={
+                        job.external_job_id
+                        for job in result.jobs
+                        if job.external_job_id
+                    },
+                )
+        except JobSourceIngestionError as error:
+            await session.rollback()
+            print(f"Ingestion stopped: {error}", file=sys.stderr)
+            return 1
+        await session.commit()
+    print(
+        f"Ingested {len(result.jobs)} jobs into the shared catalog: "
+        f"{result.created_count} created, {result.updated_count} updated, "
+        f"{closed} closed."
+    )
+    return 0
 
 
 async def ingest(args: argparse.Namespace, adapter: FileJobSourceAdapter) -> int:
@@ -147,7 +205,24 @@ async def ingest(args: argparse.Namespace, adapter: FileJobSourceAdapter) -> int
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
-    if not args.dry_run and not args.user_email and not args.user_id:
+    if args.close_missing and (not args.catalog or args.limit):
+        print(
+            "--close-missing needs --catalog and a full file (no --limit).",
+            file=sys.stderr,
+        )
+        return 2
+    if args.catalog and (args.user_email or args.user_id):
+        print(
+            "--catalog jobs have no owner; drop --user-email/--user-id.",
+            file=sys.stderr,
+        )
+        return 2
+    if (
+        not args.dry_run
+        and not args.catalog
+        and not args.user_email
+        and not args.user_id
+    ):
         print(
             "--user-email or --user-id is required unless --dry-run is used.",
             file=sys.stderr,
@@ -188,6 +263,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  ... and {len(candidates) - 5} more")
         print("Dry run only; nothing was written.")
         return 0
+
+    if args.catalog:
+        return asyncio.run(ingest_catalog(args, adapter))
 
     owner_label = f"user {args.user_id}" if args.user_id else f"email {args.user_email}"
     if not args.yes and not confirm(

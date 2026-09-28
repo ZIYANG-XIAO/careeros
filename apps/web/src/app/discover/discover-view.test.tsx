@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -78,6 +78,9 @@ function makeJob(overrides: Partial<Job> = {}): Job {
     updated_at: "2026-09-19T00:00:00Z",
     is_saved: false,
     saved_at: null,
+    is_catalog: false,
+    similar_count: 0,
+    other_locations: [],
     latest_snapshot: {
       id: "snap-1",
       version_number: 1,
@@ -86,6 +89,7 @@ function makeJob(overrides: Partial<Job> = {}): Job {
       content_sha256: "x",
       parser_version: "v1",
       parser_model: "test",
+      requirements_status: "PARSED",
       created_at: "2026-09-19T00:00:00Z",
       requirements: [],
     },
@@ -111,10 +115,51 @@ beforeEach(() => {
 });
 
 describe("DiscoverView", () => {
+  it("pages through the catalog with Load more", async () => {
+    const firstPage = Array.from({ length: 50 }, (_, index) =>
+      makeJob({ id: `job-${index}`, title: `Role ${index}` }),
+    );
+    mockListJobs
+      .mockResolvedValueOnce(firstPage)
+      .mockResolvedValueOnce([makeJob({ id: "job-50", title: "Role 50" })]);
+    renderDiscover();
+    expect(await screen.findByText("Role 0")).toBeInTheDocument();
+    expect(mockListJobs.mock.calls[0][1]).toMatchObject({
+      limit: 50,
+      offset: 0,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Load more jobs" }));
+    expect(await screen.findByText("Role 50")).toBeInTheDocument();
+    expect(mockListJobs.mock.calls[1][1]).toMatchObject({
+      limit: 50,
+      offset: 50,
+    });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Load more jobs" }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
   it("renders job rows", async () => {
     renderDiscover();
     expect(await screen.findByText("Platform Engineer")).toBeInTheDocument();
     expect(screen.getByText("Acme")).toBeInTheDocument();
+  });
+
+  it("shows how many other locations a collapsed row stands for", async () => {
+    mockListJobs.mockResolvedValueOnce([
+      makeJob({
+        similar_count: 2,
+        other_locations: ["Austin, TX", "Boston, MA"],
+      }),
+    ]);
+    renderDiscover();
+    expect(await screen.findByText("Platform Engineer")).toBeInTheDocument();
+    expect(
+      screen.getByText((text) => text.includes("+2 more locations")),
+    ).toBeInTheDocument();
   });
 
   it("shows the in-pipeline badge for a job with a linked application", async () => {

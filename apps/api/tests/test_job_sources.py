@@ -119,7 +119,7 @@ async def test_source_ingestion_is_retry_safe_and_visible_through_canonical_api(
         assert first.jobs[0].id == retry.jobs[0].id
         assert parser.calls == 1
 
-        response = await client.get("/jobs")
+        response = await client.get("/jobs", params={"source": "mine"})
         assert response.status_code == 200
         assert len(response.json()) == 1
         job = response.json()[0]
@@ -181,7 +181,7 @@ async def test_changed_source_description_adds_snapshot_without_duplicate_job() 
         finally:
             await engine.dispose()
 
-        response = await client.get("/jobs")
+        response = await client.get("/jobs", params={"source": "mine"})
         assert response.status_code == 200
         jobs = response.json()
         assert len(jobs) == 1

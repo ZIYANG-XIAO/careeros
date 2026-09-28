@@ -8,7 +8,7 @@ from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -62,7 +62,10 @@ def _fingerprint(payload: object) -> str:
 async def _owned_job(session: AsyncSession, user_id: UUID, job_id: UUID | None) -> Job | None:
     if job_id is None:
         return None
-    job = await session.scalar(select(Job).where(Job.id == job_id, Job.user_id == user_id))
+    # Users may apply to their own jobs and to shared catalog jobs.
+    job = await session.scalar(
+        select(Job).where(Job.id == job_id, or_(Job.user_id == user_id, Job.user_id.is_(None)))
+    )
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     return job
@@ -881,3 +884,18 @@ async def record_application_submission(
         )
     await session.flush()
     return _response(application)
+
+
+@router.delete("/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_application(
+    application_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    """Delete an application with its answers, status history, and activities."""
+    result = await session.execute(
+        delete(Application).where(Application.id == application_id, Application.user_id == user.id)
+    )
+    if getattr(result, "rowcount", 0) == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

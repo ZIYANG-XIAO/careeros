@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8" />
+    <title>My Information - Example Corp Careers</title>
+  </head>
+  <body>
+    <!-- Local fixture modeled on Workday's single-page apply flow. No <form>
+         element; containers and inputs carry data-automation-id. -->
+    <div data-automation-id="applyFlowPage">
+      <h2 data-automation-id="pageHeaderText">My Information</h2>
+      <div data-automation-id="legalNameSection">
+        <div data-automation-id="formField-legalNameSection_firstName">
+          <label for="input-4">First Name<abbr title="required">*</abbr></label>
+          <input
+            id="input-4"
+            type="text"
+            data-automation-id="legalNameSection_firstName"
+            aria-required="true"
+          />
+        </div>
+        <div data-automation-id="formField-legalNameSection_lastName">
+          <label for="input-5">Last Name<abbr title="required">*</abbr></label>
+          <input
+            id="input-5"
+            type="text"
+            data-automation-id="legalNameSection_lastName"
+            aria-required="true"
+          />
+        </div>
+      </div>
+      <div data-automation-id="addressSection">
+        <label for="input-7">Address Line 1</label>
+        <input
+          id="input-7"
+          type="text"
+          data-automation-id="addressSection_addressLine1"
+        />
+        <label for="input-8">City</label>
+        <input
+          id="input-8"
+          type="text"
+          data-automation-id="addressSection_city"
+        />
+        <label for="input-9">Postal Code</label>
+        <input
+          id="input-9"
+          type="text"
+          data-automation-id="addressSection_postalCode"
+        />
+      </div>
+      <label for="input-10">Email Address<abbr title="required">*</abbr></label>
+      <input id="input-10" type="text" data-automation-id="email" />
+      <label for="input-11">Phone Number<abbr title="required">*</abbr></label>
+      <input id="input-11" type="text" data-automation-id="phone-number" />
+      <label for="input-12">How Did You Hear About Us?</label>
+      <input
+        id="input-12"
+        type="text"
+        data-automation-id="sourceSection_source"
+      />
+      <div data-automation-id="file-upload-drop-zone">
+        <label for="input-13">Resume/CV</label>
+        <input
+          id="input-13"
+          type="file"
+          data-automation-id="file-upload-input-ref"
+        />
+      </div>
+      <button type="button" data-automation-id="bottom-navigation-next-button">
+        Save and Continue
+      </button>
+    </div>
+  </body>
+</html>

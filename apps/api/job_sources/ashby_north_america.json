@@ -1,0 +1,114 @@
+{
+  "source_key": "ashby",
+  "description": "North America: employers whose public Ashby job boards were verified to exist on 2026-09-28. Only postings located in the US or Canada are kept.",
+  "boards": [
+    {
+      "token": "openai",
+      "company": "OpenAI"
+    },
+    {
+      "token": "notion",
+      "company": "Notion"
+    },
+    {
+      "token": "linear",
+      "company": "Linear"
+    },
+    {
+      "token": "ramp",
+      "company": "Ramp"
+    },
+    {
+      "token": "cursor",
+      "company": "Cursor"
+    },
+    {
+      "token": "vanta",
+      "company": "Vanta"
+    },
+    {
+      "token": "replit",
+      "company": "Replit"
+    },
+    {
+      "token": "perplexity",
+      "company": "Perplexity"
+    },
+    {
+      "token": "cohere",
+      "company": "Cohere"
+    },
+    {
+      "token": "1password",
+      "company": "1Password"
+    },
+    {
+      "token": "benchling",
+      "company": "Benchling"
+    },
+    {
+      "token": "supabase",
+      "company": "Supabase"
+    },
+    {
+      "token": "posthog",
+      "company": "PostHog"
+    },
+    {
+      "token": "zapier",
+      "company": "Zapier"
+    },
+    {
+      "token": "harvey",
+      "company": "Harvey"
+    },
+    {
+      "token": "elevenlabs",
+      "company": "ElevenLabs"
+    },
+    {
+      "token": "sierra",
+      "company": "Sierra"
+    },
+    {
+      "token": "modal",
+      "company": "Modal"
+    },
+    {
+      "token": "runway",
+      "company": "Runway"
+    },
+    {
+      "token": "wealthsimple",
+      "company": "Wealthsimple"
+    },
+    {
+      "token": "kraken.com",
+      "company": "Kraken"
+    },
+    {
+      "token": "quora",
+      "company": "Quora"
+    },
+    {
+      "token": "snowflake",
+      "company": "Snowflake"
+    },
+    {
+      "token": "plaid",
+      "company": "Plaid"
+    },
+    {
+      "token": "watershed",
+      "company": "Watershed"
+    },
+    {
+      "token": "hex",
+      "company": "Hex"
+    },
+    {
+      "token": "lemonade",
+      "company": "Lemonade"
+    }
+  ]
+}

@@ -578,6 +578,17 @@ Do not log resumes, Career Brain content, page/form content, application answers
 tokens, or sensitive data by default. Send only task-relevant data to AI
 providers.
 
+Implemented (Phase S): `RequestContextMiddleware` accepts a well-formed
+`X-Request-ID` or generates one, returns it on every response (exposed to the
+Web via CORS), and writes one JSON access-log line with request ID, method,
+route template, status, and duration — never query strings, bodies, or user
+identifiers. AI-backed endpoints (job capture/clip, resume import, job
+analysis) are limited per user by `ai_requests_per_minute` (default 20,
+`429 RATE_LIMITED` with `Retry-After`). The limiter is in-memory per API
+process; a shared store is needed before running several processes. Error
+tracking (for example Sentry) is not configured — it is a new external
+provider and needs approval.
+
 ## 25. Testing strategy
 
 - Unit tests: domain rules, answer policy, mappings, normalization, transitions.

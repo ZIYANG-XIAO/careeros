@@ -291,6 +291,37 @@ The logical Job should remain capable of representing:
 
 Source-specific payloads must not become the canonical model.
 
+### 11.0 Private jobs and the shared catalog — implemented (Phase T)
+
+`jobs.user_id` is nullable (migration `0024_shared_job_catalog`):
+
+- **Private job** (`user_id` set): captured manually or clipped by that user.
+  Only the owner can see, edit, or delete it.
+- **Catalog job** (`user_id` NULL): synced from an approved source, visible to
+  every user, read-only through the API, closed by the sync when the source
+  drops it. Closed catalog jobs disappear from browsing but stay visible where a
+  user saved them.
+
+Uniqueness is split accordingly: private jobs are unique per owner by source
+ID and canonical URL; catalog jobs are unique globally by the same keys.
+Per-user state — `SavedJob`, `JobAnalysis` (now versioned per user and job),
+`Application` — may reference either kind. Clipping a page already in the
+catalog saves the catalog job instead of creating a private copy.
+
+`job_snapshots.requirements_status` is `PARSED` or `PENDING`. Catalog snapshots
+are stored `PENDING`; the first `POST /jobs/{id}/requirements` (triggered when
+someone opens the job) extracts requirements once, under a row lock, for
+everyone, reusing an existing parse of identical text when available.
+Analysis creation returns `409 REQUIREMENTS_PENDING` until then.
+
+`GET /jobs` supports `source=all|mine|catalog`, `limit`/`offset` (unpaged
+catalog listings are capped at 200), `compact=true`, which omits
+descriptions and requirements for list views, and `collapse=true`, which
+returns one row per company + title (employers routinely post the identical
+role once per office) — the row carries `similar_count` and up to 20
+`other_locations`, preferring the user's saved posting in the group as the
+representative row. Discover uses `compact` and `collapse` together.
+
 ### 11.1 Implemented job-source boundary
 
 Conceptually:
@@ -409,7 +440,17 @@ immutable `ApplicationStatusHistory` rows.
 records. Notes have no schedule. Follow-ups and interviews require a
 timezone-aware `scheduled_at`; follow-ups may also have `completed_at`.
 Activities are mutable planning context, not immutable proof that an external
-event occurred.
+event occurred. Open follow-ups and interviews (from 30 days ago onward) can be
+downloaded as an iCalendar file (`GET /calendar/activities.ics`).
+
+### 15.2a Application contacts — implemented (Phase S)
+
+`ApplicationContact` (migration `0023_application_contacts`) stores people the
+user deals with for one application: name, relationship (`RECRUITER`,
+`HIRING_MANAGER`, `INTERVIEWER`, `REFERRER`, `OTHER`), optional email, profile
+link, and notes. Only what the user types is stored; CareerOS never looks
+people up or contacts them. Contacts are mutable and cascade with their
+Application (at most 50 per application).
 
 ### 15.3 Historical snapshot rule
 
@@ -443,7 +484,7 @@ Answer Engine with source category `USER_CONTACT_INFO`.
 User choices such as target locations, work arrangement, relocation preference,
 or search-specific preferences. They are not proof of professional capability.
 
-### 16.4 Reusable confirmed answer — planned
+### 16.4 Reusable confirmed answer — implemented (Phase R)
 
 A user-approved answer intended for reuse across equivalent application
 questions when policy allows.
@@ -457,8 +498,13 @@ Conceptual fields may include:
 - timestamps; and
 - current/revoked state.
 
-The initial Answer Engine milestone must determine whether fixed structured
-fields, reusable records, or both best fit approved questions.
+Implemented as `reusable_answers`: owner, original question text, normalized
+question key, answer text, `created_at`, and `revoked_at`. Rows are never
+edited; a new save revokes the previous active row for that key (a partial
+unique index allows one active row per user and key). Sensitive or
+consequential questions are refused at save time. Canonical fields continue to
+use fixed structured sources (Career Brain, `UserContactInfo`, Resume); reusable
+records cover only custom questions.
 
 ### 16.5 Application-specific answer — implemented narrow history
 
@@ -521,6 +567,26 @@ used at the time where product, legal, and retention policy allows.
 The system must distinguish current truth from historical application context.
 Exact retention and deletion policy requires an explicit product/legal decision;
 the architecture must not guess.
+
+User-initiated deletion is implemented (Phase S) with these rules:
+
+- **Job** (`DELETE /jobs/{id}`): removes snapshots, requirements, analyses, and
+  saves. Applications survive with `job_id` set to null; their company/role
+  snapshots keep them meaningful. `PATCH /jobs/{id}` edits listing fields only;
+  captured descriptions stay immutable snapshots.
+- **Application** (`DELETE /applications/{id}`): removes its answers, status
+  history, activities, contacts, and idempotency records.
+- **Resume** (`DELETE /resumes/{id}`): refused with `409 RESUME_IN_USE` while an
+  Application records any of its versions, because an application's exact
+  resume is history. Otherwise removes all versions, imports, draft items,
+  derived job analyses, asset rows, and stored files. Confirmed Career Brain
+  evidence is not removed.
+- **Account** (`DELETE /me` with `{"confirm": "DELETE"}`): removes the Career
+  Brain and user row (every owned table cascades) and then the stored resume
+  files. The auth provider identity is not deleted by the API.
+- **Export** (`GET /me/export`): one JSON document with every owned table,
+  excluding internal storage keys; original files remain downloadable per
+  version.
 
 ## 20. Implementation guidance
 

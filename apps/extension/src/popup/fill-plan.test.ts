@@ -190,3 +190,76 @@ describe("buildFillPlan", () => {
     });
   });
 });
+
+describe("saved reusable answers", () => {
+  const customDetection: PageDetection = {
+    status: "APPLICATION_PAGE",
+    adapter: "generic",
+    reasons: [],
+    forms: [
+      {
+        id: "form-0",
+        adapter: "generic",
+        support: "PARTIALLY_SUPPORTED",
+        fields: [
+          {
+            id: "hear",
+            controlType: "TEXT",
+            question: "How did you hear about us?",
+            required: true,
+            canonicalKey: null,
+            support: "UNKNOWN",
+            confidence: "LOW",
+            options: [],
+          },
+        ],
+      },
+    ],
+  };
+
+  function customDecision(
+    sourceCategory: "REUSABLE_CONFIRMED_ANSWER" | "CAREER_BRAIN",
+  ): AnswerResolution {
+    return {
+      decisions: [
+        {
+          fieldId: "hear",
+          canonicalKey: null,
+          questionCategory: "STANDARD",
+          proposedAnswer: "A friend",
+          sourceCategory,
+          sourceReferenceId: "00000000-0000-4000-8000-000000000009",
+          action: "FILL",
+          policyCategory: "STANDARD",
+          confidence: "HIGH",
+          sensitivity: "NONE",
+          reviewState: "NOT_REQUIRED",
+          reusePolicy: "NOT_APPLICABLE",
+          saveIntentRequired: false,
+        },
+      ],
+      selectedResumeVersionId: null,
+      semanticClassifierUsed: false,
+    };
+  }
+
+  it("fills a custom question only from a saved reusable answer", () => {
+    expect(
+      buildFillPlan(
+        customDecision("REUSABLE_CONFIRMED_ANSWER"),
+        customDetection,
+      ),
+    ).toEqual([
+      {
+        fieldId: "hear",
+        canonicalKey: null,
+        controlType: "TEXT",
+        action: "FILL",
+        proposedAnswer: "A friend",
+      },
+    ]);
+    expect(
+      buildFillPlan(customDecision("CAREER_BRAIN"), customDetection),
+    ).toMatchObject([{ action: "SUGGEST", proposedAnswer: null }]);
+  });
+});

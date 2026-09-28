@@ -9,6 +9,7 @@ import { getContactInfo } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import type { ContactInfo } from "@/lib/types";
 
+import { SavedAnswersSection } from "@/components/saved-answers-section";
 import { MeTabs } from "../me-tabs";
 
 const EMPTY_CONTACT_INFO: ContactInfo = {
@@ -102,6 +103,7 @@ export default function MeContactPage() {
         contactInfo={contactInfo ?? EMPTY_CONTACT_INFO}
         onSaved={setContactInfo}
       />
+      <SavedAnswersSection />
     </div>
   );
 }

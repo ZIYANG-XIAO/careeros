@@ -352,6 +352,8 @@ export type JobSnapshot = {
   content_sha256: string;
   parser_version: string;
   parser_model: string;
+  /** PENDING until requirements are extracted on first use (catalog jobs). */
+  requirements_status: "PENDING" | "PARSED";
   created_at: string;
   requirements: JobRequirement[];
 };
@@ -380,6 +382,12 @@ export type Job = {
   updated_at: string;
   is_saved: boolean;
   saved_at: string | null;
+  /** Shared career-site listing: read-only, visible to every user. */
+  is_catalog: boolean;
+  /** Only set by a collapsed listing: how many other matching postings this
+   * row stands for (same company + title), and up to 20 of their locations. */
+  similar_count: number;
+  other_locations: string[];
   latest_snapshot: JobSnapshot;
 };
 
@@ -555,4 +563,26 @@ export type CreateApplicationRequest = {
     sensitivity: "NONE";
     user_confirmed: true;
   }>;
+};
+
+export type ReusableAnswer = {
+  id: string;
+  question_text: string;
+  answer_text: string;
+  created_at: string;
+};
+
+export type ApplicationContactRelationship =
+  "RECRUITER" | "HIRING_MANAGER" | "INTERVIEWER" | "REFERRER" | "OTHER";
+
+export type ApplicationContact = {
+  id: string;
+  application_id: string;
+  name: string;
+  relationship_type: ApplicationContactRelationship;
+  email: string | null;
+  profile_url: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 };

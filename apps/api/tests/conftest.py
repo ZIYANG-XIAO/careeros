@@ -96,6 +96,7 @@ async def make_integration_client(
     answer_classifier: AnswerFieldClassifier | None = None,
     resume_storage_dir: str = "/tmp/careeros-test-resume-assets",
     max_resume_size_bytes: int | None = None,
+    ai_requests_per_minute: int = 0,
 ) -> AsyncGenerator[AsyncClient]:
     """Create an authenticated AsyncClient backed by a real DB user+brain.
 
@@ -130,6 +131,8 @@ async def make_integration_client(
     settings.resume_storage_dir = resume_storage_dir
     if max_resume_size_bytes is not None:
         settings.max_resume_size_bytes = max_resume_size_bytes
+    # Limits are off by default so suites are not coupled to request counts.
+    settings.ai_requests_per_minute = ai_requests_per_minute
     app = create_app(settings)
 
     async def override_auth() -> User:

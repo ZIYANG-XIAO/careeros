@@ -1,3 +1,5 @@
+import { t } from "../shared/i18n";
+
 export function DetectionSection({
   title,
   body,
@@ -7,7 +9,7 @@ export function DetectionSection({
 }) {
   return (
     <section className="page-card" aria-live="polite">
-      <span className="eyebrow">CURRENT PAGE</span>
+      <span className="eyebrow">{t("CURRENT PAGE")}</span>
       <h2>{title}</h2>
       <p>{body}</p>
     </section>

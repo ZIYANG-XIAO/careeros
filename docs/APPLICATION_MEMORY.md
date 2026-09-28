@@ -67,6 +67,13 @@ completion state, and timestamps. Creation is retry-safe through an
 Application-scoped idempotency key and request fingerprint. Activities are
 planning records and must not be presented as externally confirmed events.
 
+## 4a. Contacts and deletion
+
+Each Application may hold user-entered contacts (see `docs/DATA_MODEL.md`
+15.2a). An Application can be deleted by its owner, which removes its answers,
+status history, activities, and contacts; deleting its Job keeps the
+Application and only clears `job_id`.
+
 ## 5. Application-specific answer history
 
 Create requests may include up to 200 ordered, user-confirmed answers. Stored

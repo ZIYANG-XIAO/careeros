@@ -15,7 +15,7 @@ import type {
   JobWorkplaceType,
 } from "@/lib/types";
 
-export type View = "all" | "saved";
+export type View = "all" | "saved" | "mine";
 export type Filters = {
   search: string;
   location: string;

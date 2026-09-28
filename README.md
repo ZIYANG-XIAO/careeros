@@ -22,7 +22,7 @@ the user through the Career Brain.
 M0–M17 and the post-M17 implementation wave are implemented at repository
 level. M16 is complete: automated hardening plus the representative
 unpacked-Chrome validation of both scenarios, run manually on 2026-09-28.
-Current Alembic head: `0021_job_search_goals`.
+Current Alembic head: `0024_shared_job_catalog`.
 Today the repository supports:
 
 - Next.js Web → FastAPI API → PostgreSQL;
@@ -71,8 +71,9 @@ Today the repository supports:
   improved landing page, and an extension setup guide at `/setup`;
 - a `/readiness` endpoint and local JWKS preflight diagnostic
   (`scripts/preflight.py` checks Clerk JWKS reachability only);
-- partial English/Simplified Chinese localization for Applications, Resumes,
-  Career Profile, and Job detail;
+- English/Simplified Chinese localization across the Web app and, following
+  the browser UI language, the extension popup, in-page assistant, and field
+  markers;
 - an in-page Application Assistant — a controlled UI panel for detection,
   answers, form filling, and Application Memory — with open Shadow DOM style
   isolation, on-demand content-script injection, explicit activation, and
@@ -84,6 +85,27 @@ Today the repository supports:
   user-confirmed contact-info candidates surfaced from resume import; and
 - Applications list CSV export, a visual application-stage stepper, and a
   user-set preferred-skill marker on Career Brain skills; and
+- an explicit-action Job Clipper in the extension popup (JSON-LD first,
+  editable draft, deduplicated by canonical page URL, saved to Discover);
+- deterministic Preference Fit chips in Discover against the active goal;
+- explicitly saved, revocable Reusable Answers for custom non-sensitive
+  questions, filled by the extension on matching questions;
+- explicit resume attach that puts the exact owned Resume Version file into an
+  empty upload control;
+- a fixture-validated Workday adapter and formless-page detection for
+  single-page ATSs;
+- job edit/delete, application delete, resume delete (kept while an
+  application recorded it), full JSON data export, and confirmed account
+  deletion;
+- `.ics` calendar download of open follow-ups and interviews;
+- per-application contacts (recruiters, referrers, interviewers);
+- Clip/Remember answers/Attach resume in the in-page assistant too;
+- request IDs, structured access logs, and per-user limits on AI-backed
+  endpoints;
+- a shared job catalog synced daily from the public job boards of 86
+  employers on Greenhouse, Lever, and Ashby (North America,
+  `scripts/sync_job_sources.py`), with deferred shared requirement extraction
+  and paged Discover browsing; and
 - a full visual and information-architecture redesign (new design tokens,
   typography, and the Pipeline/Discover/Me/Start IA above), informed by a
   competitive review of simplify.jobs — see "Candidate backlog from the
@@ -91,11 +113,11 @@ Today the repository supports:
 
 The following V1 capabilities are planned, not implemented:
 
-- production job acquisition and real external source adapters;
-- automatic resume/file upload and broader custom-widget execution;
-- complete localization of every Web surface and the extension; and
-- representative unpacked-Chrome validation across both required application
-  paths.
+- China-market job sources (on hold), and running the daily sync in a
+  production environment;
+- custom JavaScript widget execution (react-select, Workday listboxes); and
+- representative unpacked-Chrome validation of Phase R's resume attach,
+  Workday adapter, and formless detection on real sites.
 
 Application Strategy and resume tailoring are deferred optional enhancements.
 Existing Job Intelligence remains available and must not become a mandatory

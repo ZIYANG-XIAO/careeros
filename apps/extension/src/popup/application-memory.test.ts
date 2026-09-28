@@ -4,6 +4,7 @@ import type {
   AnswerResolution,
   ApplicationPageContext,
   FillExecutionResult,
+  PageDetection,
 } from "../shared/messages";
 import {
   confirmedApplicationAnswers,
@@ -303,5 +304,69 @@ describe("application memory popup policy", () => {
         application: null,
       }),
     ).toBe(false);
+  });
+});
+
+describe("confirmedApplicationAnswers with saved reusable answers", () => {
+  it("records a filled reusable answer as user-provided under the page's question", () => {
+    const resolution: AnswerResolution = {
+      decisions: [
+        {
+          fieldId: "field-0-4",
+          canonicalKey: null,
+          questionCategory: "STANDARD",
+          proposedAnswer: "A friend",
+          sourceCategory: "REUSABLE_CONFIRMED_ANSWER",
+          sourceReferenceId: "00000000-0000-4000-8000-000000000009",
+          action: "FILL",
+          policyCategory: "STANDARD",
+          confidence: "HIGH",
+          sensitivity: "NONE",
+          reviewState: "NOT_REQUIRED",
+          reusePolicy: "NOT_APPLICABLE",
+          saveIntentRequired: false,
+        },
+      ],
+      selectedResumeVersionId: null,
+      semanticClassifierUsed: false,
+    };
+    const detection: PageDetection = {
+      status: "APPLICATION_PAGE",
+      adapter: "generic",
+      reasons: [],
+      forms: [
+        {
+          id: "form-0",
+          adapter: "generic",
+          support: "PARTIALLY_SUPPORTED",
+          fields: [
+            {
+              id: "field-0-4",
+              controlType: "TEXT",
+              question: "How did you hear about us?",
+              required: true,
+              canonicalKey: null,
+              support: "UNKNOWN",
+              confidence: "LOW",
+              options: [],
+            },
+          ],
+        },
+      ],
+    };
+    expect(
+      confirmedApplicationAnswers(
+        resolution,
+        { fields: [{ fieldId: "field-0-4", state: "FILLED" }] },
+        detection,
+      ),
+    ).toEqual([
+      {
+        canonicalKey: null,
+        questionText: "How did you hear about us?",
+        answerText: "A friend",
+        sourceCategory: "USER_PROVIDED",
+      },
+    ]);
   });
 });

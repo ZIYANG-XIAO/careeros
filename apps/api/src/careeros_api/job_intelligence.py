@@ -7,7 +7,7 @@ from uuid import UUID
 import sqlalchemy as sa
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
@@ -41,6 +41,7 @@ from careeros_api.models import (
     ResumeVersion,
     User,
 )
+from careeros_api.rate_limit import ai_rate_limit
 
 router = APIRouter(prefix="/jobs/{job_id}/analyses", tags=["job-intelligence"])
 
@@ -209,7 +210,12 @@ async def _load_analysis(
     )
 
 
-@router.post("", response_model=JobAnalysisResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=JobAnalysisResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(ai_rate_limit)],
+)
 async def create_job_analysis(
     job_id: UUID,
     body: CreateJobAnalysisRequest,
@@ -220,10 +226,18 @@ async def create_job_analysis(
     job = await session.scalar(
         select(Job)
         .options(selectinload(Job.snapshots).selectinload(JobSnapshot.requirements))
-        .where(Job.id == job_id, Job.user_id == user.id)
+        .where(Job.id == job_id, or_(Job.user_id == user.id, Job.user_id.is_(None)))
     )
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    if max(job.snapshots, key=lambda item: item.version_number).requirements_status != "PARSED":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "REQUIREMENTS_PENDING",
+                "message": "Extract this job's requirements before analyzing it",
+            },
+        )
     resume_version = await session.scalar(
         select(ResumeVersion)
         .options(joinedload(ResumeVersion.resume))
@@ -289,7 +303,9 @@ async def create_job_analysis(
 
     await session.execute(select(Job).where(Job.id == job.id).with_for_update())
     current_version = await session.scalar(
-        select(sa.func.max(JobAnalysis.analysis_version)).where(JobAnalysis.job_id == job.id)
+        select(sa.func.max(JobAnalysis.analysis_version)).where(
+            JobAnalysis.job_id == job.id, JobAnalysis.user_id == user.id
+        )
     )
     recommendation, summary = _recommendation(requirements, evaluations)
     analysis = JobAnalysis(

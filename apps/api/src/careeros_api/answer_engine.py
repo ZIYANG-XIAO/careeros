@@ -41,9 +41,11 @@ from careeros_api.models import (
     Experience,
     Resume,
     ResumeVersion,
+    ReusableAnswer,
     User,
     UserContactInfo,
 )
+from careeros_api.reusable_answer_lookup import active_reusable_answers, question_key
 
 logger = logging.getLogger(__name__)
 
@@ -529,6 +531,46 @@ def _resolved_decision(
     )
 
 
+REUSABLE_CONTROL_TYPES = frozenset(
+    {
+        NormalizedControlType.TEXT,
+        NormalizedControlType.TEXTAREA,
+        NormalizedControlType.SELECT,
+        NormalizedControlType.RADIO_GROUP,
+        NormalizedControlType.NUMBER,
+    }
+)
+
+
+def _answer_fits_options(field: AnswerFieldInput, saved: ReusableAnswer) -> bool:
+    """A saved choice is only reused when the form offers exactly that option."""
+    if field.control_type not in {
+        NormalizedControlType.SELECT,
+        NormalizedControlType.RADIO_GROUP,
+    }:
+        return True
+    wanted = saved.answer_text.strip().casefold()
+    return any(option.strip().casefold() == wanted for option in field.options)
+
+
+def _reusable_decision(field: AnswerFieldInput, saved: ReusableAnswer) -> AnswerDecision:
+    return AnswerDecision(
+        field_id=field.field_id,
+        canonical_key=None,
+        question_category=QuestionCategory.STANDARD,
+        proposed_answer=saved.answer_text,
+        source_category=AnswerSourceCategory.REUSABLE_CONFIRMED_ANSWER,
+        source_reference_id=saved.id,
+        action=AnswerAction.FILL,
+        policy_category=AnswerPolicyCategory.STANDARD,
+        confidence=AnswerConfidence.HIGH,
+        sensitivity=AnswerSensitivity.NONE,
+        review_state=AnswerReviewState.NOT_REQUIRED,
+        reuse_policy=ReusePolicy.NOT_APPLICABLE,
+        save_intent_required=False,
+    )
+
+
 async def resolve_answer_decisions(
     request: AnswerResolutionRequest,
     user: User,
@@ -591,6 +633,18 @@ async def resolve_answer_decisions(
         form_locale=request.form_locale,
     )
 
+    reusable_keys = {
+        field.field_id: question_key(field.question)
+        for field in request.fields
+        if effective[field.field_id][0] is None
+        and sensitive_categories[field.field_id] is None
+        and field.question
+        and field.control_type in REUSABLE_CONTROL_TYPES
+    }
+    reusable = await active_reusable_answers(
+        session, user.id, {key for key in reusable_keys.values() if key}
+    )
+
     decisions: list[AnswerDecision] = []
     for field in request.fields:
         sensitive_category = sensitive_categories[field.field_id]
@@ -602,8 +656,11 @@ async def resolve_answer_decisions(
             continue
         canonical_key, confidence = effective[field.field_id]
         source = sources.get(canonical_key) if canonical_key is not None else None
+        saved = reusable.get(reusable_keys.get(field.field_id, ""))
         if canonical_key is not None and source is not None:
             decisions.append(_resolved_decision(field, canonical_key, confidence, source))
+        elif canonical_key is None and saved is not None and _answer_fits_options(field, saved):
+            decisions.append(_reusable_decision(field, saved))
         else:
             decisions.append(_unknown_decision(field, canonical_key))
 

@@ -13,6 +13,7 @@ const TABS = [
   { href: "/me/resumes", key: "nav.resumes" as const },
   { href: "/me/goals", key: "nav.goals" as const },
   { href: "/me/contact", key: "nav.contactAnswers" as const },
+  { href: "/me/account", key: "nav.account" as const },
 ];
 
 function MeTabs() {

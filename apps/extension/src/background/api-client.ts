@@ -3,12 +3,22 @@ import type {
   AnswerResolutionRequestData,
   ApplicationPageContext,
   AuthStatus,
+  ClipJobRequestData,
+  ClippedJob,
+  ResumeFilePayload,
+  ReusableAnswerInput,
+  SavedReusableAnswers,
   PrepareApplicationRequestData,
   RecordApplicationRequestData,
   TrackedApplication,
 } from "../shared/messages";
 import { resolveAnswers } from "./api-client-answers";
 import { getAuthStatus } from "./api-client-auth";
+import {
+  clipJob,
+  downloadResumeVersion,
+  saveReusableAnswers,
+} from "./api-client-jobs";
 import {
   getApplicationContext,
   prepareApplication,
@@ -72,6 +82,41 @@ export class CareerOsApiClient {
       this.request,
       input,
       pageUrl,
+    );
+  }
+
+  async clipJob(
+    input: ClipJobRequestData,
+    pageUrl: string,
+  ): Promise<ClippedJob | null> {
+    return clipJob(
+      this.apiUrl,
+      this.tokenProvider,
+      this.request,
+      input,
+      pageUrl,
+    );
+  }
+
+  async saveReusableAnswers(
+    answers: ReusableAnswerInput[],
+  ): Promise<SavedReusableAnswers | null> {
+    return saveReusableAnswers(
+      this.apiUrl,
+      this.tokenProvider,
+      this.request,
+      answers,
+    );
+  }
+
+  async downloadResumeVersion(
+    resumeVersionId: string,
+  ): Promise<ResumeFilePayload | null> {
+    return downloadResumeVersion(
+      this.apiUrl,
+      this.tokenProvider,
+      this.request,
+      resumeVersionId,
     );
   }
 }

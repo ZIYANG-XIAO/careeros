@@ -111,9 +111,20 @@ button:hover {
   background: #1e40af;
 }
 
+button.secondary {
+  border: 1px solid #1d4ed8;
+  background: white;
+  color: #1d4ed8;
+}
+
+button.secondary:hover {
+  background: #eff6ff;
+}
+
 button:focus-visible,
 .memory-form input:focus-visible,
-.memory-form select:focus-visible {
+.memory-form select:focus-visible,
+.memory-form textarea:focus-visible {
   outline: 3px solid #93c5fd;
   outline-offset: 2px;
 }
@@ -136,7 +147,8 @@ button:disabled {
 }
 
 .memory-form input,
-.memory-form select {
+.memory-form select,
+.memory-form textarea {
   width: 100%;
   margin-top: 5px;
   border: 1px solid #cbd5e1;
@@ -146,6 +158,10 @@ button:disabled {
   font: inherit;
   font-size: 13px;
   padding: 9px 10px;
+}
+
+.memory-form textarea {
+  resize: vertical;
 }
 
 .memory-form input:disabled,

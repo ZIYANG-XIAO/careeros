@@ -1,4 +1,5 @@
 import type { AnswerResolution } from "../shared/messages";
+import { t } from "../shared/i18n";
 
 export function answerCopy(resolution: AnswerResolution): {
   title: string;
@@ -23,14 +24,18 @@ export function answerCopy(resolution: AnswerResolution): {
     needsConfirm -
     needsReview;
   const details = [
-    approved > 0 ? `${approved} approved for fill` : null,
-    needsInput > 0 ? `${needsInput} need input` : null,
-    needsConfirm > 0 ? `${needsConfirm} need confirmation` : null,
-    needsReview > 0 ? `${needsReview} need review` : null,
-    unresolved > 0 ? `${unresolved} unresolved` : null,
+    approved > 0 ? t("{count} approved for fill", { count: approved }) : null,
+    needsInput > 0 ? t("{count} need input", { count: needsInput }) : null,
+    needsConfirm > 0
+      ? t("{count} need confirmation", { count: needsConfirm })
+      : null,
+    needsReview > 0 ? t("{count} need review", { count: needsReview }) : null,
+    unresolved > 0 ? t("{count} unresolved", { count: unresolved }) : null,
   ].filter(Boolean);
   return {
-    title: "Answer decisions ready",
-    body: `${details.join(" · ") || "No answers resolved"}. Nothing was filled.`,
+    title: t("Answer decisions ready"),
+    body: t("{details}. Nothing was filled.", {
+      details: details.join(" · ") || t("No answers resolved"),
+    }),
   };
 }

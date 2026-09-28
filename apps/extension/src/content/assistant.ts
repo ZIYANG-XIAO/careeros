@@ -8,16 +8,30 @@ import { answerCopy } from "../popup/answer-copy";
 import { detectionCopy } from "../popup/detection-copy";
 import { fillCopy } from "../popup/fill-copy";
 import { approvedFillCount, buildFillPlan } from "../popup/fill-plan";
+import {
+  attachResultMessage,
+  clipDraftProblem,
+  resumeUploadFieldId,
+  savedAnswersSummary,
+} from "../popup/tool-copy";
 import type {
   AnswerResolution,
   ApplicationPageContext,
+  AttachResumeResult,
   AuthStatus,
+  ClippedJob,
   ExtensionResponse,
   FillExecutionResult,
   PageDetection,
+  JobDraft,
   PopupRequest,
+  SavedReusableAnswers,
   TrackedApplication,
+  TypedCustomAnswer,
 } from "../shared/messages";
+import { fillButtonLabel, t } from "../shared/i18n";
+import { captureCustomAnswers } from "./answer-capture";
+import { extractJobDraft } from "./job-extraction";
 
 const HOST_ID = "careeros-assistant-host";
 const Z_INDEX = 2147483640;
@@ -181,6 +195,10 @@ button:focus-visible {
   padding: 8px;
   font-size: 13px;
 }
+.memory-form .memory-choice {
+  flex-direction: row;
+  align-items: flex-start;
+}
 .memory-note, .memory-error {
   font-size: 12px;
   color: #64748b;
@@ -204,6 +222,24 @@ type LoadState<T> =
   | { state: "loading" }
   | { state: "ready"; value: T }
   | { state: "error"; message: string };
+
+type ToolClipState =
+  | { state: "idle" }
+  | { state: "editing"; draft: JobDraft; error: string | null }
+  | { state: "saving"; draft: JobDraft }
+  | { state: "saved"; job: ClippedJob };
+type ToolAnswersState =
+  | { state: "idle" }
+  | {
+      state: "choosing" | "saving";
+      items: TypedCustomAnswer[];
+      selected: Set<string>;
+    }
+  | { state: "done"; message: string };
+type ToolAttachState =
+  | { state: "idle" }
+  | { state: "attaching" }
+  | { state: "done"; message: string };
 
 export interface AssistantHandle {
   destroy: () => void;
@@ -239,6 +275,18 @@ function createLogoSvg(): SVGSVGElement {
   return svg;
 }
 
+/**
+ * Multi-step single-page applications (notably Workday) swap the form without
+ * changing the URL. The visible step heading identifies the step, so a change
+ * is treated like navigation and earlier inspection results are discarded.
+ */
+export function applicationStepSignature(doc: Document): string {
+  const heading = doc.querySelector(
+    "[data-automation-id='pageHeaderText'], [data-automation-id='progressBarActiveStep']",
+  );
+  return heading?.textContent?.replace(/\s+/g, " ").trim().slice(0, 200) ?? "";
+}
+
 function setText(element: HTMLElement, text: string): void {
   element.textContent = text;
 }
@@ -263,7 +311,7 @@ export function mountAssistant(): AssistantHandle {
   const launcher = document.createElement("button");
   launcher.type = "button";
   launcher.className = "launcher";
-  launcher.setAttribute("aria-label", "Open CareerOS assistant");
+  launcher.setAttribute("aria-label", t("Open CareerOS assistant"));
   launcher.setAttribute("aria-expanded", "false");
   launcher.setAttribute("aria-controls", "careeros-assistant-panel");
   launcher.append(createLogoSvg());
@@ -272,7 +320,7 @@ export function mountAssistant(): AssistantHandle {
   panel.id = "careeros-assistant-panel";
   panel.className = "panel";
   panel.setAttribute("role", "dialog");
-  panel.setAttribute("aria-label", "CareerOS application assistant");
+  panel.setAttribute("aria-label", t("CareerOS application assistant"));
   panel.setAttribute("aria-live", "polite");
 
   shadow.append(style, root);
@@ -297,7 +345,11 @@ export function mountAssistant(): AssistantHandle {
     prepareKey: crypto.randomUUID(),
     recordKey: crypto.randomUUID(),
     lastUrl: window.location.href,
+    lastStep: applicationStepSignature(document),
     navigationGeneration: 0,
+    clip: { state: "idle" } as ToolClipState,
+    savedAnswers: { state: "idle" } as ToolAnswersState,
+    attach: { state: "idle" } as ToolAttachState,
   };
 
   let urlPollTimer: ReturnType<typeof setInterval> | null = null;
@@ -310,6 +362,9 @@ export function mountAssistant(): AssistantHandle {
   }
 
   function clearStaleFormState(): void {
+    state.clip = { state: "idle" };
+    state.savedAnswers = { state: "idle" };
+    state.attach = { state: "idle" };
     state.detection = { state: "idle" };
     state.answers = null;
     state.fillResult = null;
@@ -323,8 +378,10 @@ export function mountAssistant(): AssistantHandle {
 
   function handleUrlChange(): void {
     const nextUrl = window.location.href;
-    if (nextUrl === state.lastUrl) return;
+    const nextStep = applicationStepSignature(document);
+    if (nextUrl === state.lastUrl && nextStep === state.lastStep) return;
     state.lastUrl = nextUrl;
+    state.lastStep = nextStep;
     state.navigationGeneration += 1;
     clearStaleFormState();
   }
@@ -354,7 +411,7 @@ export function mountAssistant(): AssistantHandle {
     launcher.setAttribute("aria-expanded", open ? "true" : "false");
     launcher.setAttribute(
       "aria-label",
-      open ? "Close CareerOS assistant" : "Open CareerOS assistant",
+      open ? t("Close CareerOS assistant") : t("Open CareerOS assistant"),
     );
     void chrome.storage.local.set({ [STORAGE_EXPANDED_KEY]: open });
     if (!open && restoreFocus) launcher.focus();
@@ -388,8 +445,8 @@ export function mountAssistant(): AssistantHandle {
           state: "error",
           message:
             response.error === "UNSUPPORTED_PAGE"
-              ? "Open a normal web page to use CareerOS."
-              : "This page could not be inspected.",
+              ? t("Open a normal web page to use CareerOS.")
+              : t("This page could not be inspected."),
         };
         render();
         return;
@@ -445,8 +502,8 @@ export function mountAssistant(): AssistantHandle {
               state: "error",
               message:
                 contextResponse.error === "UNAUTHENTICATED"
-                  ? "Sign in to record this application."
-                  : "Application context is unavailable.",
+                  ? t("Sign in to record this application.")
+                  : t("Application context is unavailable."),
             };
           }
         } catch {
@@ -454,7 +511,7 @@ export function mountAssistant(): AssistantHandle {
           if (isApplicationPage) {
             state.applicationContext = {
               state: "error",
-              message: "Application context is unavailable.",
+              message: t("Application context is unavailable."),
             };
           }
         }
@@ -500,21 +557,21 @@ export function mountAssistant(): AssistantHandle {
               state: "error",
               message:
                 answerResponse.error === "UNAUTHENTICATED"
-                  ? "Sign in to preview safe answers."
-                  : "Answer decisions are unavailable.",
+                  ? t("Sign in to preview safe answers.")
+                  : t("Answer decisions are unavailable."),
             };
       } catch {
         if (!isCurrentGeneration(capturedGeneration)) return;
         state.answers = {
           state: "error",
-          message: "Answer decisions are unavailable.",
+          message: t("Answer decisions are unavailable."),
         };
       }
     } catch {
       if (!isCurrentGeneration(capturedGeneration)) return;
       state.detection = {
         state: "error",
-        message: "This page could not be inspected.",
+        message: t("This page could not be inspected."),
       };
     }
     if (!isCurrentGeneration(capturedGeneration)) return;
@@ -560,12 +617,12 @@ export function mountAssistant(): AssistantHandle {
       if (!isCurrentGeneration(capturedGeneration)) return;
       state.answers = response.ok
         ? { state: "ready", value: response.data }
-        : { state: "error", message: "Answer decisions are unavailable." };
+        : { state: "error", message: t("Answer decisions are unavailable.") };
     } catch {
       if (!isCurrentGeneration(capturedGeneration)) return;
       state.answers = {
         state: "error",
-        message: "Answer decisions are unavailable.",
+        message: t("Answer decisions are unavailable."),
       };
     }
     if (!isCurrentGeneration(capturedGeneration)) return;
@@ -621,8 +678,9 @@ export function mountAssistant(): AssistantHandle {
         state.useTrackedApplication = true;
       } catch {
         if (!isCurrentGeneration(capturedGeneration)) return;
-        state.recordError =
-          "CareerOS could not save recovery context, but you can still fill and submit manually.";
+        state.recordError = t(
+          "CareerOS could not save recovery context, but you can still fill and submit manually.",
+        );
       } finally {
         if (isCurrentGeneration(capturedGeneration)) {
           state.preparingApplication = false;
@@ -645,14 +703,14 @@ export function mountAssistant(): AssistantHandle {
             state: "error",
             message:
               response.error === "STALE_PAGE"
-                ? "This page changed before fill could finish."
-                : "The page could not be updated.",
+                ? t("This page changed before fill could finish.")
+                : t("The page could not be updated."),
           };
     } catch {
       if (!isCurrentGeneration(capturedGeneration)) return;
       state.fillResult = {
         state: "error",
-        message: "The page could not be updated.",
+        message: t("The page could not be updated."),
       };
     }
     if (!isCurrentGeneration(capturedGeneration)) return;
@@ -674,6 +732,7 @@ export function mountAssistant(): AssistantHandle {
     const retainedAnswers = confirmedApplicationAnswers(
       state.answers?.state === "ready" ? state.answers.value : null,
       state.fillResult?.state === "ready" ? state.fillResult.value : null,
+      state.detection.state === "ready" ? state.detection.value : null,
     );
     try {
       const response = await sendBackground<TrackedApplication>({
@@ -693,8 +752,9 @@ export function mountAssistant(): AssistantHandle {
       state.recordedApplication = response.data;
     } catch {
       if (!isCurrentGeneration(capturedGeneration)) return;
-      state.recordError =
-        "CareerOS could not record this application. Your details remain here so you can retry.";
+      state.recordError = t(
+        "CareerOS could not record this application. Your details remain here so you can retry.",
+      );
     } finally {
       if (isCurrentGeneration(capturedGeneration)) {
         state.recording = false;
@@ -717,18 +777,30 @@ export function mountAssistant(): AssistantHandle {
     const title = document.createElement("strong");
     const body = document.createElement("p");
     if (state.auth.state === "loading") {
-      setText(title, "Checking account…");
-      setText(body, "Your Career Brain stays in the secure CareerOS service.");
+      setText(title, t("Checking account…"));
+      setText(
+        body,
+        t("Your Career Brain stays in the secure CareerOS service."),
+      );
     } else if (state.auth.state === "ready" && state.auth.value.authenticated) {
       dot.classList.add("connected");
-      setText(title, "Connected to CareerOS");
-      setText(body, "Your Career Brain stays in the secure CareerOS service.");
+      setText(title, t("Connected to CareerOS"));
+      setText(
+        body,
+        t("Your Career Brain stays in the secure CareerOS service."),
+      );
     } else if (state.auth.state === "error") {
       setText(title, state.auth.message);
-      setText(body, "Your Career Brain stays in the secure CareerOS service.");
+      setText(
+        body,
+        t("Your Career Brain stays in the secure CareerOS service."),
+      );
     } else {
-      setText(title, "Sign in to CareerOS");
-      setText(body, "Your Career Brain stays in the secure CareerOS service.");
+      setText(title, t("Sign in to CareerOS"));
+      setText(
+        body,
+        t("Your Career Brain stays in the secure CareerOS service."),
+      );
     }
     copy.append(title, body);
     row.append(dot, copy);
@@ -742,25 +814,27 @@ export function mountAssistant(): AssistantHandle {
     section.setAttribute("aria-live", "polite");
     const eyebrow = document.createElement("span");
     eyebrow.className = "eyebrow";
-    setText(eyebrow, "Current page");
+    setText(eyebrow, t("Current page"));
     const title = document.createElement("h2");
     const body = document.createElement("p");
     if (state.detection.state === "idle") {
-      setText(title, "Not inspected yet");
+      setText(title, t("Not inspected yet"));
       setText(
         body,
-        "Use Reinspect page when you are ready. CareerOS does not scan continuously.",
+        t(
+          "Use Reinspect page when you are ready. CareerOS does not scan continuously.",
+        ),
       );
     } else if (state.detection.state === "loading") {
-      setText(title, "Checking this page…");
-      setText(body, "CareerOS only inspects when you ask.");
+      setText(title, t("Checking this page…"));
+      setText(body, t("CareerOS only inspects when you ask."));
     } else if (state.detection.state === "ready") {
       const copy = detectionCopy(state.detection.value);
       setText(title, copy.title);
       setText(body, copy.body);
     } else {
       setText(title, state.detection.message);
-      setText(body, "CareerOS only inspects when you ask.");
+      setText(body, t("CareerOS only inspects when you ask."));
     }
     section.append(eyebrow, title, body);
     container.append(section);
@@ -773,14 +847,14 @@ export function mountAssistant(): AssistantHandle {
     section.setAttribute("aria-live", "polite");
     const eyebrow = document.createElement("span");
     eyebrow.className = "eyebrow";
-    setText(eyebrow, "Answer policy");
+    setText(eyebrow, t("Answer policy"));
     const title = document.createElement("h2");
     const body = document.createElement("p");
     if (state.answers.state === "loading") {
-      setText(title, "Checking approved sources…");
+      setText(title, t("Checking approved sources…"));
       setText(
         body,
-        "CareerOS keeps unknown and sensitive answers under your control.",
+        t("CareerOS keeps unknown and sensitive answers under your control."),
       );
     } else if (state.answers.state === "ready") {
       const copy = answerCopy(state.answers.value);
@@ -790,7 +864,7 @@ export function mountAssistant(): AssistantHandle {
       setText(title, state.answers.message);
       setText(
         body,
-        "CareerOS keeps unknown and sensitive answers under your control.",
+        t("CareerOS keeps unknown and sensitive answers under your control."),
       );
     }
     section.append(eyebrow, title, body);
@@ -804,14 +878,16 @@ export function mountAssistant(): AssistantHandle {
     section.setAttribute("aria-live", "polite");
     const eyebrow = document.createElement("span");
     eyebrow.className = "eyebrow";
-    setText(eyebrow, "Review");
+    setText(eyebrow, t("Review"));
     const title = document.createElement("h2");
     const body = document.createElement("p");
     if (state.fillResult.state === "loading") {
-      setText(title, "Updating supported fields…");
+      setText(title, t("Updating supported fields…"));
       setText(
         body,
-        "Existing answers stay untouched, and CareerOS never submits the form.",
+        t(
+          "Existing answers stay untouched, and CareerOS never submits the form.",
+        ),
       );
     } else if (state.fillResult.state === "ready") {
       const copy = fillCopy(state.fillResult.value);
@@ -821,7 +897,9 @@ export function mountAssistant(): AssistantHandle {
       setText(title, state.fillResult.message);
       setText(
         body,
-        "Existing answers stay untouched, and CareerOS never submits the form.",
+        t(
+          "Existing answers stay untouched, and CareerOS never submits the form.",
+        ),
       );
     }
     section.append(eyebrow, title, body);
@@ -840,21 +918,21 @@ export function mountAssistant(): AssistantHandle {
     section.setAttribute("aria-live", "polite");
     const eyebrow = document.createElement("span");
     eyebrow.className = "eyebrow";
-    setText(eyebrow, "Application memory");
+    setText(eyebrow, t("Application memory"));
     const title = document.createElement("h2");
     const body = document.createElement("p");
 
     if (state.applicationContext.state === "loading") {
-      setText(title, "Looking for tracked context…");
-      setText(body, "Sign in and keep this application page open.");
+      setText(title, t("Looking for tracked context…"));
+      setText(body, t("Sign in and keep this application page open."));
     } else if (state.applicationContext.state === "error") {
       setText(title, state.applicationContext.message);
-      setText(body, "Sign in and keep this application page open.");
+      setText(body, t("Sign in and keep this application page open."));
       section.append(eyebrow, title, body);
       container.append(section);
       return;
     } else if (state.recordedApplication) {
-      setText(title, "Application recorded");
+      setText(title, t("Application recorded"));
       setText(
         body,
         `${state.recordedApplication.company} · ${state.recordedApplication.role}`,
@@ -862,7 +940,7 @@ export function mountAssistant(): AssistantHandle {
       const viewButton = document.createElement("button");
       viewButton.type = "button";
       viewButton.className = "secondary";
-      viewButton.textContent = "Open in CareerOS";
+      viewButton.textContent = t("Open in CareerOS");
       viewButton.addEventListener("click", () => {
         void chrome.runtime.sendMessage({
           type: "CAREEROS_OPEN_APPLICATION",
@@ -873,22 +951,28 @@ export function mountAssistant(): AssistantHandle {
       container.append(section);
       return;
     } else {
-      setText(title, "Record after you submit");
+      setText(title, t("Record after you submit"));
       const ctx = state.applicationContext.value;
       if (ctx.matchKind === "EXACT_URL") {
         setText(
           body,
-          "CareerOS matched the application you started. Confirm after you submit the form.",
+          t(
+            "CareerOS matched the application you started. Confirm after you submit the form.",
+          ),
         );
       } else if (ctx.matchKind === "RECENT_PREPARING") {
         setText(
           body,
-          "CareerOS found one recent application. Review the company and role before confirming.",
+          t(
+            "CareerOS found one recent application. Review the company and role before confirming.",
+          ),
         );
       } else {
         setText(
           body,
-          "No tracked job matched this page. Review the suggested context before confirming.",
+          t(
+            "No tracked job matched this page. Review the suggested context before confirming.",
+          ),
         );
       }
     }
@@ -923,14 +1007,17 @@ export function mountAssistant(): AssistantHandle {
       choice.append(
         checkbox,
         document.createTextNode(
-          ` Use the recent ${state.applicationContext.value.application.company} · ${state.applicationContext.value.application.role} record`,
+          ` ${t("Use the recent {company} · {role} record", {
+            company: state.applicationContext.value.application.company,
+            role: state.applicationContext.value.application.role,
+          })}`,
         ),
       );
       form.append(choice);
     }
 
     const companyLabel = document.createElement("label");
-    setText(companyLabel, "Company");
+    setText(companyLabel, t("Company"));
     const companyInput = document.createElement("input");
     companyInput.value = state.company;
     companyInput.maxLength = 500;
@@ -947,7 +1034,7 @@ export function mountAssistant(): AssistantHandle {
     companyLabel.append(companyInput);
 
     const roleLabel = document.createElement("label");
-    setText(roleLabel, "Role");
+    setText(roleLabel, t("Role"));
     const roleInput = document.createElement("input");
     roleInput.value = state.role;
     roleInput.maxLength = 500;
@@ -964,11 +1051,11 @@ export function mountAssistant(): AssistantHandle {
     roleLabel.append(roleInput);
 
     const resumeLabel = document.createElement("label");
-    setText(resumeLabel, "Resume used");
+    setText(resumeLabel, t("Resume used"));
     const resumeSelect = document.createElement("select");
     const emptyOption = document.createElement("option");
     emptyOption.value = "";
-    emptyOption.textContent = "No resume recorded";
+    emptyOption.textContent = t("No resume recorded");
     resumeSelect.append(emptyOption);
     if (state.applicationContext.state === "ready") {
       for (const resume of state.applicationContext.value.resumeVersions) {
@@ -998,8 +1085,8 @@ export function mountAssistant(): AssistantHandle {
     recordButton.disabled =
       state.recording || !state.company.trim() || !state.role.trim();
     recordButton.textContent = state.recording
-      ? "Recording application…"
-      : "I submitted — Record application";
+      ? t("Recording application…")
+      : t("I submitted — Record application");
     recordButton.addEventListener("click", () => {
       void recordSubmittedApplication();
     });
@@ -1008,7 +1095,9 @@ export function mountAssistant(): AssistantHandle {
     note.className = "memory-note";
     setText(
       note,
-      "Click only after you submit the form yourself. CareerOS never clicks Submit.",
+      t(
+        "Click only after you submit the form yourself. CareerOS never clicks Submit.",
+      ),
     );
 
     form.append(companyLabel, roleLabel, resumeLabel, recordButton, note);
@@ -1048,15 +1137,18 @@ export function mountAssistant(): AssistantHandle {
         state.preparingApplication ||
         state.applicationContext?.state === "loading";
       if (state.preparingApplication) {
-        fillButton.textContent = "Saving recovery context…";
+        fillButton.textContent = t("Saving recovery context…");
       } else if (state.fillResult?.state === "loading") {
-        fillButton.textContent = "Applying approved answers…";
+        fillButton.textContent = t("Applying approved answers…");
       } else if (approvedFields > 0) {
-        fillButton.textContent = `${shouldPrepareForRecovery ? "Save context & fill" : "Fill"} ${approvedFields} approved ${approvedFields === 1 ? "field" : "fields"}`;
+        fillButton.textContent = fillButtonLabel(
+          shouldPrepareForRecovery,
+          approvedFields,
+        );
       } else {
         fillButton.textContent = shouldPrepareForRecovery
-          ? "Save context & show review states"
-          : "Show review states on page";
+          ? t("Save context & show review states")
+          : t("Show review states on page");
       }
       fillButton.addEventListener("click", () => {
         void applyApprovedAnswers();
@@ -1067,7 +1159,7 @@ export function mountAssistant(): AssistantHandle {
     const reinspectButton = document.createElement("button");
     reinspectButton.type = "button";
     reinspectButton.className = "secondary";
-    reinspectButton.textContent = "Reinspect page";
+    reinspectButton.textContent = t("Reinspect page");
     reinspectButton.addEventListener("click", () => {
       void inspectPage();
     });
@@ -1077,7 +1169,7 @@ export function mountAssistant(): AssistantHandle {
       const signInButton = document.createElement("button");
       signInButton.type = "button";
       signInButton.className = "secondary";
-      signInButton.textContent = "Open CareerOS to sign in";
+      signInButton.textContent = t("Open CareerOS to sign in");
       signInButton.addEventListener("click", () => {
         void chrome.runtime.sendMessage({ type: "CAREEROS_OPEN_SIGN_IN" });
       });
@@ -1085,6 +1177,300 @@ export function mountAssistant(): AssistantHandle {
     }
 
     container.append(actions);
+  }
+
+  function errorMessage(error: string): string {
+    return error === "UNAUTHENTICATED"
+      ? t("Sign in to CareerOS")
+      : error === "STALE_PAGE"
+        ? t("This page changed before fill could finish.")
+        : t("This page could not be read.");
+  }
+
+  async function saveClippedJob(draft: JobDraft): Promise<void> {
+    if (clipDraftProblem(draft)) return;
+    const generation = state.navigationGeneration;
+    state.clip = { state: "saving", draft };
+    render();
+    try {
+      const response = await sendBackground<ClippedJob>({
+        type: "CAREEROS_CLIP_JOB",
+        title: draft.title,
+        company: draft.company,
+        location: draft.location,
+        description: draft.description,
+        market: draft.market,
+        countryCode: draft.countryCode,
+        workplaceType: draft.workplaceType,
+        employmentType: draft.employmentType,
+        expectedPageUrl: window.location.href,
+      });
+      if (!isCurrentGeneration(generation)) return;
+      state.clip = response.ok
+        ? { state: "saved", job: response.data }
+        : { state: "editing", draft, error: errorMessage(response.error) };
+    } catch {
+      if (!isCurrentGeneration(generation)) return;
+      state.clip = {
+        state: "editing",
+        draft,
+        error: t(
+          "CareerOS could not save this job. Check the description and try again.",
+        ),
+      };
+    }
+    render();
+  }
+
+  async function saveSelectedAnswers(
+    items: TypedCustomAnswer[],
+    selected: Set<string>,
+  ): Promise<void> {
+    state.savedAnswers = { state: "saving", items, selected };
+    render();
+    try {
+      const response = await sendBackground<SavedReusableAnswers>({
+        type: "CAREEROS_SAVE_REUSABLE_ANSWERS",
+        answers: items
+          .filter((item) => selected.has(item.fieldId))
+          .map(({ question, answer }) => ({ question, answer })),
+      });
+      state.savedAnswers = {
+        state: "done",
+        message: response.ok
+          ? savedAnswersSummary(response.data)
+          : t("Sign in to CareerOS to save answers."),
+      };
+    } catch {
+      state.savedAnswers = {
+        state: "done",
+        message: t("CareerOS could not save answers."),
+      };
+    }
+    render();
+  }
+
+  async function attachResume(fieldId: string): Promise<void> {
+    const generation = state.navigationGeneration;
+    state.attach = { state: "attaching" };
+    render();
+    try {
+      const response = await sendBackground<AttachResumeResult>({
+        type: "CAREEROS_ATTACH_RESUME",
+        fieldId,
+        resumeVersionId: state.resumeVersionId,
+        expectedPageUrl: window.location.href,
+      });
+      if (!isCurrentGeneration(generation)) return;
+      state.attach = {
+        state: "done",
+        message: response.ok
+          ? attachResultMessage(response.data.state)
+          : t("The resume could not be attached."),
+      };
+    } catch {
+      state.attach = {
+        state: "done",
+        message: t("The resume could not be attached."),
+      };
+    }
+    render();
+  }
+
+  function toolButton(label: string, onClick: () => void, disabled = false) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary";
+    button.disabled = disabled;
+    button.textContent = label;
+    button.addEventListener("click", onClick);
+    return button;
+  }
+
+  function note(text: string, error = false): HTMLParagraphElement {
+    const paragraph = document.createElement("p");
+    paragraph.className = error ? "memory-error" : "memory-note";
+    setText(paragraph, text);
+    return paragraph;
+  }
+
+  function labelledInput(
+    label: string,
+    value: string,
+    onInput: (value: string) => void,
+  ): HTMLLabelElement {
+    const wrapper = document.createElement("label");
+    setText(wrapper, label);
+    const input = document.createElement("input");
+    input.value = value;
+    input.maxLength = 500;
+    input.addEventListener("input", () => onInput(input.value));
+    wrapper.append(input);
+    return wrapper;
+  }
+
+  function renderToolsSection(container: HTMLElement): void {
+    if (state.auth.state !== "ready" || !state.auth.value.authenticated) {
+      return;
+    }
+    const section = document.createElement("div");
+    section.className = "section";
+    section.setAttribute("aria-live", "polite");
+
+    // Save this job
+    const clip = state.clip;
+    if (clip.state === "idle") {
+      section.append(
+        toolButton(t("Save this job"), () => {
+          state.clip = {
+            state: "editing",
+            draft: extractJobDraft(document, window.location.href),
+            error: null,
+          };
+          render();
+        }),
+      );
+    } else if (clip.state === "saved") {
+      section.append(
+        note(
+          clip.job.created ? t("Saved to CareerOS") : t("Already in CareerOS"),
+        ),
+        toolButton(t("Open in CareerOS"), () => {
+          void sendBackground({
+            type: "CAREEROS_OPEN_JOB",
+            jobId: clip.job.jobId,
+          });
+        }),
+      );
+    } else {
+      const draft = clip.draft;
+      const form = document.createElement("div");
+      form.className = "memory-form";
+      form.append(
+        note(
+          draft.extraction === "STRUCTURED_DATA"
+            ? t("Read from this page's job listing data.")
+            : t(
+                "No structured job data found — fields were guessed from page text. Please check them.",
+              ),
+        ),
+        labelledInput(t("Title"), draft.title, (value) => {
+          draft.title = value;
+        }),
+        labelledInput(t("Company"), draft.company, (value) => {
+          draft.company = value;
+        }),
+      );
+      const problem = clipDraftProblem(draft);
+      if (clip.state === "editing" && clip.error) {
+        form.append(note(clip.error, true));
+      }
+      if (problem) form.append(note(problem));
+      form.append(
+        toolButton(
+          clip.state === "saving" ? t("Saving…") : t("Save to CareerOS"),
+          () => {
+            // Inputs update the draft without re-rendering (to keep focus),
+            // so re-render here to surface any missing field.
+            if (clipDraftProblem(draft)) render();
+            else void saveClippedJob(draft);
+          },
+          clip.state === "saving",
+        ),
+      );
+      section.append(form);
+    }
+
+    // Remember answers typed into custom questions
+    if (state.detection.state === "ready") {
+      const saved = state.savedAnswers;
+      if (saved.state === "idle") {
+        section.append(
+          toolButton(t("Remember my answers on this page"), () => {
+            const items = captureCustomAnswers(document, window.location.href);
+            state.savedAnswers =
+              items.length > 0
+                ? { state: "choosing", items, selected: new Set() }
+                : {
+                    state: "done",
+                    message: t(
+                      "No answered custom questions found on this page yet.",
+                    ),
+                  };
+            render();
+          }),
+        );
+      } else if (saved.state === "done") {
+        section.append(note(saved.message));
+      } else {
+        const list = document.createElement("div");
+        list.className = "memory-form";
+        list.append(note(t("Choose answers to reuse")));
+        for (const item of saved.items) {
+          const choice = document.createElement("label");
+          choice.className = "memory-choice";
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = saved.selected.has(item.fieldId);
+          checkbox.addEventListener("change", () => {
+            if (checkbox.checked) saved.selected.add(item.fieldId);
+            else saved.selected.delete(item.fieldId);
+            render();
+          });
+          choice.append(
+            checkbox,
+            document.createTextNode(` ${item.question} — ${item.answer}`),
+          );
+          list.append(choice);
+        }
+        list.append(
+          toolButton(
+            saved.state === "saving"
+              ? t("Saving…")
+              : t(
+                  saved.selected.size === 1
+                    ? "Save {count} answer"
+                    : "Save {count} answers",
+                  { count: saved.selected.size },
+                ),
+            () => void saveSelectedAnswers(saved.items, saved.selected),
+            saved.state === "saving" || saved.selected.size === 0,
+          ),
+        );
+        section.append(list);
+      }
+    }
+
+    // Attach the chosen resume to the upload field
+    const uploadFieldId =
+      state.detection.state === "ready"
+        ? resumeUploadFieldId(state.detection.value)
+        : null;
+    const resumeOptions =
+      state.applicationContext?.state === "ready"
+        ? state.applicationContext.value.resumeVersions
+        : [];
+    if (uploadFieldId && resumeOptions.length > 0) {
+      const selected = resumeOptions.find(
+        (option) => option.id === state.resumeVersionId,
+      );
+      section.append(
+        toolButton(
+          state.attach.state === "attaching"
+            ? t("Attaching resume…")
+            : selected
+              ? t("Attach resume: {label}", { label: selected.label })
+              : t("Choose a resume below to attach it"),
+          () => void attachResume(uploadFieldId),
+          !selected || state.attach.state === "attaching",
+        ),
+      );
+      if (state.attach.state === "done") {
+        section.append(note(state.attach.message));
+      }
+    }
+
+    if (section.childElementCount > 0) container.append(section);
   }
 
   function renderPanel(): void {
@@ -1097,8 +1483,8 @@ export function mountAssistant(): AssistantHandle {
     const closeButton = document.createElement("button");
     closeButton.type = "button";
     closeButton.className = "close-btn";
-    closeButton.setAttribute("aria-label", "Close CareerOS assistant");
-    setText(closeButton, "Close");
+    closeButton.setAttribute("aria-label", t("Close CareerOS assistant"));
+    setText(closeButton, t("Close"));
     closeButton.addEventListener("click", () => setPanelOpen(false, true));
     header.append(brand, closeButton);
     panel.append(header);
@@ -1108,11 +1494,12 @@ export function mountAssistant(): AssistantHandle {
     renderAnswersSection(panel);
     renderActions(panel);
     renderFillSection(panel);
+    renderToolsSection(panel);
     renderApplicationMemory(panel);
 
     const footer = document.createElement("div");
     footer.className = "footer-note";
-    setText(footer, "CareerOS never submits the application for you.");
+    setText(footer, t("CareerOS never submits the application for you."));
     panel.append(footer);
   }
 
@@ -1142,9 +1529,9 @@ export function mountAssistant(): AssistantHandle {
       });
       state.auth = response.ok
         ? { state: "ready", value: response.data }
-        : { state: "error", message: "CareerOS is unavailable." };
+        : { state: "error", message: t("CareerOS is unavailable.") };
     } catch {
-      state.auth = { state: "error", message: "CareerOS is unavailable." };
+      state.auth = { state: "error", message: t("CareerOS is unavailable.") };
     }
     render();
   })();

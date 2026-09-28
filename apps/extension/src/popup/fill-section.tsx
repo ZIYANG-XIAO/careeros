@@ -3,6 +3,7 @@ import type {
   ApplicationPageContext,
   FillExecutionResult,
 } from "../shared/messages";
+import { fillButtonLabel, t } from "../shared/i18n";
 
 export function FillSection({
   hasReviewPlan,
@@ -36,23 +37,23 @@ export function FillSection({
           onClick={onApply}
         >
           {preparingApplication
-            ? "Saving recovery context…"
+            ? t("Saving recovery context…")
             : fillResult?.state === "loading"
-              ? "Applying approved answers…"
+              ? t("Applying approved answers…")
               : approvedFields > 0
-                ? `${shouldPrepareForRecovery ? "Save context & fill" : "Fill"} ${approvedFields} approved ${approvedFields === 1 ? "field" : "fields"}`
+                ? fillButtonLabel(shouldPrepareForRecovery, approvedFields)
                 : shouldPrepareForRecovery
-                  ? "Save context & show review states"
-                  : "Show review states on page"}
+                  ? t("Save context & show review states")
+                  : t("Show review states on page")}
         </button>
       ) : null}
 
       {fillResult ? (
         <section className="page-card" aria-live="polite">
-          <span className="eyebrow">REVIEW</span>
+          <span className="eyebrow">{t("REVIEW")}</span>
           <h2>
             {fillResult.state === "loading"
-              ? "Updating supported fields…"
+              ? t("Updating supported fields…")
               : fillResult.state === "ready"
                 ? resolvedFillCopy!.title
                 : fillResult.message}
@@ -60,7 +61,9 @@ export function FillSection({
           <p>
             {fillResult.state === "ready"
               ? resolvedFillCopy!.body
-              : "Existing answers stay untouched, and CareerOS never submits the form."}
+              : t(
+                  "Existing answers stay untouched, and CareerOS never submits the form.",
+                )}
           </p>
         </section>
       ) : null}

@@ -4,8 +4,11 @@ import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { ConfirmDelete } from "@/components/confirm-delete";
+import { JobEditForm } from "@/components/job-edit-form";
 import { Button } from "@/components/ui/button";
 import { ApplicationActivitySection } from "@/components/application-activity-section";
+import { ApplicationContactsSection } from "@/components/application-contacts-section";
 import {
   createApplication,
   createJobAnalysis,
@@ -16,6 +19,9 @@ import {
   listApplicationActivities,
   listJobAnalyses,
   listResumes,
+  deleteApplication,
+  deleteJob,
+  extractJobRequirements,
   saveJob,
   unsaveJob,
   updateApplicationStatus,
@@ -47,6 +53,8 @@ type FocusPanelProps = {
   onClose: () => void;
   onApplicationChanged?: (application: Application) => void;
   onJobChanged?: (job: Job) => void;
+  /** Called after the focused record was deleted; the panel should close. */
+  onDeleted?: (target: FocusTarget) => void;
 };
 
 const STAGE_ORDER: ApplicationStatus[] = [
@@ -194,9 +202,11 @@ function StageControl({
 function ApplicationPanelBody({
   id,
   onChanged,
+  onDeleted,
 }: {
   id: string;
   onChanged?: (application: Application) => void;
+  onDeleted?: () => void;
 }) {
   const { getToken } = useAuth();
   const { locale, t } = useI18n();
@@ -388,6 +398,8 @@ function ApplicationPanelBody({
         initialActivities={activities}
       />
 
+      <ApplicationContactsSection applicationId={id} />
+
       <dl className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-rail p-3">
         <div>
           <dt className="text-xs font-medium uppercase tracking-wide text-ink-3">
@@ -500,6 +512,17 @@ function ApplicationPanelBody({
           </dl>
         )}
       </div>
+
+      <ConfirmDelete
+        label={t("applications.delete")}
+        warning={t("applications.deleteWarning")}
+        onConfirm={async () => {
+          const token = await getToken();
+          if (!token) throw new Error("Missing authentication token");
+          await deleteApplication(token, application.id);
+          onDeleted?.();
+        }}
+      />
     </div>
   );
 }
@@ -610,9 +633,11 @@ function OpportunitySummary({ analysis }: { analysis: JobAnalysis }) {
 function JobPanelBody({
   id,
   onChanged,
+  onDeleted,
 }: {
   id: string;
   onChanged?: (job: Job) => void;
+  onDeleted?: () => void;
 }) {
   const { getToken } = useAuth();
   const { locale, t } = useI18n();
@@ -628,6 +653,10 @@ function JobPanelBody({
   const [analyzing, setAnalyzing] = useState(false);
   const [starting, setStarting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [requirementsState, setRequirementsState] = useState<"idle" | "failed">(
+    "idle",
+  );
   const [fetchKey, setFetchKey] = useState(0);
   const [prevFetchKey, setPrevFetchKey] = useState(0);
   const applicationKey = useRef<string | null>(null);
@@ -682,6 +711,36 @@ function JobPanelBody({
       cancelled = true;
     };
   }, [getToken, id, fetchKey]);
+
+  const pendingJobId =
+    job?.latest_snapshot.requirements_status === "PENDING" ? job.id : null;
+
+  const [requirementsAttempt, setRequirementsAttempt] = useState(0);
+
+  // Catalog jobs defer requirement extraction until someone opens them; the
+  // result is shared, so this runs at most once per posting for everyone.
+  useEffect(() => {
+    if (!pendingJobId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const token = await getToken();
+        if (!token) throw new Error("Missing authentication token");
+        const updated = await extractJobRequirements(token, pendingJobId);
+        if (!cancelled) setJob(updated);
+      } catch {
+        if (!cancelled) setRequirementsState("failed");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken, pendingJobId, requirementsAttempt]);
+
+  function retryRequirements() {
+    setRequirementsState("idle");
+    setRequirementsAttempt((attempt) => attempt + 1);
+  }
 
   async function toggleSave() {
     if (!job) return;
@@ -885,6 +944,24 @@ function JobPanelBody({
         <p className="text-sm font-medium text-ink">
           {t("jobs.detail.groundedRequirements")}
         </p>
+        {job.latest_snapshot.requirements_status === "PENDING" && (
+          <p className="mt-2 text-sm text-ink-3" aria-live="polite">
+            {requirementsState === "failed" ? (
+              <>
+                {t("jobs.requirementsFailed")}{" "}
+                <button
+                  type="button"
+                  className="font-semibold text-accent hover:underline"
+                  onClick={retryRequirements}
+                >
+                  {t("jobs.requirementsRetry")}
+                </button>
+              </>
+            ) : (
+              t("jobs.requirementsPending")
+            )}
+          </p>
+        )}
         <ul className="mt-2 flex flex-col gap-2">
           {job.latest_snapshot.requirements.map((requirement) => (
             <li
@@ -915,6 +992,47 @@ function JobPanelBody({
           {jobSourceSummary(job, locale)}
         </p>
       </div>
+
+      {job.is_catalog ? (
+        <p className="text-xs text-ink-3">{t("jobs.catalogNote")}</p>
+      ) : (
+        <>
+          {editing ? (
+            <JobEditForm
+              job={job}
+              onCancel={() => setEditing(false)}
+              onSaved={(updated) => {
+                setJob(updated);
+                setEditing(false);
+                onChanged?.(updated);
+              }}
+            />
+          ) : (
+            <Button
+              variant="secondary"
+              className="self-start"
+              onClick={() => setEditing(true)}
+            >
+              {t("jobs.edit.open")}
+            </Button>
+          )}
+
+          <ConfirmDelete
+            label={t("jobs.delete")}
+            warning={t(
+              linkedApplication
+                ? "jobs.deleteWarningWithApplication"
+                : "jobs.deleteWarning",
+            )}
+            onConfirm={async () => {
+              const token = await getToken();
+              if (!token) throw new Error("Missing authentication token");
+              await deleteJob(token, job.id);
+              onDeleted?.();
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -924,6 +1042,7 @@ function FocusPanel({
   onClose,
   onApplicationChanged,
   onJobChanged,
+  onDeleted,
 }: FocusPanelProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -943,9 +1062,15 @@ function FocusPanel({
           key={target.id}
           id={target.id}
           onChanged={onApplicationChanged}
+          onDeleted={() => onDeleted?.(target)}
         />
       ) : (
-        <JobPanelBody key={target.id} id={target.id} onChanged={onJobChanged} />
+        <JobPanelBody
+          key={target.id}
+          id={target.id}
+          onChanged={onJobChanged}
+          onDeleted={() => onDeleted?.(target)}
+        />
       )}
     </aside>
   );

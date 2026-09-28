@@ -77,7 +77,7 @@ async def test_capture_job_preserves_raw_snapshot_and_grounded_requirements() ->
         assert requirement["normalized_value"] == "Python"
         assert requirement["source_text"] in payload()["description"]
 
-        listed = await client.get("/jobs")
+        listed = await client.get("/jobs", params={"source": "mine"})
         assert listed.status_code == 200
         assert [item["id"] for item in listed.json()] == [body["id"]]
 
@@ -168,13 +168,13 @@ async def test_job_search_and_location_filters_are_server_owned() -> None:
         assert first.status_code == 201
         assert second.status_code == 201
 
-        by_title = await client.get("/jobs", params={"search": "platform"})
+        by_title = await client.get("/jobs", params={"search": "platform", "source": "mine"})
         assert [item["id"] for item in by_title.json()] == [first.json()["id"]]
 
-        by_company = await client.get("/jobs", params={"search": "contoso"})
+        by_company = await client.get("/jobs", params={"search": "contoso", "source": "mine"})
         assert [item["id"] for item in by_company.json()] == [second.json()["id"]]
 
-        by_location = await client.get("/jobs", params={"location": "canada"})
+        by_location = await client.get("/jobs", params={"location": "canada", "source": "mine"})
         assert [item["id"] for item in by_location.json()] == [first.json()["id"]]
 
         by_market = await client.get(
@@ -184,11 +184,12 @@ async def test_job_search_and_location_filters_are_server_owned() -> None:
                 "country_code": "CA",
                 "workplace_type": "REMOTE",
                 "employment_type": "FULL_TIME",
+                "source": "mine",
             },
         )
         assert [item["id"] for item in by_market.json()] == [first.json()["id"]]
 
-        by_title = await client.get("/jobs", params={"sort": "title"})
+        by_title = await client.get("/jobs", params={"sort": "title", "source": "mine"})
         assert [item["id"] for item in by_title.json()] == [second.json()["id"], first.json()["id"]]
 
 
@@ -245,3 +246,66 @@ async def test_missing_and_malformed_job_ids_are_rejected() -> None:
         assert (await client.get(f"/jobs/{uuid4()}")).status_code == 404
         assert (await client.post(f"/jobs/{uuid4()}/save")).status_code == 404
         assert (await client.get("/jobs/not-a-uuid")).status_code == 422
+
+
+CLIP_URL = "https://boards.example.com/acme/jobs/42?gh_jid=42&utm_source=x"
+
+
+def clip_payload(url: str = CLIP_URL) -> dict[str, object]:
+    body = payload()
+    body.pop("application_url")
+    body["source_url"] = url
+    return body
+
+
+@pytest.mark.asyncio
+async def test_clip_creates_saved_job_with_canonical_identity() -> None:
+    async with make_integration_client(job_parser=FakeJobParser()) as client:
+        response = await client.post("/jobs/clip", json=clip_payload())
+        assert response.status_code == 201
+        body = response.json()
+        assert body["created"] is True
+        job = body["job"]
+        assert job["source_type"] == "MANUAL_ENTRY"
+        assert job["source_key"] == "extension_clip"
+        assert job["canonical_url"] == "https://boards.example.com/acme/jobs/42?gh_jid=42"
+        assert job["application_url"] == clip_payload()["source_url"]
+        assert job["is_saved"] is True
+        assert job["saved_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_clipping_same_page_again_returns_existing_job() -> None:
+    parser = FakeJobParser()
+    async with make_integration_client(job_parser=parser) as client:
+        first = await client.post("/jobs/clip", json=clip_payload())
+        await client.delete(f"/jobs/{first.json()['job']['id']}/save")
+        again = await client.post(
+            "/jobs/clip",
+            json=clip_payload("https://BOARDS.example.com/acme/jobs/42/?utm_medium=y&gh_jid=42"),
+        )
+        assert again.status_code == 200
+        assert again.json()["created"] is False
+        assert again.json()["job"]["id"] == first.json()["job"]["id"]
+        assert again.json()["job"]["is_saved"] is True
+        listed = await client.get("/jobs", params={"source": "mine"})
+        assert len(listed.json()) == 1
+
+
+@pytest.mark.asyncio
+async def test_clip_requires_page_url() -> None:
+    async with make_integration_client(job_parser=FakeJobParser()) as client:
+        body = clip_payload()
+        body.pop("source_url")
+        response = await client.post("/jobs/clip", json=body)
+        assert response.status_code == 422
+
+
+def test_canonical_clip_url_strips_tracking_and_fragment() -> None:
+    from careeros_api.job import canonical_clip_url
+
+    assert (
+        canonical_clip_url("https://Jobs.Lever.co/acme/abc/?lever-source=li&b=2&a=1#apply")
+        == "https://jobs.lever.co/acme/abc?a=1&b=2"
+    )
+    assert canonical_clip_url("ftp://example.com/x") is None

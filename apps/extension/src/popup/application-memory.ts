@@ -1,4 +1,5 @@
 import type {
+  PageDetection,
   AnswerResolution,
   ApplicationPageContext,
   ConfirmedApplicationAnswer,
@@ -72,7 +73,13 @@ function suggestRole(context: ApplicationPageContext): string {
 export function confirmedApplicationAnswers(
   resolution: AnswerResolution | null,
   fillResult: FillExecutionResult | null,
+  detection: PageDetection | null = null,
 ): ConfirmedApplicationAnswer[] {
+  const questions = new Map(
+    (detection?.forms ?? [])
+      .flatMap((form) => form.fields)
+      .map((field) => [field.id, field.question] as const),
+  );
   if (!resolution || !fillResult) return [];
   const filled = new Set(
     fillResult.fields
@@ -86,9 +93,26 @@ export function confirmedApplicationAnswers(
       decision.proposedAnswer === null ||
       decision.policyCategory !== "STANDARD" ||
       decision.sensitivity !== "NONE" ||
-      !persistedSources.has(decision.sourceCategory)
+      !(
+        persistedSources.has(decision.sourceCategory) ||
+        decision.sourceCategory === "REUSABLE_CONFIRMED_ANSWER"
+      )
     ) {
       return [];
+    }
+    // A saved reusable answer is recorded as the user's own answer, under the
+    // question the form actually asked.
+    if (decision.sourceCategory === "REUSABLE_CONFIRMED_ANSWER") {
+      return [
+        {
+          canonicalKey: null,
+          questionText: (
+            questions.get(decision.fieldId) ?? "Application field"
+          ).slice(0, 500),
+          answerText: decision.proposedAnswer,
+          sourceCategory: "USER_PROVIDED",
+        },
+      ];
     }
     return [
       {

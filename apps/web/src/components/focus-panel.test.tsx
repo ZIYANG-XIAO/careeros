@@ -90,6 +90,9 @@ const job: Job = {
   updated_at: "2026-09-20T00:00:00Z",
   is_saved: false,
   saved_at: null,
+  is_catalog: false,
+  similar_count: 0,
+  other_locations: [],
   latest_snapshot: {
     id: "snap-1",
     version_number: 1,
@@ -98,6 +101,7 @@ const job: Job = {
     content_sha256: "abc",
     parser_version: "v1",
     parser_model: "test",
+    requirements_status: "PARSED",
     created_at: "2026-09-20T00:00:00Z",
     requirements: [],
   },

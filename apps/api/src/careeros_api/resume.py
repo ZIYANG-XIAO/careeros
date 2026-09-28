@@ -3,11 +3,12 @@
 import asyncio
 from datetime import datetime
 from typing import Annotated
+from urllib.parse import quote
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -15,7 +16,17 @@ from careeros_api.auth import get_current_user
 from careeros_api.config import Settings, get_settings
 from careeros_api.contact_info import ContactInfoUpsertRequest, apply_contact_info_updates
 from careeros_api.db import get_db_session
-from careeros_api.models import Resume, ResumeDraftItem, ResumeImport, ResumeVersion, User
+from careeros_api.models import (
+    Application,
+    JobAnalysis,
+    Resume,
+    ResumeAsset,
+    ResumeDraftItem,
+    ResumeImport,
+    ResumeVersion,
+    User,
+)
+from careeros_api.rate_limit import ai_rate_limit
 from careeros_api.resume_extraction import ResumeFileError, detect_resume_type, extract_resume_text
 from careeros_api.resume_parser import ResumeParser, ResumeParsingError, get_resume_parser
 from careeros_api.resume_schemas import ParsedResumeDraft, validate_grounding
@@ -185,6 +196,7 @@ def _resume_response(resume: Resume) -> ResumeSummaryResponse:
     "/resume-imports",
     response_model=ResumeImportResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(ai_rate_limit)],
 )
 async def upload_resume(
     file: Annotated[UploadFile, File()],
@@ -372,3 +384,103 @@ async def get_resume_version(
             status_code=status.HTTP_404_NOT_FOUND, detail="Resume version not found"
         )
     return _version_response(version)
+
+
+@router.get("/resume-versions/{version_id}/file")
+async def download_resume_version_file(
+    version_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> Response:
+    """Return the exact owned file behind one immutable Resume Version.
+
+    Used by the extension to attach the user's chosen resume to an application
+    form on explicit request; the bytes are the originally uploaded file.
+    """
+    version = await session.scalar(
+        select(ResumeVersion)
+        .join(Resume)
+        .options(selectinload(ResumeVersion.asset))
+        .where(ResumeVersion.id == version_id, Resume.user_id == user.id)
+    )
+    if version is None or version.asset.user_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resume version not found"
+        )
+    storage = LocalResumeAssetStorage(settings.resume_storage_dir)
+    try:
+        data = await asyncio.to_thread(storage.read, version.asset.storage_key)
+    except (FileNotFoundError, ValueError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resume file not found"
+        ) from error
+    filename = version.asset.original_filename.replace('"', "").replace("\\", "")
+    return Response(
+        content=data,
+        media_type=version.asset.content_type,
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}",
+            "X-Resume-Filename": quote(filename),
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@router.delete("/resumes/{resume_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_resume(
+    resume_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> Response:
+    """Delete a resume, all its versions, and their files.
+
+    Refused while any Application records one of its versions, because an
+    application's exact resume is immutable history. Derived job analyses made
+    with these versions are removed; confirmed Career Brain evidence stays.
+    """
+    resume = await session.scalar(
+        select(Resume).where(Resume.id == resume_id, Resume.user_id == user.id)
+    )
+    if resume is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
+    version_ids = select(ResumeVersion.id).where(ResumeVersion.resume_id == resume.id)
+    in_use = await session.scalar(
+        select(func.count(Application.id)).where(Application.resume_version_id.in_(version_ids))
+    )
+    if in_use:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "RESUME_IN_USE",
+                "message": "Applications record this resume; delete them first",
+            },
+        )
+    assets = list(
+        (
+            await session.scalars(
+                select(ResumeAsset).where(
+                    ResumeAsset.id.in_(
+                        select(ResumeVersion.asset_id).where(ResumeVersion.resume_id == resume.id)
+                    ),
+                    ResumeAsset.user_id == user.id,
+                )
+            )
+        ).all()
+    )
+    storage_keys = [asset.storage_key for asset in assets]
+    await session.execute(delete(JobAnalysis).where(JobAnalysis.resume_version_id.in_(version_ids)))
+    await session.execute(delete(Resume).where(Resume.id == resume.id))
+    await session.execute(
+        delete(ResumeAsset).where(ResumeAsset.id.in_([asset.id for asset in assets]))
+    )
+    await session.commit()
+
+    storage = LocalResumeAssetStorage(settings.resume_storage_dir)
+    for key in storage_keys:
+        try:
+            await asyncio.to_thread(storage.delete, key)
+        except (OSError, ValueError):  # pragma: no cover - rows are already gone
+            pass
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -1,5 +1,6 @@
 import type { LoadState } from "./use-popup-state";
 import type { AuthStatus } from "../shared/messages";
+import { t } from "../shared/i18n";
 
 export function AuthSection({
   auth,
@@ -17,14 +18,14 @@ export function AuthSection({
       <div>
         <strong>
           {auth.state === "loading"
-            ? "Checking account…"
+            ? t("Checking account…")
             : authenticated
-              ? "Connected to CareerOS"
+              ? t("Connected to CareerOS")
               : auth.state === "error"
                 ? auth.message
-                : "Sign in to CareerOS"}
+                : t("Sign in to CareerOS")}
         </strong>
-        <p>Your Career Brain stays in the secure CareerOS service.</p>
+        <p>{t("Your Career Brain stays in the secure CareerOS service.")}</p>
       </div>
     </section>
   );

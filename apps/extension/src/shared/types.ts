@@ -1,7 +1,8 @@
 export type DetectionStatus =
   "APPLICATION_PAGE" | "NOT_APPLICATION_PAGE" | "UNSUPPORTED_PAGE";
 
-export type FormAdapterId = "generic" | "greenhouse" | "lever" | "ashby";
+export type FormAdapterId =
+  "generic" | "greenhouse" | "lever" | "ashby" | "workday";
 
 export type CanonicalFieldKey =
   | "PERSON_FIRST_NAME"
@@ -251,6 +252,73 @@ export interface PrepareApplicationRequestData {
   expectedTabId?: number;
 }
 
+export type JobDraftMarket = "UNKNOWN" | "NORTH_AMERICA" | "CHINA";
+export type JobDraftCountry = "UNKNOWN" | "US" | "CA" | "CN";
+export type JobDraftWorkplaceType = "UNKNOWN" | "REMOTE" | "HYBRID" | "ONSITE";
+export type JobDraftEmploymentType =
+  "UNKNOWN" | "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERNSHIP";
+
+/** An editable, not-yet-saved job captured from the active page. */
+export interface JobDraft {
+  pageUrl: string;
+  extraction: "STRUCTURED_DATA" | "PAGE_TEXT";
+  title: string;
+  company: string;
+  location: string | null;
+  description: string;
+  market: JobDraftMarket;
+  countryCode: JobDraftCountry;
+  workplaceType: JobDraftWorkplaceType;
+  employmentType: JobDraftEmploymentType;
+}
+
+export interface ClipJobRequestData {
+  title: string;
+  company: string;
+  location: string | null;
+  description: string;
+  market: JobDraftMarket;
+  countryCode: JobDraftCountry;
+  workplaceType: JobDraftWorkplaceType;
+  employmentType: JobDraftEmploymentType;
+  expectedPageUrl: string;
+  expectedTabId?: number;
+}
+
+export interface ClippedJob {
+  jobId: string;
+  created: boolean;
+}
+
+/** A value the user typed into a custom question on the active page. */
+export interface TypedCustomAnswer {
+  fieldId: string;
+  question: string;
+  answer: string;
+}
+
+export interface ReusableAnswerInput {
+  question: string;
+  answer: string;
+}
+
+export interface SavedReusableAnswers {
+  saved: number;
+  refused: number;
+}
+
+/** The exact owned resume file, carried from the background to one page. */
+export interface ResumeFilePayload {
+  fileName: string;
+  contentType: string;
+  base64: string;
+}
+
+export interface AttachResumeResult {
+  fieldId: string;
+  state: FillFieldState;
+}
+
 export type PopupRequest =
   | { type: "CAREEROS_GET_AUTH_STATUS" }
   | {
@@ -278,8 +346,28 @@ export type PopupRequest =
       expectedTabId?: number;
       expectedPageUrl?: string;
     }
+  | {
+      type: "CAREEROS_EXTRACT_JOB";
+      expectedTabId?: number;
+      expectedPageUrl?: string;
+    }
+  | ({ type: "CAREEROS_CLIP_JOB" } & ClipJobRequestData)
+  | {
+      type: "CAREEROS_READ_CUSTOM_ANSWERS";
+      expectedTabId?: number;
+      expectedPageUrl?: string;
+    }
+  | { type: "CAREEROS_SAVE_REUSABLE_ANSWERS"; answers: ReusableAnswerInput[] }
+  | {
+      type: "CAREEROS_ATTACH_RESUME";
+      fieldId: string;
+      resumeVersionId: string;
+      expectedPageUrl: string;
+      expectedTabId?: number;
+    }
   | { type: "CAREEROS_OPEN_SIGN_IN" }
-  | { type: "CAREEROS_OPEN_APPLICATION"; applicationId: string };
+  | { type: "CAREEROS_OPEN_APPLICATION"; applicationId: string }
+  | { type: "CAREEROS_OPEN_JOB"; jobId: string };
 
 export interface TabContext {
   tabId: number;
@@ -293,6 +381,13 @@ export type ContentRequest =
       fields: FillPlanField[];
       expectedPageUrl: string;
     }
+  | { type: "CAREEROS_EXTRACT_JOB" }
+  | { type: "CAREEROS_READ_CUSTOM_ANSWERS" }
+  | ({
+      type: "CAREEROS_ATTACH_RESUME";
+      fieldId: string;
+      expectedPageUrl: string;
+    } & ResumeFilePayload)
   | { type: "CAREEROS_ACTIVATE_ASSISTANT" }
   | { type: "CAREEROS_DEACTIVATE_ASSISTANT" };
 

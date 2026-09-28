@@ -2,12 +2,13 @@
 
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { ConfirmDelete } from "@/components/confirm-delete";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { getResume } from "@/lib/api";
+import { ApiError, deleteResume, getResume } from "@/lib/api";
 import { formatLocaleDate, useI18n } from "@/lib/i18n";
 import type { ResumeSummary } from "@/lib/types";
 
@@ -19,6 +20,7 @@ export default function ResumeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { locale, t } = useI18n();
+  const router = useRouter();
   const [resume, setResume] = useState<ResumeSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
@@ -153,6 +155,25 @@ export default function ResumeDetailPage() {
           ))}
         </div>
       </section>
+
+      <ConfirmDelete
+        label={t("resumes.delete")}
+        warning={t("resumes.deleteWarning")}
+        onConfirm={async () => {
+          const token = await getToken();
+          if (!token) throw new Error("Missing authentication token");
+          try {
+            await deleteResume(token, resume.id);
+          } catch (caught) {
+            throw new Error(
+              caught instanceof ApiError && caught.code === "RESUME_IN_USE"
+                ? t("resumes.deleteInUse")
+                : t("delete.failed"),
+            );
+          }
+          router.push("/me/resumes");
+        }}
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { FillExecutionResult } from "../shared/messages";
+import { t } from "../shared/i18n";
 
 export function fillCopy(result: FillExecutionResult): {
   title: string;
@@ -15,15 +16,22 @@ export function fillCopy(result: FillExecutionResult): {
   ).length;
   const unresolved = result.fields.length - filled - kept - review;
   const details = [
-    filled > 0 ? `${filled} filled` : null,
+    filled > 0 ? t("{count} filled", { count: filled }) : null,
     kept > 0
-      ? `${kept} existing value${kept === 1 ? "" : "s"} untouched`
+      ? t(
+          kept === 1
+            ? "{count} existing value untouched"
+            : "{count} existing values untouched",
+          { count: kept },
+        )
       : null,
-    review > 0 ? `${review} need your review` : null,
-    unresolved > 0 ? `${unresolved} unresolved` : null,
+    review > 0 ? t("{count} need your review", { count: review }) : null,
+    unresolved > 0 ? t("{count} unresolved", { count: unresolved }) : null,
   ].filter(Boolean);
   return {
-    title: "Review the application page",
-    body: `${details.join(" · ") || "No fields changed"}. CareerOS never submits the form.`,
+    title: t("Review the application page"),
+    body: t("{details}. CareerOS never submits the form.", {
+      details: details.join(" · ") || t("No fields changed"),
+    }),
   };
 }

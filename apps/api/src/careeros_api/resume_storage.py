@@ -18,6 +18,11 @@ class LocalResumeAssetStorage:
         os.chmod(destination, 0o600)
         return storage_key
 
+    def read(self, storage_key: str) -> bytes:
+        if Path(storage_key).name != storage_key:
+            raise ValueError("Invalid storage key")
+        return (self.root / storage_key).read_bytes()
+
     def delete(self, storage_key: str) -> None:
         if Path(storage_key).name != storage_key:
             raise ValueError("Invalid storage key")

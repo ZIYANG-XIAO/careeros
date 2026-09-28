@@ -703,6 +703,23 @@ export default function PipelineView() {
               ),
             }))
           }
+          onDeleted={(deleted) => {
+            setData((current) => ({
+              ...current,
+              applications:
+                deleted.kind === "application"
+                  ? current.applications.filter((app) => app.id !== deleted.id)
+                  : current.applications.map((app) =>
+                      app.job_id === deleted.id
+                        ? { ...app, job_id: null }
+                        : app,
+                    ),
+              savedJobs: current.savedJobs.filter(
+                (job) => job.id !== deleted.id,
+              ),
+            }));
+            closeFocus();
+          }}
         />
       )}
 

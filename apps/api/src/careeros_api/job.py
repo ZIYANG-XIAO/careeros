@@ -7,15 +7,22 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator, model_validator
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.elements import ColumnElement
 
 from careeros_api.auth import get_current_user
 from careeros_api.db import get_db_session
 from careeros_api.job_parser import JOB_PARSER_VERSION, JobParser, JobParsingError, get_job_parser
+from careeros_api.job_requirements import (
+    ParserUnavailableError,
+    RequirementExtractionError,
+    ensure_snapshot_requirements,
+)
 from careeros_api.job_schemas import ParsedJobDescription, validate_job_grounding
+from careeros_api.job_urls import canonical_clip_url
 from careeros_api.models import (
     Job,
     JobAvailabilityStatus,
@@ -30,8 +37,18 @@ from careeros_api.models import (
     SavedJob,
     User,
 )
+from careeros_api.rate_limit import ai_rate_limit
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+
+
+def check_market_country(market: JobMarket, country: JobCountry) -> None:
+    if market == JobMarket.UNKNOWN and country != JobCountry.UNKNOWN:
+        raise ValueError("A known country requires a market")
+    if market == JobMarket.NORTH_AMERICA and country == JobCountry.CN:
+        raise ValueError("China is not part of the North America market")
+    if market == JobMarket.CHINA and country in {JobCountry.US, JobCountry.CA}:
+        raise ValueError("US and Canada are not part of the China market")
 
 
 class CreateJobRequest(BaseModel):
@@ -57,13 +74,32 @@ class CreateJobRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_market_country(self) -> "CreateJobRequest":
-        if self.market == JobMarket.UNKNOWN and self.country_code != JobCountry.UNKNOWN:
-            raise ValueError("A known country requires a market")
-        if self.market == JobMarket.NORTH_AMERICA and self.country_code == JobCountry.CN:
-            raise ValueError("China is not part of the North America market")
-        if self.market == JobMarket.CHINA and self.country_code in {JobCountry.US, JobCountry.CA}:
-            raise ValueError("US and Canada are not part of the China market")
+        check_market_country(self.market, self.country_code)
         return self
+
+
+CLIP_SOURCE_KEY = "extension_clip"
+UNPAGED_CATALOG_CAP = 200
+MAX_GROUPED_LOCATIONS = 20
+
+
+class ClipJobRequest(CreateJobRequest):
+    source_url: AnyHttpUrl
+
+
+class UpdateJobRequest(BaseModel):
+    """Editable listing fields. The description is an immutable snapshot."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    company: str | None = Field(default=None, min_length=1, max_length=500)
+    title: str | None = Field(default=None, min_length=1, max_length=500)
+    location: str | None = Field(default=None, max_length=500)
+    application_url: AnyHttpUrl | None = None
+    market: JobMarket | None = None
+    country_code: JobCountry | None = None
+    workplace_type: JobWorkplaceType | None = None
+    employment_type: JobEmploymentType | None = None
 
 
 class JobRequirementResponse(BaseModel):
@@ -85,6 +121,7 @@ class JobSnapshotResponse(BaseModel):
     content_sha256: str
     parser_version: str
     parser_model: str
+    requirements_status: str
     created_at: datetime
     requirements: list[JobRequirementResponse]
 
@@ -113,7 +150,17 @@ class JobResponse(BaseModel):
     updated_at: datetime
     is_saved: bool
     saved_at: datetime | None
+    is_catalog: bool
+    # Only set by collapsed listings: other matching postings of the same
+    # company and title, and (up to a cap) where they are.
+    similar_count: int = 0
+    other_locations: list[str] = Field(default_factory=list)
     latest_snapshot: JobSnapshotResponse
+
+
+class ClipJobResponse(BaseModel):
+    created: bool
+    job: JobResponse
 
 
 def job_parser_dependency() -> JobParser:
@@ -138,6 +185,7 @@ def _snapshot_response(snapshot: JobSnapshot) -> JobSnapshotResponse:
         content_sha256=snapshot.content_sha256,
         parser_version=snapshot.parser_version,
         parser_model=snapshot.parser_model,
+        requirements_status=snapshot.requirements_status,
         created_at=snapshot.created_at,
         requirements=[
             JobRequirementResponse(
@@ -183,11 +231,26 @@ def _job_response(
         updated_at=job.updated_at,
         is_saved=is_saved,
         saved_at=saved_at,
+        is_catalog=job.user_id is None,
         latest_snapshot=_snapshot_response(latest),
     )
 
 
-async def _owned_job(session: AsyncSession, job_id: UUID, user_id: UUID) -> Job | None:
+def visible_to(user_id: UUID) -> ColumnElement[bool]:
+    """Jobs a user may read, save, analyze, or apply to: their own plus the catalog."""
+    return or_(Job.user_id == user_id, Job.user_id.is_(None))
+
+
+async def _visible_job(session: AsyncSession, job_id: UUID, user_id: UUID) -> Job | None:
+    return await session.scalar(
+        select(Job)
+        .options(selectinload(Job.snapshots).selectinload(JobSnapshot.requirements))
+        .where(Job.id == job_id, visible_to(user_id))
+    )
+
+
+async def _private_job(session: AsyncSession, job_id: UUID, user_id: UUID) -> Job | None:
+    """Only the user's own jobs may be edited or deleted; catalog jobs are shared."""
     return await session.scalar(
         select(Job)
         .options(selectinload(Job.snapshots).selectinload(JobSnapshot.requirements))
@@ -195,23 +258,29 @@ async def _owned_job(session: AsyncSession, job_id: UUID, user_id: UUID) -> Job 
     )
 
 
-@router.post("", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
-async def create_job(
-    body: CreateJobRequest,
-    user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    parser: Annotated[JobParser, Depends(job_parser_dependency)],
-) -> JobResponse:
+async def _parse_grounded(parser: JobParser, description: str) -> ParsedJobDescription:
     try:
-        raw_parser_output = await parser.parse_job_description(body.description)
+        raw_parser_output = await parser.parse_job_description(description)
         parsed = ParsedJobDescription.model_validate(raw_parser_output)
-        validate_job_grounding(parsed, body.description)
+        validate_job_grounding(parsed, description)
     except (JobParsingError, ValueError) as error:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"code": "JOB_PARSING_FAILED", "message": str(error)},
         ) from error
+    return parsed
 
+
+async def _create_job_with_snapshot(
+    session: AsyncSession,
+    user: User,
+    body: CreateJobRequest,
+    parser: JobParser,
+    parsed: ParsedJobDescription,
+    *,
+    source_key: str = "manual",
+    canonical_url: str | None = None,
+) -> Job:
     normalized = _normalize_description(body.description)
     observed_at = datetime.now(UTC)
     job = Job(
@@ -222,7 +291,8 @@ async def create_job(
         source_url=str(body.source_url) if body.source_url else None,
         application_url=str(body.application_url) if body.application_url else None,
         source_type=JobSourceType.MANUAL_ENTRY.value,
-        source_key="manual",
+        source_key=source_key,
+        canonical_url=canonical_url,
         first_observed_at=observed_at,
         last_observed_at=observed_at,
         availability_status=JobAvailabilityStatus.UNKNOWN.value,
@@ -259,10 +329,98 @@ async def create_job(
             )
         )
     await session.flush()
-    loaded = await _owned_job(session, job.id, user.id)
+    loaded = await _visible_job(session, job.id, user.id)
     if loaded is None:  # pragma: no cover - defensive invariant
         raise RuntimeError("Created job could not be loaded")
-    return _job_response(loaded)
+    return loaded
+
+
+@router.post(
+    "",
+    response_model=JobResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(ai_rate_limit)],
+)
+async def create_job(
+    body: CreateJobRequest,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    parser: Annotated[JobParser, Depends(job_parser_dependency)],
+) -> JobResponse:
+    parsed = await _parse_grounded(parser, body.description)
+    job = await _create_job_with_snapshot(session, user, body, parser, parsed)
+    return _job_response(job)
+
+
+async def _mark_saved(session: AsyncSession, user_id: UUID, job_id: UUID) -> datetime | None:
+    await session.execute(
+        insert(SavedJob)
+        .values(user_id=user_id, job_id=job_id)
+        .on_conflict_do_nothing(index_elements=["user_id", "job_id"])
+    )
+    await session.flush()
+    return await session.scalar(
+        select(SavedJob.created_at).where(SavedJob.user_id == user_id, SavedJob.job_id == job_id)
+    )
+
+
+@router.post("/clip", response_model=ClipJobResponse, dependencies=[Depends(ai_rate_limit)])
+async def clip_job(
+    body: ClipJobRequest,
+    response: Response,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    parser: Annotated[JobParser, Depends(job_parser_dependency)],
+) -> ClipJobResponse:
+    """Save a user-confirmed job captured from the active page by the extension.
+
+    Clipping the same page again returns the existing Job instead of creating a
+    duplicate; the page URL is the stable identity.
+    """
+    canonical_url = canonical_clip_url(str(body.source_url))
+    if canonical_url is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "UNSUPPORTED_URL", "message": "Only http(s) pages can be clipped"},
+        )
+    # A page already in the shared catalog is saved as that catalog job rather
+    # than duplicated as a private copy. Prefer the user's own job if both exist.
+    existing_id = await session.scalar(
+        select(Job.id)
+        .where(visible_to(user.id), Job.canonical_url == canonical_url)
+        .order_by(Job.user_id.is_(None))
+        .limit(1)
+    )
+    if existing_id is not None:
+        existing = await _visible_job(session, existing_id, user.id)
+        if existing is None:  # pragma: no cover - defensive invariant
+            raise RuntimeError("Clipped job could not be loaded")
+        saved_at = await _mark_saved(session, user.id, existing.id)
+        response.status_code = status.HTTP_200_OK
+        return ClipJobResponse(
+            created=False, job=_job_response(existing, is_saved=True, saved_at=saved_at)
+        )
+
+    create_body = CreateJobRequest.model_validate(
+        {
+            **body.model_dump(exclude={"source_url"}),
+            "source_url": body.source_url,
+            "application_url": body.application_url or body.source_url,
+        }
+    )
+    parsed = await _parse_grounded(parser, create_body.description)
+    job = await _create_job_with_snapshot(
+        session,
+        user,
+        create_body,
+        parser,
+        parsed,
+        source_key=CLIP_SOURCE_KEY,
+        canonical_url=canonical_url,
+    )
+    saved_at = await _mark_saved(session, user.id, job.id)
+    response.status_code = status.HTTP_201_CREATED
+    return ClipJobResponse(created=True, job=_job_response(job, is_saved=True, saved_at=saved_at))
 
 
 @router.get("", response_model=list[JobResponse])
@@ -277,45 +435,122 @@ async def list_jobs(
     workplace_type: JobWorkplaceType | None = None,
     employment_type: JobEmploymentType | None = None,
     sort: str = Query(default="recent", pattern="^(recent|title)$"),
+    source: str = Query(default="all", pattern="^(all|mine|catalog)$"),
+    limit: Annotated[int | None, Query(ge=1, le=200)] = None,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    compact: bool = False,
+    collapse: bool = False,
 ) -> list[JobResponse]:
+    """List visible jobs.
+
+    ``compact`` omits descriptions and requirements, which list views never
+    show; fetch ``/jobs/{id}`` for the full record. ``collapse`` shows one row
+    per company and title (employers often post one role once per city); the
+    row reports how many other matching postings it stands for and where.
+    """
+    saved_join = (SavedJob.job_id == Job.id) & (SavedJob.user_id == user.id)
+    conditions: list[ColumnElement[bool]] = [
+        visible_to(user.id),
+        # Closed catalog postings stay reachable only where the user saved them.
+        or_(
+            Job.user_id.is_not(None),
+            Job.availability_status != JobAvailabilityStatus.UNAVAILABLE.value,
+            SavedJob.id.is_not(None),
+        ),
+    ]
+    if source == "mine":
+        conditions.append(Job.user_id == user.id)
+    elif source == "catalog":
+        conditions.append(Job.user_id.is_(None))
+    if search is not None:
+        term = f"%{search.strip()}%"
+        conditions.append(or_(Job.title.ilike(term), Job.company.ilike(term)))
+    if location is not None:
+        conditions.append(Job.location.ilike(f"%{location.strip()}%"))
+    if saved_only:
+        conditions.append(SavedJob.id.is_not(None))
+    if market is not None:
+        conditions.append(Job.market == market.value)
+    if country_code is not None:
+        conditions.append(Job.country_code == country_code.value)
+    if workplace_type is not None:
+        conditions.append(Job.workplace_type == workplace_type.value)
+    if employment_type is not None:
+        conditions.append(Job.employment_type == employment_type.value)
+
     statement = (
         select(Job)
         .add_columns(
             SavedJob.id.is_not(None).label("is_saved"),
             SavedJob.created_at.label("saved_at"),
         )
-        .outerjoin(
-            SavedJob,
-            (SavedJob.job_id == Job.id) & (SavedJob.user_id == user.id),
-        )
+        .outerjoin(SavedJob, saved_join)
         .options(selectinload(Job.snapshots).selectinload(JobSnapshot.requirements))
-        .where(Job.user_id == user.id)
     )
-    if search is not None:
-        term = f"%{search.strip()}%"
-        statement = statement.where(or_(Job.title.ilike(term), Job.company.ilike(term)))
-    if location is not None:
-        statement = statement.where(Job.location.ilike(f"%{location.strip()}%"))
-    if saved_only:
-        statement = statement.where(SavedJob.id.is_not(None))
-    if market is not None:
-        statement = statement.where(Job.market == market.value)
-    if country_code is not None:
-        statement = statement.where(Job.country_code == country_code.value)
-    if workplace_type is not None:
-        statement = statement.where(Job.workplace_type == workplace_type.value)
-    if employment_type is not None:
-        statement = statement.where(Job.employment_type == employment_type.value)
-    if sort == "title":
-        statement = statement.order_by(Job.title.asc(), Job.company.asc())
+    if collapse:
+        group = (Job.user_id, Job.company, func.lower(Job.title))
+        ranked = (
+            select(
+                Job.id.label("id"),
+                func.row_number()
+                .over(
+                    partition_by=group,
+                    order_by=(SavedJob.id.is_(None), Job.created_at.desc(), Job.id),
+                )
+                .label("rank"),
+                func.count().over(partition_by=group).label("group_size"),
+                func.array_agg(Job.location).over(partition_by=group).label("group_locations"),
+            )
+            .select_from(Job)
+            .outerjoin(SavedJob, saved_join)
+            .where(*conditions)
+            .subquery()
+        )
+        statement = (
+            statement.add_columns(ranked.c.group_size, ranked.c.group_locations)
+            .join(ranked, ranked.c.id == Job.id)
+            .where(ranked.c.rank == 1)
+        )
     else:
-        statement = statement.order_by(Job.created_at.desc())
+        statement = statement.where(*conditions)
 
-    result = await session.execute(statement)
-    return [
-        _job_response(job, is_saved=is_saved, saved_at=saved_at)
-        for job, is_saved, saved_at in result.all()
-    ]
+    if sort == "title":
+        statement = statement.order_by(Job.title.asc(), Job.company.asc(), Job.id)
+    else:
+        statement = statement.order_by(Job.created_at.desc(), Job.id)
+    # The shared catalog is large; unpaged requests for it are capped. Saved
+    # and private lists stay complete because callers rely on them whole.
+    if limit is None and not saved_only and source != "mine":
+        limit = UNPAGED_CATALOG_CAP
+    if limit is not None:
+        statement = statement.limit(limit).offset(offset)
+
+    responses: list[JobResponse] = []
+    for row in (await session.execute(statement)).all():
+        job, is_saved, saved_at = row[0], row[1], row[2]
+        response = _job_response(job, is_saved=is_saved, saved_at=saved_at)
+        if collapse:
+            group_size, group_locations = row[3], row[4] or []
+            response.similar_count = group_size - 1
+            response.other_locations = _other_locations(job.location, group_locations)
+        responses.append(response)
+    if compact:
+        for response in responses:
+            snapshot = response.latest_snapshot
+            snapshot.raw_description = ""
+            snapshot.normalized_description = ""
+            snapshot.requirements = []
+    return responses
+
+
+def _other_locations(own: str | None, locations: list[str | None]) -> list[str]:
+    seen = {own} if own else set()
+    others: list[str] = []
+    for item in locations:
+        if item and item not in seen:
+            seen.add(item)
+            others.append(item)
+    return others[:MAX_GROUPED_LOCATIONS]
 
 
 @router.get("/{job_id}", response_model=JobResponse)
@@ -335,7 +570,7 @@ async def get_job(
             (SavedJob.job_id == Job.id) & (SavedJob.user_id == user.id),
         )
         .options(selectinload(Job.snapshots).selectinload(JobSnapshot.requirements))
-        .where(Job.id == job_id, Job.user_id == user.id)
+        .where(Job.id == job_id, visible_to(user.id))
     )
     row = result.one_or_none()
     if row is None:
@@ -350,18 +585,10 @@ async def save_job(
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> JobResponse:
-    job = await _owned_job(session, job_id, user.id)
+    job = await _visible_job(session, job_id, user.id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
-    await session.execute(
-        insert(SavedJob)
-        .values(user_id=user.id, job_id=job.id)
-        .on_conflict_do_nothing(index_elements=["user_id", "job_id"])
-    )
-    await session.flush()
-    saved_at = await session.scalar(
-        select(SavedJob.created_at).where(SavedJob.user_id == user.id, SavedJob.job_id == job.id)
-    )
+    saved_at = await _mark_saved(session, user.id, job.id)
     return _job_response(job, is_saved=True, saved_at=saved_at)
 
 
@@ -371,10 +598,102 @@ async def unsave_job(
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> Response:
-    job = await _owned_job(session, job_id, user.id)
+    job = await _visible_job(session, job_id, user.id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     await session.execute(
         delete(SavedJob).where(SavedJob.user_id == user.id, SavedJob.job_id == job.id)
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.patch("/{job_id}", response_model=JobResponse)
+async def update_job(
+    job_id: UUID,
+    body: UpdateJobRequest,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> JobResponse:
+    job = await _private_job(session, job_id, user.id)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    changes = body.model_dump(exclude_unset=True)
+    for required in ("company", "title"):
+        if required in changes and changes[required] is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={"code": "INVALID_JOB", "message": f"{required} cannot be empty"},
+            )
+    market = changes.get("market", JobMarket(job.market))
+    country = changes.get("country_code", JobCountry(job.country_code))
+    try:
+        check_market_country(market, country)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "INVALID_JOB", "message": str(error)},
+        ) from error
+    for field, value in changes.items():
+        if field == "application_url":
+            value = str(value) if value else None
+        elif hasattr(value, "value"):
+            value = value.value
+        setattr(job, field, value)
+    await session.flush()
+    await session.refresh(job, ["updated_at"])
+    saved_at = await session.scalar(
+        select(SavedJob.created_at).where(SavedJob.user_id == user.id, SavedJob.job_id == job.id)
+    )
+    return _job_response(job, is_saved=saved_at is not None, saved_at=saved_at)
+
+
+@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_job(
+    job_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    """Delete a job and its snapshots/analyses.
+
+    Applications to it are kept: they carry their own company/role snapshot and
+    simply lose the link to the Job.
+    """
+    result = await session.execute(delete(Job).where(Job.id == job_id, Job.user_id == user.id))
+    if getattr(result, "rowcount", 0) == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/{job_id}/requirements",
+    response_model=JobResponse,
+    dependencies=[Depends(ai_rate_limit)],
+)
+async def extract_job_requirements(
+    job_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    parser: Annotated[JobParser, Depends(job_parser_dependency)],
+) -> JobResponse:
+    """Extract grounded requirements for a job whose latest snapshot is pending.
+
+    Catalog jobs defer this until someone needs it; the result is shared.
+    Idempotent: an already-parsed snapshot is returned unchanged.
+    """
+    job = await _visible_job(session, job_id, user.id)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    latest = max(job.snapshots, key=lambda snapshot: snapshot.version_number)
+    try:
+        changed = await ensure_snapshot_requirements(session, latest.id, parser)
+    except (RequirementExtractionError, ParserUnavailableError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "JOB_PARSING_FAILED", "message": str(error)},
+        ) from error
+    if changed:
+        await session.refresh(latest, ["requirements", "requirements_status"])
+    saved_at = await session.scalar(
+        select(SavedJob.created_at).where(SavedJob.user_id == user.id, SavedJob.job_id == job.id)
+    )
+    return _job_response(job, is_saved=saved_at is not None, saved_at=saved_at)

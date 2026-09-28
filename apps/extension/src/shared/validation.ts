@@ -1,5 +1,7 @@
 import type {
   AnswerAction,
+  ClipJobRequestData,
+  ReusableAnswerInput,
   AnswerFieldInput,
   AnswerResolutionRequestData,
   ConfirmedApplicationAnswer,
@@ -65,16 +67,33 @@ export function parsePopupRequest(value: unknown): PopupRequest | null {
   if (isRecordApplicationRequest(value)) return value;
   const assistant = parseTabBoundRequest(value, "CAREEROS_ACTIVATE_ASSISTANT");
   if (assistant) return assistant;
+  const extract = parseTabBoundRequest(value, "CAREEROS_EXTRACT_JOB");
+  if (extract) return extract;
+  if (isClipJobRequest(value)) return value;
+  const readAnswers = parseTabBoundRequest(
+    value,
+    "CAREEROS_READ_CUSTOM_ANSWERS",
+  );
+  if (readAnswers) return readAnswers;
+  if (isSaveReusableAnswersRequest(value)) return value;
+  if (isPopupAttachResumeRequest(value)) return value;
   if (isExactMessage(value, "CAREEROS_OPEN_SIGN_IN")) {
     return { type: "CAREEROS_OPEN_SIGN_IN" };
   }
   if (isOpenApplicationRequest(value)) return value;
+  if (isOpenJobRequest(value)) return value;
   return null;
 }
 
 export function parseContentRequest(value: unknown): ContentRequest | null {
   if (isExactMessage(value, "CAREEROS_INSPECT_PAGE")) {
     return { type: "CAREEROS_INSPECT_PAGE" };
+  }
+  if (isExactMessage(value, "CAREEROS_EXTRACT_JOB")) {
+    return { type: "CAREEROS_EXTRACT_JOB" };
+  }
+  if (isExactMessage(value, "CAREEROS_READ_CUSTOM_ANSWERS")) {
+    return { type: "CAREEROS_READ_CUSTOM_ANSWERS" };
   }
   if (isExactMessage(value, "CAREEROS_ACTIVATE_ASSISTANT")) {
     return { type: "CAREEROS_ACTIVATE_ASSISTANT" };
@@ -83,6 +102,7 @@ export function parseContentRequest(value: unknown): ContentRequest | null {
     return { type: "CAREEROS_DEACTIVATE_ASSISTANT" };
   }
   if (isContentFillPlanRequest(value)) return value;
+  if (isContentAttachResumeRequest(value)) return value;
   return null;
 }
 
@@ -278,11 +298,14 @@ function isFillPlanField(value: unknown): value is FillPlanField {
     return false;
   }
   if (value.action === "FILL") {
+    // A custom question (null canonical key) may only be filled from a saved
+    // reusable answer; radio groups are allowed only for that case.
+    const blocked =
+      value.canonicalKey === null
+        ? ["CHECKBOX", "FILE", "UNSUPPORTED"]
+        : ["CHECKBOX", "RADIO_GROUP", "FILE", "UNSUPPORTED"];
     return (
-      value.canonicalKey !== null &&
-      !["CHECKBOX", "RADIO_GROUP", "FILE", "UNSUPPORTED"].includes(
-        value.controlType as string,
-      ) &&
+      !blocked.includes(value.controlType as string) &&
       typeof value.proposedAnswer === "string" &&
       value.proposedAnswer.length > 0 &&
       value.proposedAnswer.length <= 2_000
@@ -509,4 +532,151 @@ function isPrepareApplicationRequest(value: unknown): value is {
     return false;
   }
   return true;
+}
+
+const jobMarkets = new Set(["UNKNOWN", "NORTH_AMERICA", "CHINA"]);
+const jobCountries = new Set(["UNKNOWN", "US", "CA", "CN"]);
+const workplaceTypes = new Set(["UNKNOWN", "REMOTE", "HYBRID", "ONSITE"]);
+const employmentTypes = new Set([
+  "UNKNOWN",
+  "FULL_TIME",
+  "PART_TIME",
+  "CONTRACT",
+  "INTERNSHIP",
+]);
+
+function isBoundedText(value: unknown, min: number, max: number): boolean {
+  return (
+    typeof value === "string" &&
+    value.trim().length >= min &&
+    value.length <= max
+  );
+}
+
+function isClipJobRequest(value: unknown): value is {
+  type: "CAREEROS_CLIP_JOB";
+} & ClipJobRequestData {
+  if (!isRecord(value) || value.type !== "CAREEROS_CLIP_JOB") return false;
+  const base = [
+    "type",
+    "title",
+    "company",
+    "location",
+    "description",
+    "market",
+    "countryCode",
+    "workplaceType",
+    "employmentType",
+    "expectedPageUrl",
+  ];
+  const keys = Object.keys(value);
+  const keySetOk = [base, [...base, "expectedTabId"]].some(
+    (keySet) => keys.length === keySet.length && hasExactKeys(value, keySet),
+  );
+  return (
+    keySetOk &&
+    isBoundedText(value.title, 1, 500) &&
+    isBoundedText(value.company, 1, 500) &&
+    (value.location === null || isBoundedText(value.location, 0, 500)) &&
+    isBoundedText(value.description, 20, 100_000) &&
+    typeof value.market === "string" &&
+    jobMarkets.has(value.market) &&
+    typeof value.countryCode === "string" &&
+    jobCountries.has(value.countryCode) &&
+    typeof value.workplaceType === "string" &&
+    workplaceTypes.has(value.workplaceType) &&
+    typeof value.employmentType === "string" &&
+    employmentTypes.has(value.employmentType) &&
+    hasRequiredExpectedPageUrl(value) &&
+    hasOptionalExpectedTabId(value)
+  );
+}
+
+function isOpenJobRequest(value: unknown): value is {
+  type: "CAREEROS_OPEN_JOB";
+  jobId: string;
+} {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ["type", "jobId"]) &&
+    value.type === "CAREEROS_OPEN_JOB" &&
+    typeof value.jobId === "string" &&
+    uuidPattern.test(value.jobId)
+  );
+}
+
+function isSaveReusableAnswersRequest(value: unknown): value is {
+  type: "CAREEROS_SAVE_REUSABLE_ANSWERS";
+  answers: ReusableAnswerInput[];
+} {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ["type", "answers"]) &&
+    value.type === "CAREEROS_SAVE_REUSABLE_ANSWERS" &&
+    Array.isArray(value.answers) &&
+    value.answers.length > 0 &&
+    value.answers.length <= 50 &&
+    value.answers.every(
+      (answer) =>
+        isRecord(answer) &&
+        hasExactKeys(answer, ["question", "answer"]) &&
+        isBoundedText(answer.question, 1, 500) &&
+        isBoundedText(answer.answer, 1, 2000),
+    )
+  );
+}
+
+function isPopupAttachResumeRequest(value: unknown): value is {
+  type: "CAREEROS_ATTACH_RESUME";
+  fieldId: string;
+  resumeVersionId: string;
+  expectedPageUrl: string;
+  expectedTabId?: number;
+} {
+  if (!isRecord(value) || value.type !== "CAREEROS_ATTACH_RESUME") return false;
+  const base = ["type", "fieldId", "resumeVersionId", "expectedPageUrl"];
+  const keys = Object.keys(value);
+  return (
+    [base, [...base, "expectedTabId"]].some(
+      (keySet) => keys.length === keySet.length && hasExactKeys(value, keySet),
+    ) &&
+    isBoundedText(value.fieldId, 1, 200) &&
+    typeof value.resumeVersionId === "string" &&
+    uuidPattern.test(value.resumeVersionId) &&
+    hasRequiredExpectedPageUrl(value) &&
+    hasOptionalExpectedTabId(value)
+  );
+}
+
+// 10 MB resume limit on the API, base64-encoded.
+const MAX_RESUME_BASE64 = Math.ceil((10 * 1024 * 1024 * 4) / 3) + 4;
+
+function isContentAttachResumeRequest(value: unknown): value is {
+  type: "CAREEROS_ATTACH_RESUME";
+  fieldId: string;
+  expectedPageUrl: string;
+  fileName: string;
+  contentType: string;
+  base64: string;
+} {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, [
+      "type",
+      "fieldId",
+      "expectedPageUrl",
+      "fileName",
+      "contentType",
+      "base64",
+    ]) &&
+    value.type === "CAREEROS_ATTACH_RESUME" &&
+    isBoundedText(value.fieldId, 1, 200) &&
+    isExpectedPageUrl(value.expectedPageUrl) &&
+    isBoundedText(value.fileName, 1, 500) &&
+    isBoundedText(value.contentType, 1, 100) &&
+    typeof value.base64 === "string" &&
+    value.base64.length > 0 &&
+    value.base64.length <= MAX_RESUME_BASE64 &&
+    /^[A-Za-z0-9+/]+={0,2}$/.test(value.base64)
+  );
 }
