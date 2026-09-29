@@ -28,7 +28,17 @@ main {
 }
 
 header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 18px;
+}
+
+.brand-icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 14px;
 }
 
 .eyebrow {

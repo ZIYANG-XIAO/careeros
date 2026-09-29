@@ -115,6 +115,23 @@ beforeEach(() => {
 });
 
 describe("DiscoverView", () => {
+  it("shows a company logo on every job row", async () => {
+    mockListJobs.mockResolvedValue([
+      makeJob({ id: "job-1", company: "Acme" }),
+      makeJob({ id: "job-2", company: "Beacon" }),
+    ]);
+
+    const { container } = renderDiscover();
+
+    await waitFor(() => expect(mockListJobs).toHaveBeenCalled());
+    expect(
+      container.querySelector('[data-company-logo="Acme"]'),
+    ).toHaveAttribute("src", "https://cdn.simpleicons.org/acme?viewbox=auto");
+    expect(
+      container.querySelector('[data-company-logo="Beacon"]'),
+    ).toHaveAttribute("src", "https://cdn.simpleicons.org/beacon?viewbox=auto");
+  });
+
   it("pages through the catalog with Load more", async () => {
     const firstPage = Array.from({ length: 50 }, (_, index) =>
       makeJob({ id: `job-${index}`, title: `Role ${index}` }),

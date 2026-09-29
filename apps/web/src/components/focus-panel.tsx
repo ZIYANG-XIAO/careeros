@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ConfirmDelete } from "@/components/confirm-delete";
+import { CompanyMark } from "@/components/company-mark";
 import { JobEditForm } from "@/components/job-edit-form";
 import { Button } from "@/components/ui/button";
 import { ApplicationActivitySection } from "@/components/application-activity-section";
@@ -51,6 +52,7 @@ export type FocusTarget =
 type FocusPanelProps = {
   target: FocusTarget;
   onClose: () => void;
+  layout?: "drawer" | "workspace";
   onApplicationChanged?: (application: Application) => void;
   onJobChanged?: (job: Job) => void;
   /** Called after the focused record was deleted; the panel should close. */
@@ -78,10 +80,6 @@ const CLASSIFICATION_KEYS = [
   "WEAK_EVIDENCE",
   "GENUINE_GAP",
 ] as const;
-
-function monogram(name: string): string {
-  return name.trim().charAt(0).toUpperCase() || "?";
-}
 
 function PanelBar({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
@@ -333,9 +331,7 @@ function ApplicationPanelBody({
   return (
     <div className="flex flex-col gap-5 overflow-y-auto p-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft font-semibold text-accent">
-          {monogram(application.company)}
-        </span>
+        <CompanyMark company={application.company} />
         <div className="min-w-0">
           <p className="truncate text-[13px] font-semibold text-ink-2">
             {application.company}
@@ -819,9 +815,7 @@ function JobPanelBody({
   return (
     <div className="flex flex-col gap-5 overflow-y-auto p-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft font-semibold text-accent">
-          {monogram(job.company)}
-        </span>
+        <CompanyMark company={job.company} />
         <div className="min-w-0">
           <p className="truncate text-[13px] font-semibold text-ink-2">
             {job.company}
@@ -1040,6 +1034,7 @@ function JobPanelBody({
 function FocusPanel({
   target,
   onClose,
+  layout = "drawer",
   onApplicationChanged,
   onJobChanged,
   onDeleted,
@@ -1055,7 +1050,13 @@ function FocusPanel({
   }, [onClose]);
 
   return (
-    <aside className="flex h-full w-full flex-col border-l border-border bg-surface shadow-panel-edge lg:w-[520px]">
+    <aside
+      className={`flex h-full w-full flex-col bg-surface ${
+        layout === "workspace"
+          ? "lg:min-w-0 lg:flex-1"
+          : "border-l border-border shadow-panel-edge lg:w-[520px]"
+      }`}
+    >
       <PanelBar onClose={onClose} />
       {target.kind === "application" ? (
         <ApplicationPanelBody

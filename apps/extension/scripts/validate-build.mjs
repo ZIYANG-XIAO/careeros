@@ -12,6 +12,14 @@ const manifest = JSON.parse(
   await readFile(path.join(buildDir, "manifest.json"), "utf8"),
 );
 
+for (const size of [16, 32, 48, 128]) {
+  const iconPath = `icons/icon-${size}.png`;
+  if (manifest.icons?.[size] !== iconPath) {
+    throw new Error(`Extension manifest is missing its ${size}px brand icon.`);
+  }
+  await readFile(path.join(buildDir, iconPath));
+}
+
 if (typeof manifest.key !== "string" || manifest.key.length === 0) {
   throw new Error(
     "The development extension must have a stable CRX public key.",
