@@ -191,6 +191,13 @@ Home also shows the user's active Job Search Goal. A user without one receives
 a direct setup action rather than fabricated personalization. The active goal
 is an explicit user choice, not an inferred career recommendation.
 
+Home now turns owned state into a compact daily briefing. It combines factual
+application-attention prompts with explicitly scheduled follow-ups/interviews,
+and shows a small opportunity radar ranked only by alignment with the active
+Job Search Goal and job freshness. This deterministic preference alignment is
+not eligibility, professional-evidence fit, or an outcome probability. China
+and North America goals remain separate and are labeled in the briefing.
+
 Navigation labels should remain user-facing. Users should not need to understand
 internal concepts such as `CareerEvidenceRevision` or `JobSnapshot`.
 
@@ -218,6 +225,12 @@ formation before real job-source acquisition.
 Users may apply the active goal to populate compatible market, country, first
 role, first city, workplace, and employment filters; they can then change any
 filter without rewriting the saved goal.
+
+When an active goal exists, each untracked job also shows a compact,
+deterministic preference-alignment summary. The comparison uses only explicit
+role, market, country, location, workplace, and employment metadata; freshness
+is a tie-breaker when the Home opportunity radar is ordered. It does not claim
+work eligibility, professional-evidence fit, or an outcome probability.
 
 ### 6.2 Job detail
 

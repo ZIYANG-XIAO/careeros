@@ -105,3 +105,27 @@ export function preferenceFit(
     mismatched,
   };
 }
+
+function fitRank(fit: PreferenceFit): number {
+  if (fit.level === "BLOCKED") return Number.NEGATIVE_INFINITY;
+  if (fit.level === "UNKNOWN") return 0;
+  return fit.matched.length * 2 - fit.mismatched.length;
+}
+
+/** Rank visible opportunities by explicit goal alignment, then freshness. */
+export function rankByPreferenceFit(
+  jobs: Job[],
+  goal: JobSearchGoal | null,
+): Job[] {
+  return jobs
+    .filter((job) => preferenceFit(job, goal).level !== "BLOCKED")
+    .slice()
+    .sort((a, b) => {
+      const rankDelta =
+        fitRank(preferenceFit(b, goal)) - fitRank(preferenceFit(a, goal));
+      if (rankDelta !== 0) return rankDelta;
+      const bTime = Date.parse(b.first_observed_at ?? b.created_at);
+      const aTime = Date.parse(a.first_observed_at ?? a.created_at);
+      return bTime - aTime;
+    });
+}

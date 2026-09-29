@@ -27,27 +27,31 @@ vi.mock("@clerk/nextjs", () => ({
   useAuth: () => ({ getToken: mockGetToken }),
 }));
 
-vi.mock("@/lib/api", () => ({
-  getApplication: (...args: unknown[]) => mockGetApplication(...args),
-  getApplicationStatusHistory: (...args: unknown[]) =>
-    mockGetApplicationStatusHistory(...args),
-  listApplicationActivities: (...args: unknown[]) =>
-    mockListApplicationActivities(...args),
-  createApplicationActivity: (...args: unknown[]) =>
-    mockCreateApplicationActivity(...args),
-  updateApplicationActivity: (...args: unknown[]) =>
-    mockUpdateApplicationActivity(...args),
-  listResumes: (...args: unknown[]) => mockListResumes(...args),
-  listJobAnalyses: (...args: unknown[]) => mockListJobAnalyses(...args),
-  updateApplicationStatus: (...args: unknown[]) =>
-    mockUpdateApplicationStatus(...args),
-  getJob: (...args: unknown[]) => mockGetJob(...args),
-  saveJob: (...args: unknown[]) => mockSaveJob(...args),
-  unsaveJob: (...args: unknown[]) => mockUnsaveJob(...args),
-  createApplication: (...args: unknown[]) => mockCreateApplication(...args),
-  createJobAnalysis: (...args: unknown[]) => mockCreateJobAnalysis(...args),
-  listApplications: (...args: unknown[]) => mockListApplications(...args),
-}));
+vi.mock("@/lib/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api")>();
+  return {
+    ...actual,
+    getApplication: (...args: unknown[]) => mockGetApplication(...args),
+    getApplicationStatusHistory: (...args: unknown[]) =>
+      mockGetApplicationStatusHistory(...args),
+    listApplicationActivities: (...args: unknown[]) =>
+      mockListApplicationActivities(...args),
+    createApplicationActivity: (...args: unknown[]) =>
+      mockCreateApplicationActivity(...args),
+    updateApplicationActivity: (...args: unknown[]) =>
+      mockUpdateApplicationActivity(...args),
+    listResumes: (...args: unknown[]) => mockListResumes(...args),
+    listJobAnalyses: (...args: unknown[]) => mockListJobAnalyses(...args),
+    updateApplicationStatus: (...args: unknown[]) =>
+      mockUpdateApplicationStatus(...args),
+    getJob: (...args: unknown[]) => mockGetJob(...args),
+    saveJob: (...args: unknown[]) => mockSaveJob(...args),
+    unsaveJob: (...args: unknown[]) => mockUnsaveJob(...args),
+    createApplication: (...args: unknown[]) => mockCreateApplication(...args),
+    createJobAnalysis: (...args: unknown[]) => mockCreateJobAnalysis(...args),
+    listApplications: (...args: unknown[]) => mockListApplications(...args),
+  };
+});
 
 const application: Application = {
   id: "app-1",

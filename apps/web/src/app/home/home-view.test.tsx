@@ -133,8 +133,9 @@ describe("HomeView", () => {
       await screen.findByRole("heading", { name: "Welcome back, Alex." }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Your next useful actions" }),
+      screen.getByRole("heading", { name: "1 useful move for today" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("North America search")).toBeInTheDocument();
     expect(screen.getByText("Figma")).toBeInTheDocument();
     expect(screen.getByText("Software Engineer")).toBeInTheDocument();
     expect(screen.getByText("Acme · Backend Engineer")).toBeInTheDocument();

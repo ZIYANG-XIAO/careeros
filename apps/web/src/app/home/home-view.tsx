@@ -2,12 +2,10 @@
 
 import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 
-import { CalendarDownloadButton } from "@/components/calendar-download-button";
+import { DailyBriefing } from "@/components/daily-briefing";
 import { LoadErrorBanner } from "@/components/load-error-banner";
-import { PipelineActionCenter } from "@/components/pipeline-action-center";
 import { Spinner } from "@/components/ui/spinner";
 import {
   getCareerBrain,
@@ -31,6 +29,7 @@ import { useDataFetch } from "@/lib/use-data-fetch";
 
 type HomeData = {
   applications: ApplicationSummary[];
+  jobs: Job[];
   savedJobs: Job[];
   resumes: ResumeSummary[];
   brain: CareerBrain;
@@ -41,23 +40,31 @@ type HomeData = {
 function HomeView() {
   const { isLoaded, isSignedIn, getToken, userId } = useAuth();
   const { user } = useUser();
-  const router = useRouter();
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
 
   const fetchHome = useCallback(async (): Promise<HomeData> => {
     const token = await getToken();
     if (!token) throw new Error("Missing authentication token");
-    const [applications, savedJobs, resumes, brain, upcomingActivities, goals] =
-      await Promise.all([
-        listApplications(token),
-        listJobs(token, { savedOnly: true }),
-        listResumes(token),
-        getCareerBrain(token),
-        listUpcomingApplicationActivities(token, 8).catch(() => []),
-        listJobSearchGoals(token).catch(() => []),
-      ]);
+    const [
+      applications,
+      jobs,
+      savedJobs,
+      resumes,
+      brain,
+      upcomingActivities,
+      goals,
+    ] = await Promise.all([
+      listApplications(token),
+      listJobs(token, { compact: true, collapse: true, limit: 50 }),
+      listJobs(token, { savedOnly: true }),
+      listResumes(token),
+      getCareerBrain(token),
+      listUpcomingApplicationActivities(token, 8).catch(() => []),
+      listJobSearchGoals(token).catch(() => []),
+    ]);
     return {
       applications,
+      jobs,
       savedJobs,
       resumes,
       brain,
@@ -72,6 +79,7 @@ function HomeView() {
       resetKey: userId ?? undefined,
       initialData: {
         applications: [],
+        jobs: [],
         savedJobs: [],
         resumes: [],
         brain: {
@@ -103,9 +111,6 @@ function HomeView() {
     [data.applications],
   );
   const preferredSkills = data.brain.skills.filter((skill) => skill.preferred);
-  const applicationById = new Map(
-    data.applications.map((application) => [application.id, application]),
-  );
   const displayName = user?.firstName || user?.username || "";
   const activeGoal = data.goals.find((goal) => goal.is_active) ?? null;
 
@@ -184,6 +189,13 @@ function HomeView() {
         </Link>
       </section>
 
+      <DailyBriefing
+        applications={data.applications}
+        jobs={data.jobs}
+        activities={data.upcomingActivities}
+        activeGoal={activeGoal}
+      />
+
       <section
         aria-label={t("home.quickActions")}
         className="grid overflow-hidden rounded-2xl border border-border bg-surface shadow-sm sm:grid-cols-3"
@@ -220,70 +232,7 @@ function HomeView() {
         </Link>
       </section>
 
-      {data.upcomingActivities.length > 0 && (
-        <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-          <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
-                {t("home.schedule.eyebrow")}
-              </p>
-              <h2 className="mt-1 text-lg font-semibold text-ink">
-                {t("home.schedule.title")}
-              </h2>
-            </div>
-            <div className="flex flex-col items-end gap-1">
-              <Link
-                href="/pipeline"
-                className="text-sm font-semibold text-accent hover:underline"
-              >
-                {t("home.schedule.manage")} →
-              </Link>
-              <CalendarDownloadButton />
-            </div>
-          </div>
-          <div className="grid divide-y divide-row-divider sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-            {data.upcomingActivities.slice(0, 2).map((activity) => {
-              const application = applicationById.get(activity.application_id);
-              return (
-                <Link
-                  key={activity.id}
-                  href={`/pipeline?focus=${activity.application_id}`}
-                  className="px-5 py-4 hover:bg-rail"
-                >
-                  <span className="text-xs font-semibold uppercase tracking-wide text-accent">
-                    {activity.activity_type === "INTERVIEW"
-                      ? t("activity.type.interview")
-                      : t("activity.type.followUp")}
-                  </span>
-                  <span className="mt-1 block text-sm font-semibold text-ink">
-                    {activity.title}
-                  </span>
-                  <span className="mt-1 block text-xs text-ink-3">
-                    {application
-                      ? `${application.company} · ${application.role}`
-                      : t("nav.applications")}
-                    {activity.scheduled_at
-                      ? ` · ${new Intl.DateTimeFormat(locale, {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        }).format(new Date(activity.scheduled_at))}`
-                      : ""}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <PipelineActionCenter
-          applications={data.applications}
-          onOpenApplication={(applicationId) =>
-            router.push(`/pipeline?focus=${applicationId}`)
-          }
-        />
-
+      <div>
         <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
           <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
             <div>

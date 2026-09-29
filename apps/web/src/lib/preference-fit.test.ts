@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { preferenceFit, roleMatchesTitle } from "./preference-fit";
+import {
+  preferenceFit,
+  rankByPreferenceFit,
+  roleMatchesTitle,
+} from "./preference-fit";
 import type { Job, JobSearchGoal } from "./types";
 
 function makeJob(overrides: Partial<Job> = {}): Job {
@@ -123,5 +127,34 @@ describe("preferenceFit", () => {
         makeGoal({ company_blocklist: ["ACME"], target_roles: ["Engineer"] }),
       ),
     ).toEqual({ level: "BLOCKED" });
+  });
+});
+
+describe("rankByPreferenceFit", () => {
+  it("places aligned current jobs first and removes blocked companies", () => {
+    const goal = makeGoal({
+      market: "CHINA",
+      target_roles: ["Product Manager"],
+      company_blocklist: ["Blocked Co"],
+    });
+    const aligned = makeJob({
+      id: "aligned",
+      company: "Good Co",
+      title: "Senior Product Manager",
+      market: "CHINA",
+      first_observed_at: "2026-09-28T00:00:00Z",
+    });
+    const partial = makeJob({
+      id: "partial",
+      company: "Other Co",
+      title: "Product Manager",
+      market: "NORTH_AMERICA",
+    });
+    const blocked = makeJob({ id: "blocked", company: "Blocked Co" });
+
+    expect(rankByPreferenceFit([partial, blocked, aligned], goal)).toEqual([
+      aligned,
+      partial,
+    ]);
   });
 });
