@@ -56,8 +56,17 @@ function App() {
   return (
     <main>
       <header>
-        <span className="eyebrow">{t("APPLY ANYWHERE")}</span>
-        <h1>CareerOS</h1>
+        <img
+          className="brand-icon"
+          src="icons/icon-48.png"
+          alt=""
+          width="48"
+          height="48"
+        />
+        <div>
+          <span className="eyebrow">{t("APPLY ANYWHERE")}</span>
+          <h1>CareerOS</h1>
+        </div>
       </header>
 
       <AuthSection auth={auth} authenticated={authenticated} />

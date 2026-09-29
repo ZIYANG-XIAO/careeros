@@ -108,6 +108,18 @@ const manifest = {
   action: {
     default_title: "CareerOS Application Assistant",
     default_popup: "popup.html",
+    default_icon: {
+      16: "icons/icon-16.png",
+      32: "icons/icon-32.png",
+      48: "icons/icon-48.png",
+      128: "icons/icon-128.png",
+    },
+  },
+  icons: {
+    16: "icons/icon-16.png",
+    32: "icons/icon-32.png",
+    48: "icons/icon-48.png",
+    128: "icons/icon-128.png",
   },
   background: {
     service_worker: "background.js",
@@ -140,6 +152,9 @@ await Promise.all([
     path.join(extensionRoot, "src/popup/popup.css"),
     path.join(buildDir, "popup.css"),
   ),
+  cp(path.join(extensionRoot, "src/icons"), path.join(buildDir, "icons"), {
+    recursive: true,
+  }),
 ]);
 
 const define = {

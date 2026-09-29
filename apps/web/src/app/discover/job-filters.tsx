@@ -117,8 +117,8 @@ export function JobFilters({
   t: (key: MessageKey) => string;
 }) {
   const [expanded, setExpanded] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return window.localStorage.getItem(COLLAPSE_STORAGE_KEY) !== "false";
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(COLLAPSE_STORAGE_KEY) === "true";
   });
 
   function toggleExpanded() {
@@ -201,45 +201,6 @@ export function JobFilters({
           id="job-filters-body"
           className="border-t border-border p-4 sm:p-5"
         >
-          <div
-            className="mb-4 flex flex-wrap gap-2"
-            aria-label={t("jobs.market")}
-          >
-            {(
-              [
-                ["", "jobs.allMarkets"],
-                ["NORTH_AMERICA", "jobs.northAmerica"],
-                ["CHINA", "jobs.china"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value || "all"}
-                type="button"
-                onClick={() => {
-                  setFilters((current) => ({
-                    ...current,
-                    market: value,
-                    countryCode:
-                      value === "NORTH_AMERICA" && current.countryCode === "CN"
-                        ? ""
-                        : value === "CHINA" &&
-                            (current.countryCode === "US" ||
-                              current.countryCode === "CA")
-                          ? ""
-                          : current.countryCode,
-                  }));
-                }}
-                aria-pressed={filters.market === value}
-                className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-                  filters.market === value
-                    ? "border-accent bg-accent text-white"
-                    : "border-border bg-surface text-ink-2 hover:border-border"
-                }`}
-              >
-                {t(label)}
-              </button>
-            ))}
-          </div>
           <form
             className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.2fr_0.8fr_auto] xl:items-end"
             onSubmit={onFilter}

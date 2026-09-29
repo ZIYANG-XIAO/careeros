@@ -1,5 +1,6 @@
 "use client";
 
+import { CompanyMark } from "@/components/company-mark";
 import { applicationStatusLabel, useI18n } from "@/lib/i18n";
 import type { MessageKey } from "@/lib/i18n";
 import type { FitCriterion, PreferenceFit } from "@/lib/preference-fit";
@@ -21,6 +22,19 @@ const CRITERION_KEYS: Record<FitCriterion, MessageKey> = {
   workplace: "fit.criterion.workplace",
   employment: "fit.criterion.employment",
 };
+
+const WORKPLACE_KEYS = {
+  REMOTE: "jobs.remote",
+  HYBRID: "jobs.hybrid",
+  ONSITE: "jobs.onsite",
+} as const;
+
+const EMPLOYMENT_KEYS = {
+  FULL_TIME: "jobs.fullTime",
+  PART_TIME: "jobs.partTime",
+  CONTRACT: "jobs.contract",
+  INTERNSHIP: "jobs.internship",
+} as const;
 
 function FitChip({ fit }: { fit: PreferenceFit }) {
   const { t } = useI18n();
@@ -66,7 +80,12 @@ function DiscoverRow({
   const { t } = useI18n();
   const chips = [
     job.location,
-    job.workplace_type !== "UNKNOWN" ? job.workplace_type : null,
+    job.workplace_type !== "UNKNOWN"
+      ? t(WORKPLACE_KEYS[job.workplace_type])
+      : null,
+    job.employment_type !== "UNKNOWN"
+      ? t(EMPLOYMENT_KEYS[job.employment_type])
+      : null,
   ].filter((value): value is string => Boolean(value));
   const otherLocationsHint =
     job.similar_count > 0
@@ -84,14 +103,28 @@ function DiscoverRow({
           : "border-transparent hover:bg-rail"
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-semibold text-ink-2">
-            {job.company}
-          </p>
-          <p className="mt-0.5 truncate text-sm font-semibold text-ink">
-            {job.title}
-          </p>
+      <div className="flex items-start gap-2.5">
+        <CompanyMark company={job.company} size="sm" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="truncate text-xs font-semibold text-ink-2">
+                {job.company}
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-sm font-semibold leading-5 text-ink">
+                {job.title}
+              </p>
+            </div>
+            {job.is_saved && (
+              <span
+                aria-hidden="true"
+                className="mt-0.5 shrink-0 text-accent"
+                title={t("discover.saveToPipeline")}
+              >
+                ♥
+              </span>
+            )}
+          </div>
           {chips.length > 0 && (
             <p className="mt-1 truncate text-xs text-ink-3">
               {chips.join(" · ")}
@@ -105,25 +138,16 @@ function DiscoverRow({
               )}
             </p>
           )}
+          <FitChip fit={fit} />
+          {linkedStatus && (
+            <span className="mt-2 inline-block rounded-full bg-status-applied-bg px-2 py-0.5 text-[11px] font-semibold text-status-applied-ink">
+              {t("discover.inPipeline", {
+                stage: applicationStatusLabel(linkedStatus, t),
+              })}
+            </span>
+          )}
         </div>
-        {job.is_saved && (
-          <span
-            aria-hidden="true"
-            className="mt-0.5 shrink-0 text-accent"
-            title={t("discover.saveToPipeline")}
-          >
-            ♥
-          </span>
-        )}
       </div>
-      <FitChip fit={fit} />
-      {linkedStatus && (
-        <span className="mt-2 inline-block rounded-full bg-status-applied-bg px-2 py-0.5 text-[11px] font-semibold text-status-applied-ink">
-          {t("discover.inPipeline", {
-            stage: applicationStatusLabel(linkedStatus, t),
-          })}
-        </span>
-      )}
     </button>
   );
 }

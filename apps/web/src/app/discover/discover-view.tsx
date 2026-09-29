@@ -101,6 +101,20 @@ export default function DiscoverView() {
     return map;
   }, [context.applications]);
 
+  function selectMarket(market: Filters["market"]) {
+    setFilters((current) => ({
+      ...current,
+      market,
+      countryCode:
+        market === "NORTH_AMERICA" && current.countryCode === "CN"
+          ? ""
+          : market === "CHINA" &&
+              (current.countryCode === "US" || current.countryCode === "CA")
+            ? ""
+            : current.countryCode,
+    }));
+  }
+
   function applyActiveGoal(goal: JobSearchGoal) {
     const nextSearch = goal.target_roles[0] ?? "";
     const nextLocation = goal.cities[0] ?? "";
@@ -124,174 +138,233 @@ export default function DiscoverView() {
     return <p className="text-sm text-ink-2">{t("jobs.signIn")}</p>;
 
   return (
-    <div className="flex h-full gap-5">
-      <div className="flex min-w-0 flex-1 flex-col gap-5">
-        <header className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-3">
-              {t("nav.discover")}
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold text-ink">
-              {t("jobs.title")}
-            </h1>
-            <p className="mt-1 text-sm text-ink-2">{t("discover.notLive")}</p>
-          </div>
-          {activeGoal && (
-            <button
-              type="button"
-              onClick={() => applyActiveGoal(activeGoal)}
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-left text-xs hover:bg-rail"
-            >
-              <span className="block font-semibold text-accent">
-                {t("discover.useGoal")}
-              </span>
-              <span className="mt-0.5 block text-ink-2">{activeGoal.name}</span>
-            </button>
-          )}
-        </header>
-
-        <nav
-          aria-label={t("discover.sections")}
-          className="flex flex-wrap gap-1 border-b border-border"
+    <div className="flex h-full min-w-0 flex-col gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
+            {t("discover.eyebrow")}
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold text-ink">
+            {t("discover.heading")}
+          </h1>
+          <p className="mt-1 text-sm text-ink-2">{t("discover.headingHint")}</p>
+        </div>
+        <div
+          role="group"
+          aria-label={t("jobs.market")}
+          className="flex rounded-xl border border-border bg-surface p-1"
         >
-          {(["all", "saved", "mine"] as const).map((view) => (
+          {(
+            [
+              ["", "jobs.allMarkets"],
+              ["NORTH_AMERICA", "jobs.northAmerica"],
+              ["CHINA", "jobs.china"],
+            ] as const
+          ).map(([value, label]) => (
             <button
-              key={view}
+              key={value || "all"}
               type="button"
-              onClick={() => setFilters((current) => ({ ...current, view }))}
-              aria-pressed={filters.view === view}
-              className={`-mb-px border-b-2 px-3 py-2 text-sm font-semibold ${
-                filters.view === view
-                  ? "border-accent text-accent"
-                  : "border-transparent text-ink-3 hover:text-ink-2"
+              onClick={() => selectMarket(value)}
+              aria-pressed={filters.market === value}
+              className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+                filters.market === value
+                  ? "bg-accent text-white"
+                  : "text-ink-3 hover:bg-rail hover:text-ink"
               }`}
             >
-              {view === "all"
-                ? t("discover.sections.browse")
-                : view === "saved"
-                  ? t("discover.sections.saved")
-                  : t("discover.sections.mine")}
+              {t(label)}
             </button>
           ))}
-          <a
-            href="#add-job"
-            className="-mb-px border-b-2 border-transparent px-3 py-2 text-sm font-semibold text-ink-3 hover:text-ink-2"
-          >
-            {t("discover.sections.add")}
-          </a>
-        </nav>
+        </div>
+      </header>
 
-        <JobFilters
-          filters={filters}
-          setFilters={setFilters}
-          search={search}
-          setSearch={setSearch}
-          location={location}
-          setLocation={setLocation}
-          isRefreshing={isRefreshing}
-          hasFilters={hasFilters}
-          onFilter={handleFilter}
-          onClearFilters={clearFilters}
+      <section className="flex flex-wrap items-center gap-3 rounded-xl border border-accent-soft-border bg-accent-tint px-4 py-3">
+        <span className="h-2 w-2 rounded-full bg-accent" aria-hidden="true" />
+        <span className="text-xs font-medium text-ink-3">
+          {t("discover.activeGoal")}
+        </span>
+        <strong className="text-sm font-semibold text-ink">
+          {activeGoal?.name ?? t("home.goal.empty")}
+        </strong>
+        {activeGoal && (
+          <button
+            type="button"
+            onClick={() => applyActiveGoal(activeGoal)}
+            className="text-xs font-semibold text-accent hover:underline sm:ml-auto"
+          >
+            {t("discover.useGoal")}
+          </button>
+        )}
+        <a
+          href="/me/goals"
+          className={`${activeGoal ? "" : "sm:ml-auto"} text-xs font-semibold text-accent hover:underline`}
+        >
+          {t("discover.changeGoal")}
+        </a>
+      </section>
+
+      <nav
+        aria-label={t("discover.sections")}
+        className="flex flex-wrap gap-1 border-b border-border"
+      >
+        {(["all", "saved", "mine"] as const).map((view) => (
+          <button
+            key={view}
+            type="button"
+            onClick={() => setFilters((current) => ({ ...current, view }))}
+            aria-pressed={filters.view === view}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-semibold ${
+              filters.view === view
+                ? "border-accent text-accent"
+                : "border-transparent text-ink-3 hover:text-ink-2"
+            }`}
+          >
+            {view === "all"
+              ? t("discover.sections.browse")
+              : view === "saved"
+                ? t("discover.sections.saved")
+                : t("discover.sections.mine")}
+          </button>
+        ))}
+        <a
+          href="#add-job"
+          className="-mb-px border-b-2 border-transparent px-3 py-2 text-sm font-semibold text-ink-3 hover:text-ink-2"
+        >
+          {t("discover.sections.add")}
+        </a>
+      </nav>
+
+      <JobFilters
+        filters={filters}
+        setFilters={setFilters}
+        search={search}
+        setSearch={setSearch}
+        location={location}
+        setLocation={setLocation}
+        isRefreshing={isRefreshing}
+        hasFilters={hasFilters}
+        onFilter={handleFilter}
+        onClearFilters={clearFilters}
+        t={t}
+      />
+
+      {actionError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-evidence-gap-border bg-evidence-gap-bg p-4 text-sm text-[#6F3627]"
+        >
+          {actionError}
+        </div>
+      )}
+      {refreshError && (
+        <LoadErrorBanner
+          error={refreshError}
+          onRetry={retry}
+          retryLabel={t("errors.retry")}
           t={t}
         />
+      )}
 
-        {actionError && (
-          <div
-            role="alert"
-            className="rounded-xl border border-evidence-gap-border bg-evidence-gap-bg p-4 text-sm text-[#6F3627]"
-          >
-            {actionError}
-          </div>
-        )}
-        {refreshError && (
-          <LoadErrorBanner
-            error={refreshError}
-            onRetry={retry}
-            retryLabel={t("errors.retry")}
-            t={t}
-          />
-        )}
-        {loadError ? (
-          <LoadErrorBanner
-            error={loadError}
-            onRetry={retry}
-            retryLabel={t("errors.retry")}
-            t={t}
-          />
-        ) : jobs.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-surface px-6 py-14 text-center">
-            <h3 className="font-semibold text-ink">
-              {filters.view === "saved"
-                ? t("jobs.noSaved")
-                : hasFilters
-                  ? t("jobs.noMatch")
-                  : t("jobs.ready")}
-            </h3>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-3">
-              {filters.view === "saved"
-                ? t("jobs.noSavedHint")
-                : hasFilters
-                  ? t("jobs.noMatchHint")
-                  : t("jobs.readyHint")}
-            </p>
-            {hasFilters && (
-              <Button
-                variant="secondary"
-                className="mt-5"
-                onClick={clearFilters}
-              >
-                {t("jobs.clearFilters")}
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div
-            className={`max-h-[60vh] divide-y divide-row-divider overflow-y-auto rounded-2xl border border-border bg-surface ${isRefreshing ? "opacity-60" : ""}`}
-          >
-            {jobs.map((job) => (
-              <DiscoverRow
-                key={job.id}
-                job={job}
-                selected={focusId === job.id}
-                linkedStatus={linkedStatusByJobId.get(job.id) ?? null}
-                fit={preferenceFit(job, activeGoal)}
-                onSelect={() => openFocus(job.id)}
+      <div className="flex min-h-[600px] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm lg:max-h-[70vh] lg:flex-row">
+        <div className="flex min-w-0 flex-col border-b border-border lg:w-[42%] lg:border-r lg:border-b-0 xl:w-[38%]">
+          {loadError ? (
+            <div className="p-4">
+              <LoadErrorBanner
+                error={loadError}
+                onRetry={retry}
+                retryLabel={t("errors.retry")}
+                t={t}
               />
-            ))}
-            {hasMore && (
-              <div className="p-3 text-center">
+            </div>
+          ) : jobs.length === 0 ? (
+            <div className="px-6 py-14 text-center">
+              <h3 className="font-semibold text-ink">
+                {filters.view === "saved"
+                  ? t("jobs.noSaved")
+                  : hasFilters
+                    ? t("jobs.noMatch")
+                    : t("jobs.ready")}
+              </h3>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-3">
+                {filters.view === "saved"
+                  ? t("jobs.noSavedHint")
+                  : hasFilters
+                    ? t("jobs.noMatchHint")
+                    : t("jobs.readyHint")}
+              </p>
+              {hasFilters && (
                 <Button
                   variant="secondary"
-                  loading={loadingMore}
-                  onClick={() => void loadMore()}
+                  className="mt-5"
+                  onClick={clearFilters}
                 >
-                  {t("jobs.loadMore")}
+                  {t("jobs.clearFilters")}
                 </Button>
+              )}
+            </div>
+          ) : (
+            <div
+              className={`min-h-0 flex-1 divide-y divide-row-divider overflow-y-auto ${isRefreshing ? "opacity-60" : ""}`}
+            >
+              {jobs.map((job) => (
+                <DiscoverRow
+                  key={job.id}
+                  job={job}
+                  selected={focusId === job.id}
+                  linkedStatus={linkedStatusByJobId.get(job.id) ?? null}
+                  fit={preferenceFit(job, activeGoal)}
+                  onSelect={() => openFocus(job.id)}
+                />
+              ))}
+              {hasMore && (
+                <div className="p-3 text-center">
+                  <Button
+                    variant="secondary"
+                    loading={loadingMore}
+                    onClick={() => void loadMore()}
+                  >
+                    {t("jobs.loadMore")}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+          <p className="shrink-0 border-t border-border px-4 py-2 text-xs text-ink-3">
+            {locale === "zh-CN"
+              ? `${jobs.length}${hasMore ? "+" : ""} ${t("jobs.jobs")}`
+              : `${jobs.length}${hasMore ? "+" : ""} ${jobs.length === 1 ? t("jobs.job") : t("jobs.jobs")}`}
+          </p>
+        </div>
+
+        {focusId ? (
+          <FocusPanel
+            target={{ kind: "job", id: focusId }}
+            onClose={closeFocus}
+            layout="workspace"
+            onJobChanged={replaceJob}
+            onDeleted={(deleted) => {
+              removeJob(deleted.id);
+              closeFocus();
+            }}
+          />
+        ) : (
+          <div className="hidden min-w-0 flex-1 items-center justify-center bg-sunken/40 px-8 text-center lg:flex">
+            <div>
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-tint text-xl text-accent">
+                ↗
               </div>
-            )}
+              <h2 className="mt-4 font-semibold text-ink">
+                {t("discover.selectPrompt")}
+              </h2>
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-ink-3">
+                {t("discover.selectPromptHint")}
+              </p>
+            </div>
           </div>
         )}
-
-        <p className="text-xs text-ink-3">
-          {locale === "zh-CN"
-            ? `${jobs.length}${hasMore ? "+" : ""} ${t("jobs.jobs")}`
-            : `${jobs.length}${hasMore ? "+" : ""} ${jobs.length === 1 ? t("jobs.job") : t("jobs.jobs")}`}
-        </p>
-
-        <CreateJobForm creating={creating} onCreate={handleCreate} t={t} />
       </div>
 
-      {focusId && (
-        <FocusPanel
-          target={{ kind: "job", id: focusId }}
-          onClose={closeFocus}
-          onJobChanged={replaceJob}
-          onDeleted={(deleted) => {
-            removeJob(deleted.id);
-            closeFocus();
-          }}
-        />
-      )}
+      <CreateJobForm creating={creating} onCreate={handleCreate} t={t} />
     </div>
   );
 }

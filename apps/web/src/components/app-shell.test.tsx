@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -27,6 +27,7 @@ vi.mock("@/lib/api", () => ({
 }));
 
 beforeEach(() => {
+  window.localStorage.clear();
   mockGetToken.mockClear();
   mockPush.mockReset();
   mockListApplications.mockReset().mockResolvedValue([]);
@@ -58,7 +59,7 @@ describe("AppShell", () => {
       "page",
     );
     expect(
-      screen.getByRole("link", { name: "Application Assistant setup" }),
+      screen.getByRole("link", { name: "Application Assistant" }),
     ).toHaveAttribute("href", "/setup");
     expect(screen.getByText("Workspace content")).toBeInTheDocument();
   });
@@ -70,9 +71,11 @@ describe("AppShell", () => {
         <AppShell>Workspace content</AppShell>
       </LocaleProvider>,
     );
+    await user.click(screen.getByRole("button", { name: /Settings/ }));
     await user.click(screen.getByRole("button", { name: "中文" }));
-    expect(screen.getByRole("link", { name: "申请中心" })).toBeInTheDocument();
-    expect(screen.getByText("求职工作台")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "申请进度" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "职业档案" })).toBeInTheDocument();
+    expect(screen.getByText("求职助手")).toBeInTheDocument();
     expect(window.localStorage.getItem("careeros.locale")).toBe("zh-CN");
     expect(document.documentElement.lang).toBe("zh-CN");
   });
@@ -84,6 +87,8 @@ describe("AppShell", () => {
         <AppShell>Workspace content</AppShell>
       </ThemeProvider>,
     );
+
+    await user.click(screen.getByRole("button", { name: /Settings/ }));
 
     expect(screen.getByRole("button", { name: "Auto" })).toHaveAttribute(
       "aria-pressed",
@@ -103,12 +108,71 @@ describe("AppShell", () => {
     expect(window.localStorage.getItem("careeros.theme")).toBe("system");
   });
 
+  it("opens settings toward the content area with working preference links", async () => {
+    const user = userEvent.setup();
+    render(
+      <ThemeProvider>
+        <AppShell>Workspace content</AppShell>
+      </ThemeProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Settings/ }));
+
+    const menu = screen.getByTestId("settings-menu");
+    expect(menu).toHaveClass("left-0");
+    expect(menu).not.toHaveClass("right-0");
+    expect(
+      within(menu).getByRole("link", { name: /Search goals/ }),
+    ).toHaveAttribute("href", "/me/goals");
+    expect(
+      within(menu).getByRole("link", { name: /Personal & contact info/ }),
+    ).toHaveAttribute("href", "/me/contact");
+    expect(within(menu).getByRole("link", { name: /Account/ })).toHaveAttribute(
+      "href",
+      "/me/account",
+    );
+  });
+
+  it("closes settings when the user clicks elsewhere", async () => {
+    const user = userEvent.setup();
+    render(
+      <ThemeProvider>
+        <AppShell>Workspace content</AppShell>
+      </ThemeProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Settings/ }));
+    expect(screen.getByTestId("settings-menu")).toBeInTheDocument();
+    await user.click(screen.getByText("Workspace content"));
+    expect(screen.queryByTestId("settings-menu")).not.toBeInTheDocument();
+  });
+
+  it("offers sidebar control inside settings", async () => {
+    const user = userEvent.setup();
+    render(<AppShell>Workspace content</AppShell>);
+
+    await user.click(screen.getByRole("button", { name: /Settings/ }));
+    await user.click(
+      within(screen.getByTestId("settings-menu")).getByRole("button", {
+        name: /Sidebar.*Collapse/,
+      }),
+    );
+
+    expect(window.localStorage.getItem("careeros.sidebarCollapsed")).toBe(
+      "true",
+    );
+    expect(screen.queryByTestId("settings-menu")).not.toBeInTheDocument();
+  });
+
   it("captures a manually-tracked application via the Capture dialog", async () => {
     mockCreateApplication.mockResolvedValue({ id: "app-1" });
     const user = userEvent.setup();
     render(<AppShell>Workspace content</AppShell>);
 
-    await user.click(screen.getByRole("button", { name: "Capture" }));
+    await user.click(screen.getByRole("button", { name: "Add" }));
+    await user.click(
+      screen.getByRole("button", { name: /Record application/ }),
+    );
     await user.type(screen.getByLabelText("Company"), "Acme");
     await user.type(screen.getByLabelText("Role"), "Engineer");
     await user.click(screen.getByRole("button", { name: "Add to pipeline" }));
@@ -127,6 +191,30 @@ describe("AppShell", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("collapses the desktop sidebar and persists the preference", async () => {
+    const user = userEvent.setup();
+    render(<AppShell>Workspace content</AppShell>);
+
+    await user.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+
+    expect(window.localStorage.getItem("careeros.sidebarCollapsed")).toBe(
+      "true",
+    );
+    expect(
+      screen.getByRole("button", { name: "Expand sidebar" }),
+    ).toBeInTheDocument();
+  });
+
+  it("restores a saved collapsed preference after the server-safe first render", () => {
+    window.localStorage.setItem("careeros.sidebarCollapsed", "true");
+
+    render(<AppShell>Workspace content</AppShell>);
+
+    expect(
+      screen.getByRole("button", { name: "Expand sidebar" }),
+    ).toBeInTheDocument();
+  });
+
   it("opens the command palette with ⌘K and navigates to a nav destination", async () => {
     const user = userEvent.setup();
     render(<AppShell>Workspace content</AppShell>);
@@ -135,7 +223,7 @@ describe("AppShell", () => {
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
 
     await user.type(
-      screen.getByRole("textbox", { name: "Jump to anything" }),
+      screen.getByRole("textbox", { name: "Search or jump" }),
       "Discover",
     );
     await user.keyboard("{Enter}");
@@ -150,9 +238,9 @@ describe("AppShell", () => {
     const user = userEvent.setup();
     render(<AppShell>Workspace content</AppShell>);
 
-    await user.click(screen.getByRole("button", { name: /Jump to anything/ }));
+    await user.click(screen.getByRole("button", { name: /Search or jump/ }));
     await user.type(
-      screen.getByRole("textbox", { name: "Jump to anything" }),
+      screen.getByRole("textbox", { name: "Search or jump" }),
       "Globex",
     );
 
