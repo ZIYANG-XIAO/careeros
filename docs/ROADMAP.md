@@ -52,6 +52,12 @@ Preferred rhythm:
 Specify → Implement → Test → Validate → Review → Commit → Stop
 ```
 
+The roadmap may be amended for a competitively informed capability when the
+proposal names a real user problem, connects to the CareerOS product spine,
+uses grounded data, defines privacy and safety boundaries, and includes a
+measurable validation gate. Observing a competitor is not sufficient by itself,
+and planned capabilities must not be exposed as implemented navigation.
+
 ## 4. Completed baseline — M0 through M7
 
 The following milestones are complete in repository history.

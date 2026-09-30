@@ -813,14 +813,14 @@ function JobPanelBody({
     job.market !== "UNKNOWN" ? job.market : null,
   ].filter((value): value is string => Boolean(value));
   return (
-    <div className="flex flex-col gap-5 overflow-y-auto p-4">
-      <div className="flex items-start gap-3">
-        <CompanyMark company={job.company} />
+    <div className="flex flex-col gap-6 overflow-y-auto p-5 lg:p-6">
+      <div className="flex items-start gap-4">
+        <CompanyMark company={job.company} size="lg" />
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-semibold text-ink-2">
+          <p className="truncate text-sm font-semibold text-ink-2">
             {job.company}
           </p>
-          <h2 className="truncate text-[19px] font-semibold text-ink">
+          <h2 className="mt-1 text-2xl font-semibold leading-tight text-ink">
             {job.title}
           </h2>
           {chips.length > 0 && (
@@ -835,6 +835,9 @@ function JobPanelBody({
               ))}
             </div>
           )}
+          <p className="mt-2 text-xs text-ink-3">
+            {jobSourceSummary(job, locale)}
+          </p>
         </div>
       </div>
 
@@ -870,15 +873,19 @@ function JobPanelBody({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2 border-y border-border py-4">
           {!job.is_saved && (
-            <Button onClick={() => void toggleSave()} loading={saving}>
+            <Button
+              variant="secondary"
+              onClick={() => void toggleSave()}
+              loading={saving}
+            >
               {t("discover.saveToPipeline")}
             </Button>
           )}
           {applicationUrl ? (
             <Button
-              variant={job.is_saved ? "primary" : "secondary"}
+              variant="primary"
               onClick={() => void startApplication()}
               loading={starting}
             >
@@ -979,11 +986,8 @@ function JobPanelBody({
         <p className="text-sm font-medium text-ink">
           {t("jobs.detail.originalDescription")}
         </p>
-        <p className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap text-sm leading-6 text-ink-2">
+        <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-ink-2">
           {job.latest_snapshot.raw_description}
-        </p>
-        <p className="mt-2 text-xs text-ink-3">
-          {jobSourceSummary(job, locale)}
         </p>
       </div>
 

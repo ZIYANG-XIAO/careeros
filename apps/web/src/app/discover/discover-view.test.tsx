@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -115,9 +121,30 @@ beforeEach(() => {
 });
 
 describe("DiscoverView", () => {
-  it("shows a company logo on every job row", async () => {
+  it("keeps supported search and filters in the compact toolbar", async () => {
+    const user = userEvent.setup();
+    renderDiscover();
+
+    const toolbar = await screen.findByRole("region", { name: "Search jobs" });
+    expect(
+      within(toolbar).getByPlaceholderText("Job title or company"),
+    ).toBeInTheDocument();
+    await user.selectOptions(
+      within(toolbar).getByRole("combobox", { name: "Market" }),
+      "NORTH_AMERICA",
+    );
+
+    await waitFor(() =>
+      expect(mockListJobs).toHaveBeenLastCalledWith(
+        "token",
+        expect.objectContaining({ market: "NORTH_AMERICA" }),
+      ),
+    );
+  });
+
+  it("shows a private local company mark on every job row", async () => {
     mockListJobs.mockResolvedValue([
-      makeJob({ id: "job-1", company: "Acme" }),
+      makeJob({ id: "job-1", company: "Stripe" }),
       makeJob({ id: "job-2", company: "Beacon" }),
     ]);
 
@@ -125,11 +152,14 @@ describe("DiscoverView", () => {
 
     await waitFor(() => expect(mockListJobs).toHaveBeenCalled());
     expect(
-      container.querySelector('[data-company-logo="Acme"]'),
-    ).toHaveAttribute("src", "https://cdn.simpleicons.org/acme?viewbox=auto");
+      container.querySelector('[data-company-icon="stripe"] > span'),
+    ).toHaveStyle({
+      backgroundImage: "url(/company-logos/stripe.png)",
+    });
     expect(
-      container.querySelector('[data-company-logo="Beacon"]'),
-    ).toHaveAttribute("src", "https://cdn.simpleicons.org/beacon?viewbox=auto");
+      container.querySelector('[data-company-mark="Beacon"]'),
+    ).toHaveTextContent("B");
+    expect(container.querySelector("img")).not.toBeInTheDocument();
   });
 
   it("pages through the catalog with Load more", async () => {

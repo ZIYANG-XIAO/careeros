@@ -23,6 +23,12 @@ directly to application assistance.
 
 ## 2. Current and planned scope
 
+CareerOS may expand beyond the capabilities named in this baseline when an
+approved roadmap change connects the addition to the product spine and defines
+its user value, data basis, safety/privacy boundary, and acceptance criteria.
+Competitive inspiration is evidence of a user problem, not authorization to
+copy an interface or advertise an unimplemented service.
+
 ### Implemented now — M0–M17 and the post-M17 wave
 
 - authenticated Web/API/PostgreSQL foundation;

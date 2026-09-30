@@ -75,7 +75,7 @@ describe("AppShell", () => {
     await user.click(screen.getByRole("button", { name: "中文" }));
     expect(screen.getByRole("link", { name: "申请进度" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "职业档案" })).toBeInTheDocument();
-    expect(screen.getByText("求职助手")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "申请助手" })).toBeInTheDocument();
     expect(window.localStorage.getItem("careeros.locale")).toBe("zh-CN");
     expect(document.documentElement.lang).toBe("zh-CN");
   });
@@ -108,7 +108,7 @@ describe("AppShell", () => {
     expect(window.localStorage.getItem("careeros.theme")).toBe("system");
   });
 
-  it("opens settings toward the content area with working preference links", async () => {
+  it("opens settings from the top bar with working preference links", async () => {
     const user = userEvent.setup();
     render(
       <ThemeProvider>
@@ -119,8 +119,7 @@ describe("AppShell", () => {
     await user.click(screen.getByRole("button", { name: /Settings/ }));
 
     const menu = screen.getByTestId("settings-menu");
-    expect(menu).toHaveClass("left-0");
-    expect(menu).not.toHaveClass("right-0");
+    expect(menu).toHaveClass("right-0");
     expect(
       within(menu).getByRole("link", { name: /Search goals/ }),
     ).toHaveAttribute("href", "/me/goals");
@@ -147,21 +146,17 @@ describe("AppShell", () => {
     expect(screen.queryByTestId("settings-menu")).not.toBeInTheDocument();
   });
 
-  it("offers sidebar control inside settings", async () => {
-    const user = userEvent.setup();
+  it("does not expose unimplemented product areas in primary navigation", () => {
     render(<AppShell>Workspace content</AppShell>);
+    const navigation = screen.getByRole("navigation", {
+      name: "Primary navigation",
+    });
 
-    await user.click(screen.getByRole("button", { name: /Settings/ }));
-    await user.click(
-      within(screen.getByTestId("settings-menu")).getByRole("button", {
-        name: /Sidebar.*Collapse/,
-      }),
-    );
-
-    expect(window.localStorage.getItem("careeros.sidebarCollapsed")).toBe(
-      "true",
-    );
-    expect(screen.queryByTestId("settings-menu")).not.toBeInTheDocument();
+    expect(within(navigation).queryByText("Services")).not.toBeInTheDocument();
+    expect(within(navigation).queryByText("Referrals")).not.toBeInTheDocument();
+    expect(
+      within(navigation).queryByText("Cover Letters"),
+    ).not.toBeInTheDocument();
   });
 
   it("captures a manually-tracked application via the Capture dialog", async () => {
@@ -191,28 +186,14 @@ describe("AppShell", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("collapses the desktop sidebar and persists the preference", async () => {
+  it("opens and closes the mobile navigation", async () => {
     const user = userEvent.setup();
     render(<AppShell>Workspace content</AppShell>);
 
-    await user.click(screen.getByRole("button", { name: "Collapse sidebar" }));
-
-    expect(window.localStorage.getItem("careeros.sidebarCollapsed")).toBe(
-      "true",
-    );
-    expect(
-      screen.getByRole("button", { name: "Expand sidebar" }),
-    ).toBeInTheDocument();
-  });
-
-  it("restores a saved collapsed preference after the server-safe first render", () => {
-    window.localStorage.setItem("careeros.sidebarCollapsed", "true");
-
-    render(<AppShell>Workspace content</AppShell>);
-
-    expect(
-      screen.getByRole("button", { name: "Expand sidebar" }),
-    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Open menu" }));
+    expect(screen.getByTestId("mobile-menu")).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByTestId("mobile-menu")).not.toBeInTheDocument();
   });
 
   it("opens the command palette with ⌘K and navigates to a nav destination", async () => {

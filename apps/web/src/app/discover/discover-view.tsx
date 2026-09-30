@@ -101,20 +101,6 @@ export default function DiscoverView() {
     return map;
   }, [context.applications]);
 
-  function selectMarket(market: Filters["market"]) {
-    setFilters((current) => ({
-      ...current,
-      market,
-      countryCode:
-        market === "NORTH_AMERICA" && current.countryCode === "CN"
-          ? ""
-          : market === "CHINA" &&
-              (current.countryCode === "US" || current.countryCode === "CA")
-            ? ""
-            : current.countryCode,
-    }));
-  }
-
   function applyActiveGoal(goal: JobSearchGoal) {
     const nextSearch = goal.target_roles[0] ?? "";
     const nextLocation = goal.cities[0] ?? "";
@@ -139,7 +125,7 @@ export default function DiscoverView() {
 
   return (
     <div className="flex h-full min-w-0 flex-col gap-4">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header>
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
             {t("discover.eyebrow")}
@@ -148,33 +134,6 @@ export default function DiscoverView() {
             {t("discover.heading")}
           </h1>
           <p className="mt-1 text-sm text-ink-2">{t("discover.headingHint")}</p>
-        </div>
-        <div
-          role="group"
-          aria-label={t("jobs.market")}
-          className="flex rounded-xl border border-border bg-surface p-1"
-        >
-          {(
-            [
-              ["", "jobs.allMarkets"],
-              ["NORTH_AMERICA", "jobs.northAmerica"],
-              ["CHINA", "jobs.china"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value || "all"}
-              type="button"
-              onClick={() => selectMarket(value)}
-              aria-pressed={filters.market === value}
-              className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
-                filters.market === value
-                  ? "bg-accent text-white"
-                  : "text-ink-3 hover:bg-rail hover:text-ink"
-              }`}
-            >
-              {t(label)}
-            </button>
-          ))}
         </div>
       </header>
 
@@ -266,7 +225,19 @@ export default function DiscoverView() {
       )}
 
       <div className="flex min-h-[600px] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm lg:max-h-[70vh] lg:flex-row">
-        <div className="flex min-w-0 flex-col border-b border-border lg:w-[42%] lg:border-r lg:border-b-0 xl:w-[38%]">
+        <div className="flex min-w-0 flex-col border-b border-border lg:w-[38%] lg:border-r lg:border-b-0 xl:w-[34%]">
+          <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
+            <p className="text-sm font-semibold text-ink-2" aria-live="polite">
+              {locale === "zh-CN"
+                ? `${jobs.length}${hasMore ? "+" : ""} ${t("jobs.jobs")}`
+                : `${jobs.length}${hasMore ? "+" : ""} ${jobs.length === 1 ? t("jobs.job") : t("jobs.jobs")}`}
+            </p>
+            <span className="text-xs font-medium text-ink-3">
+              {filters.sort === "recent"
+                ? t("jobs.recent")
+                : t("jobs.titleSort")}
+            </span>
+          </div>
           {loadError ? (
             <div className="p-4">
               <LoadErrorBanner
@@ -329,11 +300,6 @@ export default function DiscoverView() {
               )}
             </div>
           )}
-          <p className="shrink-0 border-t border-border px-4 py-2 text-xs text-ink-3">
-            {locale === "zh-CN"
-              ? `${jobs.length}${hasMore ? "+" : ""} ${t("jobs.jobs")}`
-              : `${jobs.length}${hasMore ? "+" : ""} ${jobs.length === 1 ? t("jobs.job") : t("jobs.jobs")}`}
-          </p>
         </div>
 
         {focusId ? (

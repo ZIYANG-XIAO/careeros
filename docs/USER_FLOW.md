@@ -29,6 +29,13 @@ Primary navigation:
 - Applications
 - Career Brain
 
+On desktop these destinations live in a compact top navigation so Discover and
+Applications retain the horizontal space needed for browse/detail and board
+workflows. Global search, explicit add actions, Application Assistant setup,
+interface preferences, and the account affordance share the top bar. Mobile
+uses a compact menu with the same four destinations. Page-specific filters and
+Career Brain subareas remain inside their owning surface.
+
 Home aggregates the next useful actions and factual recent state. Discover owns
 job browsing and saved opportunities. Applications owns the action queue,
 board/list management, and history. Career Brain owns professional context,

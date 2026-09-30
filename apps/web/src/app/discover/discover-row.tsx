@@ -97,21 +97,21 @@ function DiscoverRow({
       type="button"
       onClick={onSelect}
       aria-current={selected}
-      className={`w-full border-l-[3px] px-3 py-3 text-left transition-colors ${
+      className={`w-full border-l-[3px] px-4 py-4 text-left transition-colors ${
         selected
           ? "border-accent bg-accent-tint"
           : "border-transparent hover:bg-rail"
       }`}
     >
-      <div className="flex items-start gap-2.5">
-        <CompanyMark company={job.company} size="sm" />
+      <div className="flex items-start gap-3.5">
+        <CompanyMark company={job.company} size="lg" />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-ink-2">
+              <p className="truncate text-sm font-semibold text-ink-2">
                 {job.company}
               </p>
-              <p className="mt-0.5 line-clamp-2 text-sm font-semibold leading-5 text-ink">
+              <p className="mt-1 line-clamp-2 text-base font-semibold leading-6 text-ink">
                 {job.title}
               </p>
             </div>
@@ -126,7 +126,7 @@ function DiscoverRow({
             )}
           </div>
           {chips.length > 0 && (
-            <p className="mt-1 truncate text-xs text-ink-3">
+            <p className="mt-1.5 truncate text-sm text-ink-3">
               {chips.join(" · ")}
               {otherLocationsHint && (
                 <span

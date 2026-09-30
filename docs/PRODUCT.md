@@ -35,6 +35,20 @@ Intelligence, Application Strategy, and resume tailoring.
 Many users already know they want to apply. CareerOS should let them move
 quickly. Deeper intelligence is available by choice, not imposed as a toll gate.
 
+### Competitive product evolution
+
+CareerOS may adopt capabilities proven useful in other job-search products, but
+must redesign them around the CareerOS product spine rather than copy another
+product's navigation or accumulate disconnected tools. A proposal must identify
+the user problem, its place in the connected workflow, the grounded data it
+relies on, its privacy and safety boundary, and a verifiable success criterion.
+
+The roadmap continues to control implementation sequence, but may be updated
+when that product case is approved. Until implementation is complete, a
+capability must not appear in primary navigation or be represented as
+available. Unknown professional truth remains unknown, sensitive answers are
+not inferred, and application submission remains an explicit user action.
+
 ## 3. The connected problem
 
 Job searching is fragmented across profiles, resumes, job sites, company career
