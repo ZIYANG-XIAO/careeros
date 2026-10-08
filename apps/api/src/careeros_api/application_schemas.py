@@ -173,6 +173,10 @@ class ApplicationStatusHistoryEntryResponse(StrictModel):
     changed_at: datetime
 
 
+class ApplicationStatusHistoryBulkEntryResponse(ApplicationStatusHistoryEntryResponse):
+    application_id: UUID
+
+
 class CreateApplicationActivityRequest(StrictModel):
     idempotency_key: UUID
     activity_type: Literal["NOTE", "FOLLOW_UP", "INTERVIEW"]

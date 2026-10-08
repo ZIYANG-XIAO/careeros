@@ -19,6 +19,12 @@ logger = logging.getLogger(__name__)
 
 bearer_scheme = HTTPBearer()
 
+# Clerk mints short-lived (~60s) session tokens with `iat`/`nbf` set by its
+# own clock. Without tolerance, a server clock even a fraction of a second
+# behind rejects freshly minted tokens as "not yet valid". Clerk's SDKs
+# default to the same 5-second allowance.
+CLOCK_SKEW_LEEWAY_SECONDS = 5
+
 _jwk_clients: dict[str, PyJWKClient] = {}
 
 
@@ -66,9 +72,12 @@ async def verify_clerk_token(
             signing_key.key,
             algorithms=["RS256"],
             issuer=settings.clerk_issuer_url,
+            leeway=CLOCK_SKEW_LEEWAY_SECONDS,
             options={"require": ["exp", "sub"]},
         )
     except jwt.InvalidTokenError as error:
+        # Log only the failure class, never the token or its claims.
+        logger.warning("Rejected Clerk token: %s", type(error).__name__)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication token",

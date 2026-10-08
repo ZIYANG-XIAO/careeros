@@ -122,6 +122,9 @@ Version. There are no M14 endpoints that edit or delete historical answers.
   submission, preserve a previously unset exact Resume Version, and append
   approved answer history without regressing later status.
 - `GET /applications/{id}/status-history` — list immutable lifecycle history.
+- `GET /applications/status-history` — the caller's lifecycle history across all
+  owned applications (each entry carries `application_id`), oldest first; used
+  by the Pipeline list to date each stage in one request.
 - `GET/POST /applications/{id}/activities` — list or idempotently create notes,
   follow-ups, and interviews.
 - `PATCH /applications/{id}/activities/{activity_id}` — update owned planning

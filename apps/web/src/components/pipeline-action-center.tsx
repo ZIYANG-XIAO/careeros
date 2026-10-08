@@ -3,15 +3,19 @@
 import { useI18n } from "@/lib/i18n";
 import { pipelineAttentionItems, pipelineSummary } from "@/lib/pipeline";
 import type { ApplicationSummary } from "@/lib/types";
+import { CompanyMark } from "@/components/company-mark";
 
 type PipelineActionCenterProps = {
   applications: ApplicationSummary[];
   onOpenApplication: (applicationId: string) => void;
+  /** Explicit user confirmation that a Preparing application was submitted. */
+  onConfirmSubmitted?: (applicationId: string) => void;
 };
 
 function PipelineActionCenter({
   applications,
   onOpenApplication,
+  onConfirmSubmitted,
 }: PipelineActionCenterProps) {
   const { t } = useI18n();
   const attention = pipelineAttentionItems(applications);
@@ -58,7 +62,7 @@ function PipelineActionCenter({
         {metrics.map(([label, value], index) => (
           <div
             key={label}
-            className={`px-4 py-3 ${index % 2 === 0 ? "border-r border-border" : ""} sm:border-r sm:last:border-r-0`}
+            className={`border-border px-4 py-3 ${index % 2 === 0 ? "border-r" : ""} ${index < 2 ? "border-b sm:border-b-0" : ""} sm:border-r sm:last:border-r-0`}
           >
             <dt className="text-[11px] font-medium uppercase tracking-wide text-ink-3">
               {t(label)}
@@ -71,13 +75,17 @@ function PipelineActionCenter({
       {attention.length > 0 && (
         <ul className="divide-y divide-row-divider">
           {attention.slice(0, 4).map(({ application, reason, daysWaiting }) => (
-            <li key={application.id}>
+            <li
+              key={application.id}
+              className="flex items-center gap-2 pr-4 hover:bg-rail sm:pr-5"
+            >
               <button
                 type="button"
                 onClick={() => onOpenApplication(application.id)}
-                className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left hover:bg-rail sm:px-5"
+                className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 text-left sm:pl-5"
               >
-                <span className="min-w-0">
+                <CompanyMark company={application.company} size="sm" />
+                <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-ink">
                     {application.company} · {application.role}
                   </span>
@@ -95,6 +103,15 @@ function PipelineActionCenter({
                   {t("pipeline.action.review")} →
                 </span>
               </button>
+              {reason === "CONFIRM_SUBMISSION" && onConfirmSubmitted && (
+                <button
+                  type="button"
+                  onClick={() => onConfirmSubmitted(application.id)}
+                  className="shrink-0 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover"
+                >
+                  {t("pipeline.action.markApplied")}
+                </button>
+              )}
             </li>
           ))}
         </ul>

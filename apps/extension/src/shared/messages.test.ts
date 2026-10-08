@@ -423,4 +423,75 @@ describe("attach resume requests", () => {
       parseContentRequest({ ...content, base64: "not base64!" }),
     ).toBeNull();
   });
+
+  it("accepts only well-formed draft requests", () => {
+    const valid = {
+      type: "CAREEROS_DRAFT_ANSWER",
+      question: "Why us?",
+      jobId: "0b6f7a9e-3f5c-4e63-9d8e-1a2b3c4d5e6f",
+    };
+    expect(parsePopupRequest(valid)).toEqual(valid);
+    expect(parsePopupRequest({ ...valid, jobId: null })).toEqual({
+      ...valid,
+      jobId: null,
+    });
+    expect(parsePopupRequest({ ...valid, jobId: "not-a-uuid" })).toBeNull();
+    expect(parsePopupRequest({ ...valid, question: "" })).toBeNull();
+    expect(parsePopupRequest({ ...valid, token: "x" })).toBeNull();
+  });
+
+  it("validates the new assistant requests strictly", () => {
+    const id = "0b6f7a9e-3f5c-4e63-9d8e-1a2b3c4d5e6f";
+    expect(parsePopupRequest({ type: "CAREEROS_LOOKUP_PAGE_JOB" })).toEqual({
+      type: "CAREEROS_LOOKUP_PAGE_JOB",
+    });
+    expect(
+      parsePopupRequest({ type: "CAREEROS_LOOKUP_PAGE_JOB", url: "x" }),
+    ).toBeNull();
+    expect(
+      parsePopupRequest({ type: "CAREEROS_SET_AUTO_LAUNCHER", enabled: true }),
+    ).toEqual({ type: "CAREEROS_SET_AUTO_LAUNCHER", enabled: true });
+    expect(
+      parsePopupRequest({ type: "CAREEROS_SET_AUTO_LAUNCHER", enabled: "yes" }),
+    ).toBeNull();
+    expect(
+      parsePopupRequest({
+        type: "CAREEROS_OPEN_MATERIALS",
+        jobId: id,
+        tab: "tailor",
+      }),
+    ).toEqual({ type: "CAREEROS_OPEN_MATERIALS", jobId: id, tab: "tailor" });
+    expect(
+      parsePopupRequest({
+        type: "CAREEROS_OPEN_MATERIALS",
+        jobId: id,
+        tab: "admin",
+      }),
+    ).toBeNull();
+    expect(
+      parsePopupRequest({
+        type: "CAREEROS_ANALYZE_JOB",
+        jobId: id,
+        resumeVersionId: "../../etc",
+      }),
+    ).toBeNull();
+    expect(
+      parsePopupRequest({
+        type: "CAREEROS_ATTACH_COVER_LETTER",
+        fieldId: "field-0-3",
+        text: "Dear team",
+        filenameHint: "Cover letter",
+        expectedPageUrl: "https://jobs.lever.co/acme/1/apply",
+      }),
+    ).not.toBeNull();
+    expect(
+      parsePopupRequest({
+        type: "CAREEROS_ATTACH_COVER_LETTER",
+        fieldId: "field-0-3",
+        text: "",
+        filenameHint: "Cover letter",
+        expectedPageUrl: "https://jobs.lever.co/acme/1/apply",
+      }),
+    ).toBeNull();
+  });
 });

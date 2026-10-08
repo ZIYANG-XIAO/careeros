@@ -1,5 +1,6 @@
 import type { AttachResumeResult, ResumeFilePayload } from "../shared/messages";
 import { selectFormAdapter } from "./adapters/registry";
+import { isInputElement } from "./dom-elements";
 import { inspectFormTargets } from "./form-normalization";
 
 const MAX_FORMS = 10;
@@ -40,6 +41,7 @@ export function attachResumeFile(
   pageUrl: string,
   fieldId: string,
   payload: ResumeFilePayload,
+  expectedKey: "RESUME_FILE" | "COVER_LETTER_FILE" = "RESUME_FILE",
 ): AttachResumeResult {
   const failed: AttachResumeResult = { fieldId, state: "FAILED" };
   let url: URL;
@@ -57,8 +59,9 @@ export function attachResumeFile(
   const control = target?.controls[0];
   if (
     !target ||
-    target.field.canonicalKey !== "RESUME_FILE" ||
-    !(control instanceof HTMLInputElement) ||
+    target.field.canonicalKey !== expectedKey ||
+    !control ||
+    !isInputElement(control) ||
     control.type !== "file"
   ) {
     return failed;

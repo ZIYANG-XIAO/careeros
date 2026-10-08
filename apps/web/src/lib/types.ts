@@ -388,6 +388,17 @@ export type Job = {
    * row stands for (same company + title), and up to 20 of their locations. */
   similar_count: number;
   other_locations: string[];
+  /** When the employer published the posting, if the source reports it. */
+  posted_at?: string | null;
+  /** Diversified listings only: rank within its company and that company's total. */
+  company_rank?: number | null;
+  company_job_count?: number | null;
+  /** The user's latest application status for this job (listings only). */
+  application_status?: ApplicationStatus | null;
+  /** The pay range the posting states, quoted; never estimated. */
+  salary?: SalaryRange | null;
+  /** What the posting explicitly says about visa sponsorship, quoted. */
+  sponsorship?: SponsorshipStatement | null;
   latest_snapshot: JobSnapshot;
 };
 
@@ -509,6 +520,9 @@ export type ApplicationStatusHistoryEntry = {
   changed_at: string;
 };
 
+export type ApplicationStatusHistoryBulkEntry =
+  ApplicationStatusHistoryEntry & { application_id: string };
+
 export type ApplicationActivityType = "NOTE" | "FOLLOW_UP" | "INTERVIEW";
 
 export type ApplicationActivity = {
@@ -585,4 +599,143 @@ export type ApplicationContact = {
   notes: string | null;
   created_at: string;
   updated_at: string;
+};
+
+// ---------------------------------------------------------------------------
+// Count-only personal insights (GET /insights/*).
+// ---------------------------------------------------------------------------
+
+export type RequirementGapClassification =
+  "HIDDEN_EVIDENCE" | "WEAK_EVIDENCE" | "GENUINE_GAP";
+
+export type RequirementGap = {
+  label: string;
+  category: string;
+  job_count: number;
+  genuine_gap_count: number;
+  weak_evidence_count: number;
+  hidden_evidence_count: number;
+  jobs: Array<{
+    job_id: string;
+    company: string;
+    title: string;
+    classification: RequirementGapClassification;
+  }>;
+};
+
+export type RequirementGapsResponse = {
+  tracked_job_count: number;
+  analyzed_job_count: number;
+  requirements: RequirementGap[];
+};
+
+export type PendingResumeImport = {
+  id: string;
+  filename: string;
+  pending_item_count: number;
+  created_at: string;
+};
+
+export type HiddenCompany = {
+  id: string;
+  company_name: string;
+  created_at: string;
+};
+
+export type SponsorshipStatement = {
+  status: "OFFERED" | "NOT_OFFERED";
+  quote: string;
+};
+
+export type ApplicationPacket = {
+  application: Application;
+  resume_version: {
+    id: string;
+    resume_name: string;
+    version_number: number;
+    original_filename: string;
+    created_at: string;
+  } | null;
+  job_snapshot: {
+    id: string;
+    version_number: number;
+    description: string;
+    captured_at: string;
+    basis: "AT_SUBMISSION" | "AT_CREATION" | "EARLIEST_AVAILABLE";
+  } | null;
+  status_history: ApplicationStatusHistoryEntry[];
+  activities: ApplicationActivity[];
+  contacts: ApplicationContact[];
+};
+
+// ---------------------------------------------------------------------------
+// Evidence-grounded materials (tailoring, drafts, interview prep).
+// ---------------------------------------------------------------------------
+
+export type CitedEvidence = { revision_id: string; content: string };
+export type CitedRequirement = { id: string; description: string };
+
+export type TailoringSuggestion = {
+  kind: "REWRITE" | "INSERT";
+  original_text: string | null;
+  insert_after: string | null;
+  suggested_text: string;
+  rationale: string;
+  requirements: CitedRequirement[];
+  evidence: CitedEvidence[];
+};
+
+export type TailoringResult = {
+  base_resume_version_id: string;
+  suggestions: TailoringSuggestion[];
+  dropped_count: number;
+  writer_version: string;
+};
+
+export type TailoredEdit = {
+  kind: "REWRITE" | "INSERT";
+  original_text: string | null;
+  insert_after: string | null;
+  text: string;
+};
+
+export type TailoredVersion = {
+  resume_id: string;
+  resume_version_id: string;
+  version_number: number;
+  original_filename: string;
+};
+
+export type DraftKind = "COVER_LETTER" | "OPEN_QUESTION";
+
+export type DraftResult = {
+  kind: DraftKind;
+  text: string;
+  evidence: CitedEvidence[];
+  unsupported_points: string[];
+  writer_version: string;
+};
+
+export type InterviewPrep = {
+  stories: Array<{
+    prompt: string;
+    requirements: CitedRequirement[];
+    evidence: CitedEvidence[];
+  }>;
+  questions: Array<{
+    question: string;
+    requirements: CitedRequirement[];
+    evidence: CitedEvidence[];
+  }>;
+  gaps: Array<{ requirement: CitedRequirement; honest_framing: string }>;
+  dropped_count: number;
+  writer_version: string;
+};
+
+export type SalaryRange = {
+  minimum: number;
+  maximum: number;
+  currency: "USD" | "CAD";
+  period: "YEAR" | "HOUR";
+  quote: string;
 };

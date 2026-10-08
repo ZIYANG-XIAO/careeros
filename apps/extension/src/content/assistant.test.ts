@@ -1185,3 +1185,551 @@ describe("applicationStepSignature", () => {
     expect(applicationStepSignature(document)).toBe("");
   });
 });
+
+describe("assistant review checklist, job card, and dock", () => {
+  beforeEach(() => mockChrome());
+
+  afterEach(() => {
+    destroyAssistant();
+    window.history.pushState({}, "", "/");
+    vi.unstubAllGlobals();
+  });
+
+  it("lists fields still needing the user and fills an approved draft on request", async () => {
+    document.body.innerHTML = `
+      <form id="application-form">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" />
+        <label for="why">Why do you want to join us?</label>
+        <textarea id="why" name="why"></textarea>
+        <button type="submit">Submit</button>
+      </form>
+    `;
+    // A real application path, so page inspection recognizes the form.
+    window.history.pushState({}, "", "/jobs/123/apply");
+    const form = document.getElementById("application-form") as HTMLFormElement;
+    const submit = vi.fn((event: Event) => event.preventDefault());
+    form.addEventListener("submit", submit);
+    const field = (
+      id: string,
+      controlType: string,
+      question: string,
+      key: string | null,
+    ) => ({
+      id,
+      controlType,
+      question,
+      required: key === null,
+      canonicalKey: key,
+      support: key ? "SUPPORTED" : "UNKNOWN",
+      confidence: key ? "HIGH" : "LOW",
+      options: [],
+    });
+    const decision = (
+      fieldId: string,
+      key: string | null,
+      action: string,
+      answer: string | null,
+    ) => ({
+      fieldId,
+      canonicalKey: key,
+      questionCategory: "STANDARD",
+      proposedAnswer: answer,
+      sourceCategory: answer ? "IDENTITY" : "UNKNOWN",
+      sourceReferenceId: null,
+      action,
+      policyCategory: "STANDARD",
+      confidence: answer ? "HIGH" : "LOW",
+      sensitivity: "NONE",
+      reviewState: answer ? "NOT_REQUIRED" : "REQUIRED",
+      reusePolicy: "NOT_APPLICABLE",
+      saveIntentRequired: false,
+    });
+    mockChrome({
+      sendMessage: async (message) => {
+        const request = message as { type: string };
+        if (request.type === "CAREEROS_GET_AUTH_STATUS") {
+          return { ok: true, data: { authenticated: true } };
+        }
+        if (request.type === "CAREEROS_DETECT_ACTIVE_PAGE") {
+          return {
+            ok: true,
+            data: {
+              status: "APPLICATION_PAGE",
+              adapter: "generic",
+              reasons: [],
+              forms: [
+                {
+                  id: "form-0",
+                  adapter: "generic",
+                  support: "SUPPORTED",
+                  fields: [
+                    field("field-0-0", "EMAIL", "Email", "CONTACT_EMAIL"),
+                    field(
+                      "field-0-1",
+                      "TEXTAREA",
+                      "Why do you want to join us?",
+                      null,
+                    ),
+                  ],
+                },
+              ],
+            },
+          };
+        }
+        if (request.type === "CAREEROS_RESOLVE_ANSWERS") {
+          return {
+            ok: true,
+            data: {
+              decisions: [
+                decision(
+                  "field-0-0",
+                  "CONTACT_EMAIL",
+                  "FILL",
+                  "candidate@example.com",
+                ),
+                decision("field-0-1", null, "ASK", null),
+              ],
+              selectedResumeVersionId: null,
+              semanticClassifierUsed: false,
+            },
+          };
+        }
+        if (request.type === "CAREEROS_APPLY_FILL_PLAN") {
+          return {
+            ok: true,
+            data: {
+              fields: [
+                { fieldId: "field-0-0", state: "FILLED" },
+                { fieldId: "field-0-1", state: "INPUT_REQUIRED" },
+              ],
+            },
+          };
+        }
+        if (request.type === "CAREEROS_DRAFT_ANSWER") {
+          return {
+            ok: true,
+            data: {
+              status: "DRAFTED",
+              text: "I build payment systems.",
+              evidenceCount: 2,
+              unsupportedPoints: [],
+            },
+          };
+        }
+        return { ok: true, data: {} };
+      },
+    });
+
+    mountAssistant();
+    const host = assistantHost();
+    (host.shadowRoot.querySelector(".launcher") as HTMLButtonElement).click();
+    const buttons = () =>
+      Array.from(
+        host.shadowRoot.querySelectorAll("button"),
+      ) as HTMLButtonElement[];
+    await vi.waitFor(() =>
+      expect(buttons().some((b) => b.textContent === "Reinspect page")).toBe(
+        true,
+      ),
+    );
+    buttons()
+      .find((b) => b.textContent === "Reinspect page")!
+      .click();
+    await vi.waitFor(() =>
+      expect(
+        buttons().some((b) => b.textContent?.includes("Fill 1 approved field")),
+      ).toBe(true),
+    );
+    buttons()
+      .find((b) => b.textContent?.includes("Fill 1 approved field"))!
+      .click();
+
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.textContent).toContain(
+        "Why do you want to join us?",
+      ),
+    );
+    expect(host.shadowRoot.textContent).toContain(
+      "1 required fields still need you",
+    );
+
+    buttons()
+      .find((b) => b.textContent === "Draft from my experience")!
+      .click();
+    await vi.waitFor(() =>
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+        type: "CAREEROS_DRAFT_ANSWER",
+        question: "Why do you want to join us?",
+        jobId: null,
+      }),
+    );
+    await vi.waitFor(() =>
+      expect(buttons().some((b) => b.textContent === "Put in this field")).toBe(
+        true,
+      ),
+    );
+    buttons()
+      .find((b) => b.textContent === "Put in this field")!
+      .click();
+
+    const why = document.getElementById("why") as HTMLTextAreaElement;
+    expect(why.value).toBe("I build payment systems.");
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.textContent).toContain(
+        "Added. Review it on the page before you submit.",
+      ),
+    );
+    expect(submit).not.toHaveBeenCalled();
+    window.history.pushState({}, "", "/");
+  });
+
+  it("shows the job behind the page and autofills in one click", async () => {
+    document.body.innerHTML = `
+      <form id="application-form">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" />
+        <button type="submit">Submit</button>
+      </form>
+    `;
+    const pageJob = {
+      jobId: "0b6f7a9e-3f5c-4e63-9d8e-1a2b3c4d5e6f",
+      title: "University Grad Software Engineer",
+      company: "Pinterest",
+      postedAt: "2026-10-01T12:00:00Z",
+      salary: {
+        minimum: 129022,
+        maximum: 174283,
+        currency: "USD",
+        period: "YEAR",
+      },
+      sponsorship: null,
+      isCatalog: true,
+      lastObservedAt: new Date().toISOString(),
+      isSaved: false,
+      logoDataUrl: null,
+    };
+    const base = applicationPageMocks();
+    mockChrome({
+      sendMessage: async (message) => {
+        const request = message as { type: string };
+        if (request.type === "CAREEROS_LOOKUP_PAGE_JOB") {
+          return { ok: true, data: pageJob };
+        }
+        if (request.type === "CAREEROS_GET_JOB_MATCH") {
+          return {
+            ok: true,
+            data: {
+              resumeLabel: "Backend Resume · v2",
+              analyzedAt: "2026-10-01T00:00:00Z",
+              requirements: [
+                {
+                  description: "Distributed systems",
+                  classification: "STRONG_EVIDENCE",
+                },
+                { description: "Go", classification: "GENUINE_GAP" },
+              ],
+            },
+          };
+        }
+        return base(message);
+      },
+    });
+    mountAssistant();
+    const host = assistantHost();
+    (host.shadowRoot.querySelector(".launcher") as HTMLButtonElement).click();
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.textContent).toContain(
+        "University Grad Software Engineer",
+      ),
+    );
+    expect(host.shadowRoot.textContent).toContain(
+      "$129,022 - $174,283 USD / year",
+    );
+    expect(host.shadowRoot.textContent).toContain(
+      "Confirmed open in the last 24 hours",
+    );
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.textContent).toContain(
+        "1 of 2 requirements have your evidence",
+      ),
+    );
+
+    const autofill = host.shadowRoot.querySelector(
+      ".autofill",
+    ) as HTMLButtonElement;
+    expect(autofill.textContent).toBe("Autofill this page");
+    autofill.click();
+    await vi.waitFor(() =>
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "CAREEROS_APPLY_FILL_PLAN" }),
+      ),
+    );
+    const order = (
+      chrome.runtime.sendMessage as ReturnType<typeof vi.fn>
+    ).mock.calls
+      .map(([message]) => (message as { type: string }).type)
+      .filter((type) =>
+        [
+          "CAREEROS_DETECT_ACTIVE_PAGE",
+          "CAREEROS_RESOLVE_ANSWERS",
+          "CAREEROS_APPLY_FILL_PLAN",
+        ].includes(type),
+      );
+    expect(order).toEqual([
+      "CAREEROS_DETECT_ACTIVE_PAGE",
+      "CAREEROS_RESOLVE_ANSWERS",
+      "CAREEROS_APPLY_FILL_PLAN",
+    ]);
+
+    const materials = Array.from(
+      host.shadowRoot.querySelectorAll("button"),
+    ).find(
+      (button) => button.textContent === "Tailor resume",
+    ) as HTMLButtonElement;
+    materials.click();
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+      type: "CAREEROS_OPEN_MATERIALS",
+      jobId: pageJob.jobId,
+      tab: "tailor",
+    });
+  });
+
+  it("tucks against the edge and hides on request", async () => {
+    mountAssistant();
+    const host = assistantHost();
+    const tuck = host.shadowRoot.querySelector(
+      'button[aria-label="Tuck CareerOS against the edge"]',
+    ) as HTMLButtonElement;
+    tuck.click();
+    expect(
+      host.shadowRoot.querySelector(".dock")?.classList.contains("collapsed"),
+    ).toBe(true);
+    await vi.waitFor(() =>
+      expect(chrome.storage.local.set).toHaveBeenCalledWith({
+        careeros_assistant_dock: { side: "right", top: 0.6, tucked: true },
+      }),
+    );
+    (
+      host.shadowRoot.querySelector(
+        'button[aria-label="Hide CareerOS on this page"]',
+      ) as HTMLButtonElement
+    ).click();
+    expect(isAssistantMounted()).toBe(false);
+  });
+
+  it("switches the panel between English and Chinese from the header", async () => {
+    mountAssistant();
+    const host = assistantHost();
+    (host.shadowRoot.querySelector(".launcher") as HTMLButtonElement).click();
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.textContent).toContain("Autofill this page"),
+    );
+    (host.shadowRoot.querySelector(".lang-btn") as HTMLButtonElement).click();
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.textContent).toContain("自动填写此页"),
+    );
+    expect(chrome.storage.local.set).toHaveBeenCalledWith({
+      "careeros.extensionLocale": "zh-CN",
+    });
+    expect(
+      host.shadowRoot.querySelector(".launcher")?.getAttribute("aria-label"),
+    ).toBe("关闭 CareerOS 助手");
+    (host.shadowRoot.querySelector(".lang-btn") as HTMLButtonElement).click();
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.textContent).toContain("Autofill this page"),
+    );
+  });
+
+  it("says so when autofill finds no application form", async () => {
+    mockChrome({
+      sendMessage: async (message) => {
+        const request = message as { type: string };
+        if (request.type === "CAREEROS_GET_AUTH_STATUS") {
+          return { ok: true, data: { authenticated: true } };
+        }
+        if (request.type === "CAREEROS_DETECT_ACTIVE_PAGE") {
+          return {
+            ok: true,
+            data: {
+              status: "NOT_APPLICATION_PAGE",
+              adapter: null,
+              reasons: [],
+              forms: [],
+            },
+          };
+        }
+        return { ok: true, data: null };
+      },
+    });
+    mountAssistant();
+    const host = assistantHost();
+    (host.shadowRoot.querySelector(".launcher") as HTMLButtonElement).click();
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.querySelector(".autofill")).not.toBeNull(),
+    );
+    (host.shadowRoot.querySelector(".autofill") as HTMLButtonElement).click();
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.textContent).toContain(
+        "No application form found on this page.",
+      ),
+    );
+    expect(chrome.runtime.sendMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "CAREEROS_APPLY_FILL_PLAN" }),
+    );
+  });
+
+  it("keeps the cover letter section collapsed until drafted, then shows it filled", async () => {
+    document.body.innerHTML = `
+      <script type="application/ld+json">${JSON.stringify({
+        "@type": "JobPosting",
+        title: "Backend Engineer",
+        hiringOrganization: { name: "Acme" },
+        description: "<p>Build reliable APIs with Python and PostgreSQL.</p>",
+      })}</script>
+      <h1>Backend Engineer</h1>
+      <form id="application-form">
+        <label for="cover_letter">Cover Letter</label>
+        <input id="cover_letter" type="file" />
+        <button type="submit">Submit</button>
+      </form>
+    `;
+    window.history.pushState({}, "", "/jobs/123/apply");
+    mockChrome({
+      sendMessage: async (message) => {
+        const request = message as { type: string } & Record<string, unknown>;
+        if (request.type === "CAREEROS_GET_AUTH_STATUS") {
+          return { ok: true, data: { authenticated: true } };
+        }
+        if (request.type === "CAREEROS_DETECT_ACTIVE_PAGE") {
+          return {
+            ok: true,
+            data: {
+              status: "APPLICATION_PAGE",
+              adapter: "generic",
+              reasons: [],
+              forms: [
+                {
+                  id: "form-0",
+                  adapter: "generic",
+                  support: "SUPPORTED",
+                  fields: [
+                    {
+                      id: "field-0-0",
+                      controlType: "FILE",
+                      question: "Cover Letter",
+                      required: false,
+                      canonicalKey: "COVER_LETTER_FILE",
+                      support: "SUPPORTED",
+                      confidence: "MEDIUM",
+                      options: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          };
+        }
+        if (request.type === "CAREEROS_RESOLVE_ANSWERS") {
+          return {
+            ok: true,
+            data: {
+              decisions: [],
+              selectedResumeVersionId: null,
+              semanticClassifierUsed: false,
+            },
+          };
+        }
+        if (request.type === "CAREEROS_CLIP_JOB") {
+          return {
+            ok: true,
+            data: {
+              jobId: "0b6f7a9e-3f5c-4e63-9d8e-1a2b3c4d5e6f",
+              created: true,
+            },
+          };
+        }
+        if (request.type === "CAREEROS_DRAFT_COVER_LETTER") {
+          return {
+            ok: true,
+            data: {
+              status: "DRAFTED",
+              text: "I build reliable APIs.",
+              evidenceCount: 2,
+              unsupportedPoints: [],
+            },
+          };
+        }
+        if (request.type === "CAREEROS_ATTACH_COVER_LETTER") {
+          return {
+            ok: true,
+            data: { fieldId: request.fieldId, state: "FILLED" },
+          };
+        }
+        return { ok: true, data: null };
+      },
+    });
+    mountAssistant();
+    const host = assistantHost();
+    const buttonNamed = (name: string) =>
+      Array.from(host.shadowRoot.querySelectorAll("button")).find(
+        (button) => button.textContent === name,
+      );
+    (host.shadowRoot.querySelector(".launcher") as HTMLButtonElement).click();
+
+    // Save the job first so the letter has somewhere to belong.
+    await vi.waitFor(() => expect(buttonNamed("Save this job")).toBeTruthy());
+    buttonNamed("Save this job")!.click();
+    await vi.waitFor(() =>
+      expect(buttonNamed("Save to CareerOS")).toBeTruthy(),
+    );
+    buttonNamed("Save to CareerOS")!.click();
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.textContent).toContain("Saved to CareerOS"),
+    );
+
+    buttonNamed("Reinspect page")!.click();
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.textContent).toContain("Cover letter"),
+    );
+
+    // Collapsed by default, showing only the completion chip.
+    const header = Array.from(
+      host.shadowRoot.querySelectorAll(".section-toggle"),
+    ).find((el) => el.textContent?.includes("Cover letter")) as HTMLElement;
+    expect(header).toBeTruthy();
+    expect(header.getAttribute("aria-expanded")).toBe("false");
+    expect(header.textContent).toContain("Filled (0/1)");
+    expect(
+      host.shadowRoot.textContent?.includes(
+        "This form asks for a cover letter",
+      ),
+    ).toBe(false);
+
+    header.click();
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.textContent).toContain(
+        "This form asks for a cover letter file.",
+      ),
+    );
+    buttonNamed("Draft from my experience")!.click();
+    await vi.waitFor(() =>
+      expect(
+        host.shadowRoot.querySelector<HTMLTextAreaElement>(
+          "textarea[aria-label='Draft answer (editable)']",
+        )?.value,
+      ).toBe("I build reliable APIs."),
+    );
+    buttonNamed("Attach as Word file")!.click();
+    await vi.waitFor(() =>
+      expect(host.shadowRoot.textContent).toContain(
+        "Attached as a Word file. Check it on the page before you submit.",
+      ),
+    );
+    const updatedHeader = Array.from(
+      host.shadowRoot.querySelectorAll(".section-toggle"),
+    ).find((el) => el.textContent?.includes("Cover letter")) as HTMLElement;
+    expect(updatedHeader.textContent).toContain("Filled (1/1)");
+    expect(updatedHeader.querySelector(".chip")?.className).toContain("good");
+  });
+});

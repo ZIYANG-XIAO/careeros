@@ -21,6 +21,7 @@ from careeros_api.application_schemas import (
     ApplicationAssistantMatchResponse,
     ApplicationAssistantResumeOptionResponse,
     ApplicationResponse,
+    ApplicationStatusHistoryBulkEntryResponse,
     ApplicationStatusHistoryEntryResponse,
     ApplicationSummaryResponse,
     CreateApplicationActivityRequest,
@@ -424,6 +425,42 @@ async def list_applications(
         statement = statement.where(Application.status == application_status.value)
     applications = (await session.execute(statement)).scalars().all()
     return [_summary_response(application) for application in applications]
+
+
+@router.get(
+    "/status-history",
+    response_model=list[ApplicationStatusHistoryBulkEntryResponse],
+)
+async def list_status_history(
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[ApplicationStatusHistoryBulkEntryResponse]:
+    """Every status transition across the caller's applications, oldest first.
+
+    Lets the Pipeline list render per-stage dates in one request instead of
+    one status-history call per application.
+    """
+    entries = (
+        (
+            await session.execute(
+                select(ApplicationStatusHistory)
+                .join(Application)
+                .where(Application.user_id == user.id)
+                .order_by(ApplicationStatusHistory.changed_at)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return [
+        ApplicationStatusHistoryBulkEntryResponse(
+            application_id=entry.application_id,
+            from_status=entry.from_status,
+            to_status=entry.to_status,
+            changed_at=entry.changed_at,
+        )
+        for entry in entries
+    ]
 
 
 @router.get("/activities/upcoming", response_model=list[ApplicationActivityResponse])

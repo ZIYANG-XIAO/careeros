@@ -126,6 +126,7 @@ on item 1 below.**
   10. *Rate limits/reliability* — per-board failures are isolated and reported;
       the CLI exits non-zero if any board failed.
   11. *Provider isolation* — Greenhouse fields never leave the adapter.
+- **Publish time**: `first_published` is stored as `jobs.posted_at` (Phase Z2).
 - **Schedule**: run daily, for example
   `15 6 * * * cd /path/to/careeros && .venv/bin/python scripts/sync_job_sources.py`,
   or as a long-running process with `--every-hours 24`.
@@ -167,6 +168,55 @@ launch shares the terms sign-off noted for Greenhouse.**
 
 The three sources use separate `source_key`s, so closing postings for one
 source's board never touches another source's jobs.
+
+## Source record (proposed): Workday career sites — North America pilot
+
+**Status: proposed on 2026-10-02 — not implemented. Needs owner and legal
+approval before any code is written or any sync is run.**
+
+- **What**: Workday-hosted employer career sites
+  (`https://{tenant}.wd{N}.myworkdayjobs.com/{site}`) load postings from two
+  JSON endpoints used by their own front end:
+  - list: `POST /wday/cxs/{tenant}/{site}/jobs` with
+    `{"appliedFacets":{},"limit":20,"offset":N,"searchText":""}`, which returns
+    title, `externalPath`, a location summary, a relative "Posted …" label,
+    and the requisition id;
+  - detail: `GET /wday/cxs/{tenant}/{site}{externalPath}`, which returns the
+    HTML description, primary and additional locations, country, `startDate`
+    (publish date), `endDate`, time type, and the employer's `externalUrl`.
+
+  Verified by hand against one large employer's public site on 2026-10-02.
+- **Evaluation against the criteria above**:
+  1. *Legal and terms* — **highest risk of any current source.** These are
+     undocumented internal endpoints, not a published API for third parties.
+     Workday's terms and each employer's site terms and `robots.txt` must be
+     reviewed first. Workday's official Recruiting APIs need employer
+     credentials and are not available to CareerOS.
+  2. *Source quality* — good: structured locations, country, publish date, and
+     a direct apply URL.
+  3. *Freshness* — same model as other sources: a posting missing from a
+     successfully paged list is closed; a failed fetch closes nothing.
+  4. *Market* — country from the detail payload; the list can be narrowed with
+     location facets to cut requests.
+  5. *Stable identifiers* — `{tenant}:{jobReqId}` plus the canonical
+     `externalUrl`.
+  6. *Application URLs* — the employer's own `externalUrl`.
+  7. *Removal behavior* — as 3.
+  8. *Cost* — no fees but many requests: 20 postings per list page plus one
+     detail request per posting. Mitigation: request details only for new or
+     changed postings, pause about 1 s between requests, identify CareerOS in
+     the User-Agent, and narrow by location facets.
+  9. *Reliability* — the payload can change without notice. Treat a schema
+     mismatch as a failed board, never as "all postings closed". A large site
+     reported `total: 2000`, which looks like a display cap; full coverage needs
+     faceted paging and must be verified.
+  10. *Provider isolation* — a `job_source_workday.py` adapter over
+      `job_source_boards.py`, like the existing three.
+- **Proposed pilot**: 10–20 technology employers on Workday, each verified by
+  hand, for at most four weeks, then review volume, error rate, and any
+  complaints before expanding.
+- **Not to be confused with** the extension's Workday *form-filling* adapter
+  (Phase R), which runs only on pages the user opens and only on request.
 
 ## China-market sources
 

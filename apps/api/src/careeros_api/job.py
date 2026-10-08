@@ -1,13 +1,15 @@
 """Authenticated manual job capture and grounded parsing endpoints."""
 
+import re
 from datetime import UTC, datetime
 from hashlib import sha256
 from typing import Annotated
+from urllib.parse import urlsplit, urlunsplit
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator, model_validator
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import Integer, delete, exists, func, literal, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -16,21 +18,28 @@ from sqlalchemy.sql.elements import ColumnElement
 from careeros_api.auth import get_current_user
 from careeros_api.db import get_db_session
 from careeros_api.job_parser import JOB_PARSER_VERSION, JobParser, JobParsingError, get_job_parser
+from careeros_api.job_ranking import goal_match_score
 from careeros_api.job_requirements import (
     ParserUnavailableError,
     RequirementExtractionError,
     ensure_snapshot_requirements,
 )
+from careeros_api.job_salary import SalaryRange, salary_range
 from careeros_api.job_schemas import ParsedJobDescription, validate_job_grounding
+from careeros_api.job_sponsorship import SponsorshipStatement, sponsorship_statement
 from careeros_api.job_urls import canonical_clip_url
 from careeros_api.models import (
+    Application,
+    HiddenCompany,
     Job,
     JobAvailabilityStatus,
     JobCountry,
+    JobDismissal,
     JobEmploymentType,
     JobFreshnessStatus,
     JobMarket,
     JobRequirement,
+    JobSearchGoal,
     JobSnapshot,
     JobSourceType,
     JobWorkplaceType,
@@ -155,6 +164,19 @@ class JobResponse(BaseModel):
     # company and title, and (up to a cap) where they are.
     similar_count: int = 0
     other_locations: list[str] = Field(default_factory=list)
+    # The status of the user's most recently updated application to this job,
+    # so browse views can mark jobs already applied to. Only set by listings.
+    application_status: str | None = None
+    # Only set by diversified listings: this row's rank within its company
+    # and how many matching rows that company has in total.
+    company_rank: int | None = None
+    company_job_count: int | None = None
+    posted_at: datetime | None = None
+    # What the posting itself says about visa sponsorship, quoted; None when
+    # it says nothing. Never inferred (see job_sponsorship.py).
+    sponsorship: SponsorshipStatement | None = None
+    # The pay range the posting states, quoted; None when it states none.
+    salary: SalaryRange | None = None
     latest_snapshot: JobSnapshotResponse
 
 
@@ -219,6 +241,7 @@ def _job_response(
         external_job_id=job.external_job_id,
         canonical_url=job.canonical_url,
         first_observed_at=job.first_observed_at,
+        posted_at=job.posted_at,
         last_observed_at=job.last_observed_at,
         availability_status=job.availability_status,
         freshness_status=job.freshness_status,
@@ -232,6 +255,8 @@ def _job_response(
         is_saved=is_saved,
         saved_at=saved_at,
         is_catalog=job.user_id is None,
+        sponsorship=sponsorship_statement(latest.raw_description),
+        salary=salary_range(latest.raw_description),
         latest_snapshot=_snapshot_response(latest),
     )
 
@@ -423,31 +448,24 @@ async def clip_job(
     return ClipJobResponse(created=True, job=_job_response(job, is_saved=True, saved_at=saved_at))
 
 
-@router.get("", response_model=list[JobResponse])
-async def list_jobs(
-    user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    search: Annotated[str | None, Query(min_length=1, max_length=200)] = None,
-    location: Annotated[str | None, Query(min_length=1, max_length=200)] = None,
-    saved_only: bool = False,
-    market: JobMarket | None = None,
-    country_code: JobCountry | None = None,
-    workplace_type: JobWorkplaceType | None = None,
-    employment_type: JobEmploymentType | None = None,
-    sort: str = Query(default="recent", pattern="^(recent|title)$"),
-    source: str = Query(default="all", pattern="^(all|mine|catalog)$"),
-    limit: Annotated[int | None, Query(ge=1, le=200)] = None,
-    offset: Annotated[int, Query(ge=0)] = 0,
-    compact: bool = False,
-    collapse: bool = False,
-) -> list[JobResponse]:
-    """List visible jobs.
+DIVERSIFY_PER_COMPANY = 2
 
-    ``compact`` omits descriptions and requirements, which list views never
-    show; fetch ``/jobs/{id}`` for the full record. ``collapse`` shows one row
-    per company and title (employers often post one role once per city); the
-    row reports how many other matching postings it stands for and where.
-    """
+
+def _browse_conditions(
+    user: User,
+    *,
+    search: str | None,
+    location: str | None,
+    company: str | None,
+    saved_only: bool,
+    market: JobMarket | None,
+    country_code: JobCountry | None,
+    workplace_type: JobWorkplaceType | None,
+    employment_type: JobEmploymentType | None,
+    source: str,
+    include_hidden: bool,
+) -> tuple[ColumnElement[bool], list[ColumnElement[bool]]]:
+    """The saved-job join and the filters shared by job listings."""
     saved_join = (SavedJob.job_id == Job.id) & (SavedJob.user_id == user.id)
     conditions: list[ColumnElement[bool]] = [
         visible_to(user.id),
@@ -465,6 +483,8 @@ async def list_jobs(
     if search is not None:
         term = f"%{search.strip()}%"
         conditions.append(or_(Job.title.ilike(term), Job.company.ilike(term)))
+    if company is not None:
+        conditions.append(func.lower(func.trim(Job.company)) == company.strip().lower())
     if location is not None:
         conditions.append(Job.location.ilike(f"%{location.strip()}%"))
     if saved_only:
@@ -477,16 +497,101 @@ async def list_jobs(
         conditions.append(Job.workplace_type == workplace_type.value)
     if employment_type is not None:
         conditions.append(Job.employment_type == employment_type.value)
+    # Browse lists honour "not interested" and hidden companies; saved and
+    # private lists never hide anything the user explicitly kept.
+    if not include_hidden and not saved_only and source != "mine":
+        conditions.append(
+            ~exists().where(JobDismissal.user_id == user.id, JobDismissal.job_id == Job.id)
+        )
+        conditions.append(
+            ~exists().where(
+                HiddenCompany.user_id == user.id,
+                HiddenCompany.company_key == func.lower(func.trim(Job.company)),
+            )
+        )
+
+    return saved_join, conditions
+
+
+@router.get("", response_model=list[JobResponse])
+async def list_jobs(
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    search: Annotated[str | None, Query(min_length=1, max_length=200)] = None,
+    location: Annotated[str | None, Query(min_length=1, max_length=200)] = None,
+    company: Annotated[str | None, Query(min_length=1, max_length=500)] = None,
+    saved_only: bool = False,
+    market: JobMarket | None = None,
+    country_code: JobCountry | None = None,
+    workplace_type: JobWorkplaceType | None = None,
+    employment_type: JobEmploymentType | None = None,
+    sort: str = Query(default="recent", pattern="^(recent|title|match)$"),
+    diversify: bool = False,
+    source: str = Query(default="all", pattern="^(all|mine|catalog)$"),
+    limit: Annotated[int | None, Query(ge=1, le=200)] = None,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    compact: bool = False,
+    collapse: bool = False,
+    include_hidden: bool = False,
+) -> list[JobResponse]:
+    """List visible jobs.
+
+    ``compact`` omits descriptions and requirements, which list views never
+    show; fetch ``/jobs/{id}`` for the full record. ``collapse`` shows one row
+    per company and title (employers often post one role once per city); the
+    row reports how many other matching postings it stands for and where.
+    ``diversify`` keeps at most ``DIVERSIFY_PER_COMPANY`` rows per company
+    (its most recent) so one employer's batch cannot fill a page; each row
+    reports how many matching rows its company has in total.
+    "recent" orders by when the employer published the posting, falling back
+    to when CareerOS first saw it. "match" orders by fit with the user's active
+    Job Search Goal (see job_ranking.py), then recency; without an active goal
+    it is the same as "recent".
+    """
+    saved_join, conditions = _browse_conditions(
+        user,
+        search=search,
+        location=location,
+        company=company,
+        saved_only=saved_only,
+        market=market,
+        country_code=country_code,
+        workplace_type=workplace_type,
+        employment_type=employment_type,
+        source=source,
+        include_hidden=include_hidden,
+    )
+
+    application_status = (
+        select(Application.status)
+        .where(Application.user_id == user.id, Application.job_id == Job.id)
+        .order_by(Application.updated_at.desc())
+        .limit(1)
+        .scalar_subquery()
+    )
 
     statement = (
         select(Job)
         .add_columns(
             SavedJob.id.is_not(None).label("is_saved"),
             SavedJob.created_at.label("saved_at"),
+            application_status.label("application_status"),
         )
         .outerjoin(SavedJob, saved_join)
         .options(selectinload(Job.snapshots).selectinload(JobSnapshot.requirements))
     )
+    recency = func.coalesce(Job.posted_at, Job.first_observed_at, Job.created_at)
+    score: ColumnElement[int] = literal(0, type_=Integer)
+    if sort == "match":
+        goal = await session.scalar(
+            select(JobSearchGoal)
+            .where(JobSearchGoal.user_id == user.id, JobSearchGoal.is_active.is_(True))
+            .order_by(JobSearchGoal.updated_at.desc())
+            .limit(1)
+        )
+        if goal is not None:
+            score = goal_match_score(goal)
+    ranked = None
     if collapse:
         group = (Job.user_id, Job.company, func.lower(Job.title))
         ranked = (
@@ -495,7 +600,7 @@ async def list_jobs(
                 func.row_number()
                 .over(
                     partition_by=group,
-                    order_by=(SavedJob.id.is_(None), Job.created_at.desc(), Job.id),
+                    order_by=(SavedJob.id.is_(None), recency.desc(), Job.id),
                 )
                 .label("rank"),
                 func.count().over(partition_by=group).label("group_size"),
@@ -514,10 +619,43 @@ async def list_jobs(
     else:
         statement = statement.where(*conditions)
 
+    if diversify:
+        candidates = (
+            select(
+                Job.id.label("id"),
+                func.lower(func.trim(Job.company)).label("company_key"),
+                recency.label("recency"),
+                score.label("score"),
+            )
+            .select_from(Job)
+            .outerjoin(SavedJob, saved_join)
+            .where(*conditions)
+        )
+        if ranked is not None:
+            candidates = candidates.join(ranked, ranked.c.id == Job.id).where(ranked.c.rank == 1)
+        base = candidates.subquery()
+        spread = (
+            select(
+                base.c.id,
+                func.row_number()
+                .over(
+                    partition_by=base.c.company_key,
+                    order_by=(base.c.score.desc(), base.c.recency.desc(), base.c.id),
+                )
+                .label("company_rank"),
+                func.count().over(partition_by=base.c.company_key).label("company_total"),
+            )
+        ).subquery()
+        statement = (
+            statement.add_columns(spread.c.company_rank, spread.c.company_total)
+            .join(spread, spread.c.id == Job.id)
+            .where(spread.c.company_rank <= DIVERSIFY_PER_COMPANY)
+        )
+
     if sort == "title":
         statement = statement.order_by(Job.title.asc(), Job.company.asc(), Job.id)
     else:
-        statement = statement.order_by(Job.created_at.desc(), Job.id)
+        statement = statement.order_by(score.desc(), recency.desc(), Job.id)
     # The shared catalog is large; unpaged requests for it are capped. Saved
     # and private lists stay complete because callers rely on them whole.
     if limit is None and not saved_only and source != "mine":
@@ -529,10 +667,16 @@ async def list_jobs(
     for row in (await session.execute(statement)).all():
         job, is_saved, saved_at = row[0], row[1], row[2]
         response = _job_response(job, is_saved=is_saved, saved_at=saved_at)
+        response.application_status = row[3]
+        extra = 4
         if collapse:
-            group_size, group_locations = row[3], row[4] or []
+            group_size, group_locations = row[extra], row[extra + 1] or []
             response.similar_count = group_size - 1
             response.other_locations = _other_locations(job.location, group_locations)
+            extra += 2
+        if diversify:
+            response.company_rank = row[extra]
+            response.company_job_count = row[extra + 1]
         responses.append(response)
     if compact:
         for response in responses:
@@ -551,6 +695,61 @@ def _other_locations(own: str | None, locations: list[str | None]) -> list[str]:
             seen.add(item)
             others.append(item)
     return others[:MAX_GROUPED_LOCATIONS]
+
+
+_APPLY_SUFFIX = re.compile(r"/(apply|application|applications|apply-now)/?$", re.IGNORECASE)
+
+
+def _lookup_candidates(url: str) -> list[str]:
+    """The page's canonical URL, plus the posting URL an apply page belongs to."""
+    canonical = canonical_clip_url(url)
+    if canonical is None:
+        return []
+    candidates = [canonical, url]
+    parts = urlsplit(canonical)
+    stripped = _APPLY_SUFFIX.sub("", parts.path)
+    if stripped != parts.path:
+        candidates.append(urlunsplit((parts.scheme, parts.netloc, stripped, parts.query, "")))
+    return candidates
+
+
+@router.get("/lookup", response_model=JobResponse)
+async def lookup_job(
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    url: Annotated[str, Query(min_length=8, max_length=2000)],
+) -> JobResponse:
+    """The CareerOS job (own or catalog) whose posting is the given page.
+
+    Lets the extension show a job card on a posting or its apply page without
+    the user re-saving it. Matching is by canonical URL only — never fuzzy.
+    """
+    candidates = _lookup_candidates(url)
+    if not candidates:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    saved_join = (SavedJob.job_id == Job.id) & (SavedJob.user_id == user.id)
+    row = (
+        await session.execute(
+            select(Job, SavedJob.id.is_not(None), SavedJob.created_at)
+            .outerjoin(SavedJob, saved_join)
+            .options(selectinload(Job.snapshots).selectinload(JobSnapshot.requirements))
+            .where(
+                visible_to(user.id),
+                or_(
+                    Job.canonical_url.in_(candidates),
+                    Job.source_url.in_(candidates),
+                    Job.application_url.in_(candidates),
+                ),
+            )
+            # Prefer the user's own copy, then the most recently seen posting.
+            .order_by(Job.user_id.is_(None), Job.last_observed_at.desc().nulls_last())
+            .limit(1)
+        )
+    ).one_or_none()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    job, is_saved, saved_at = row
+    return _job_response(job, is_saved=is_saved, saved_at=saved_at)
 
 
 @router.get("/{job_id}", response_model=JobResponse)

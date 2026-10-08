@@ -1,3 +1,8 @@
+import {
+  isInputElement,
+  isSelectElement,
+  isTextAreaElement,
+} from "./dom-elements";
 import type {
   CanonicalFieldKey,
   FieldConfidence,
@@ -240,8 +245,7 @@ function canonicalMatch(
   control: SupportedControl,
   question: string | null,
 ): CanonicalMatch | null {
-  const inputType =
-    control instanceof HTMLInputElement ? control.type.toLowerCase() : "";
+  const inputType = isInputElement(control) ? control.type.toLowerCase() : "";
   if (inputType === "email") {
     return { key: "CONTACT_EMAIL", confidence: "HIGH" };
   }
@@ -272,8 +276,8 @@ function canonicalMatch(
 }
 
 function controlType(control: SupportedControl): NormalizedControlType | null {
-  if (control instanceof HTMLTextAreaElement) return "TEXTAREA";
-  if (control instanceof HTMLSelectElement) return "SELECT";
+  if (isTextAreaElement(control)) return "TEXTAREA";
+  if (isSelectElement(control)) return "SELECT";
   const type = control.type.toLowerCase();
   if (["hidden", "button", "submit", "reset", "image"].includes(type)) {
     return null;
@@ -330,12 +334,11 @@ function normalizedField(
     canonicalKey: unsupported ? null : (match?.key ?? null),
     support: unsupported ? "UNSUPPORTED" : match ? "SUPPORTED" : "UNKNOWN",
     confidence: unsupported ? "LOW" : (match?.confidence ?? "LOW"),
-    options:
-      control instanceof HTMLSelectElement
-        ? selectOptions(control)
-        : radioGroup
-          ? radioOptions(radioGroup)
-          : [],
+    options: isSelectElement(control)
+      ? selectOptions(control)
+      : radioGroup
+        ? radioOptions(radioGroup)
+        : [],
   };
 }
 
@@ -352,14 +355,14 @@ export function inspectFormTargets(
   const targets: NormalizedFieldTarget[] = [];
 
   controls.forEach((control, controlIndex) => {
-    if (control instanceof HTMLInputElement && control.type === "radio") {
+    if (isInputElement(control) && control.type === "radio") {
       const groupName = control.name;
       if (groupName && visitedRadioNames.has(groupName)) return;
       if (groupName) visitedRadioNames.add(groupName);
       const group = groupName
         ? controls.filter(
             (candidate): candidate is HTMLInputElement =>
-              candidate instanceof HTMLInputElement &&
+              isInputElement(candidate) &&
               candidate.type === "radio" &&
               candidate.name === groupName,
           )

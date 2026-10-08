@@ -37,14 +37,14 @@ export function LandingPage() {
       <div className="mx-auto max-w-6xl">
         <section className="max-w-3xl">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
+            <div className="brand-link flex items-center gap-2.5">
               <Image
                 src="/brand/careeros-buddy.png"
                 alt=""
                 width={34}
                 height={34}
                 priority
-                className="rounded-[10px]"
+                className="brand-buddy rounded-[10px]"
               />
               <p className="text-sm font-bold tracking-tight">
                 Career<span className="text-blue-400">OS</span>

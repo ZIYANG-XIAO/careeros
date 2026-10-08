@@ -23,7 +23,13 @@ export type Filters = {
   countryCode: "" | Exclude<JobCountry, "UNKNOWN">;
   workplaceType: "" | Exclude<JobWorkplaceType, "UNKNOWN">;
   employmentType: "" | Exclude<JobEmploymentType, "UNKNOWN">;
-  sort: "recent" | "title";
+  /**
+   * "match": best fit with the active goal (newest first without one);
+   * "mixed": newest first. Both show at most two rows per company.
+   */
+  sort: "match" | "mixed" | "recent" | "title";
+  /** Exact company, set from a "more from this company" link. */
+  company: string;
 };
 
 const pillSelectClass =
@@ -220,6 +226,8 @@ export function JobFilters({
               }))
             }
           >
+            <option value="match">{t("jobs.sortMatch")}</option>
+            <option value="mixed">{t("jobs.sortMixed")}</option>
             <option value="recent">{t("jobs.recent")}</option>
             <option value="title">{t("jobs.titleSort")}</option>
           </FilterSelect>

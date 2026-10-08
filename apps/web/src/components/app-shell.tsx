@@ -94,12 +94,12 @@ function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-ground">
-      <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur print:hidden">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-4 sm:px-6 lg:px-8">
           <Link
             href="/home"
             onClick={closeMenus}
-            className="flex shrink-0 items-center gap-2.5"
+            className="brand-link flex shrink-0 items-center gap-2.5"
           >
             <Image
               src="/brand/careeros-buddy.png"
@@ -107,7 +107,7 @@ function AppShell({ children }: { children: ReactNode }) {
               width={36}
               height={36}
               priority
-              className="rounded-xl"
+              className="brand-buddy rounded-xl"
             />
             <span className="text-base font-bold tracking-tight text-ink">
               Career<span className="text-accent">OS</span>

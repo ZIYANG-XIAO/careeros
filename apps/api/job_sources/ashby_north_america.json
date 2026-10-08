@@ -109,6 +109,98 @@
     {
       "token": "lemonade",
       "company": "Lemonade"
+    },
+    {
+      "token": "confluent",
+      "company": "Confluent"
+    },
+    {
+      "token": "airbyte",
+      "company": "Airbyte"
+    },
+    {
+      "token": "sentry",
+      "company": "Sentry"
+    },
+    {
+      "token": "snyk",
+      "company": "Snyk"
+    },
+    {
+      "token": "miro",
+      "company": "Miro"
+    },
+    {
+      "token": "patreon",
+      "company": "Patreon"
+    },
+    {
+      "token": "substack",
+      "company": "Substack"
+    },
+    {
+      "token": "drata",
+      "company": "Drata"
+    },
+    {
+      "token": "render",
+      "company": "Render"
+    },
+    {
+      "token": "clickhouse",
+      "company": "ClickHouse"
+    },
+    {
+      "token": "headway",
+      "company": "Headway"
+    },
+    {
+      "token": "pinecone",
+      "company": "Pinecone"
+    },
+    {
+      "token": "anyscale",
+      "company": "Anyscale"
+    },
+    {
+      "token": "writer",
+      "company": "Writer"
+    },
+    {
+      "token": "gamma",
+      "company": "Gamma"
+    },
+    {
+      "token": "skydio",
+      "company": "Skydio"
+    },
+    {
+      "token": "applied",
+      "company": "Applied Intuition"
+    },
+    {
+      "token": "dave",
+      "company": "Dave"
+    },
+    {
+      "token": "nubank",
+      "company": "Nubank"
+    },
+    {
+      "token": "acorns",
+      "company": "Acorns"
+    },
+    {
+      "token": "ashby",
+      "company": "Ashby"
+    },
+    {
+      "token": "uipath",
+      "company": "UiPath"
+    },
+    {
+      "token": "poshmark",
+      "company": "Poshmark"
     }
   ]
 }

@@ -44,6 +44,23 @@ if (
     "Extension permissions differ from the reviewed M10 minimum.",
   );
 }
+// The only extra origins the extension may ever hold are these career sites,
+// and only as optional permissions the user grants from settings.
+const expectedOptionalHosts = [
+  "https://boards.greenhouse.io/*",
+  "https://job-boards.greenhouse.io/*",
+  "https://jobs.lever.co/*",
+  "https://jobs.ashbyhq.com/*",
+  "https://*.myworkdayjobs.com/*",
+];
+if (
+  JSON.stringify(manifest.optional_host_permissions) !==
+  JSON.stringify(expectedOptionalHosts)
+) {
+  throw new Error(
+    "Optional host permissions differ from the reviewed career-site list.",
+  );
+}
 if (manifest.content_scripts || manifest.externally_connectable) {
   throw new Error(
     "The extension must not expose a persistent or externally callable page bridge.",

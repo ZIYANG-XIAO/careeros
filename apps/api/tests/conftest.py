@@ -20,6 +20,8 @@ from careeros_api.job_intelligence import job_matcher_dependency
 from careeros_api.job_matcher import JobMatcher
 from careeros_api.job_parser import JobParser
 from careeros_api.main import create_app
+from careeros_api.materials import materials_writer_dependency
+from careeros_api.materials_writer import MaterialsWriter
 from careeros_api.models import CareerBrain, User
 from careeros_api.resume import resume_parser_dependency
 from careeros_api.resume_parser import ResumeParser
@@ -94,6 +96,7 @@ async def make_integration_client(
     job_parser: JobParser | None = None,
     job_matcher: JobMatcher | None = None,
     answer_classifier: AnswerFieldClassifier | None = None,
+    materials_writer: MaterialsWriter | None = None,
     resume_storage_dir: str = "/tmp/careeros-test-resume-assets",
     max_resume_size_bytes: int | None = None,
     ai_requests_per_minute: int = 0,
@@ -158,6 +161,8 @@ async def make_integration_client(
         app.dependency_overrides[job_matcher_dependency] = lambda: job_matcher
     if answer_classifier is not None:
         app.dependency_overrides[answer_classifier_dependency] = lambda: answer_classifier
+    if materials_writer is not None:
+        app.dependency_overrides[materials_writer_dependency] = lambda: materials_writer
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

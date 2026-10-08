@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <body>
+    <!-- Mirrors jobs.ashbyhq.com (2026-10): no <form>, a resume-autofill
+         helper outside the application, then form and EEO containers. -->
+    <div class="ashby-job-posting-right-pane">
+      <div class="ashby-application-form-autofill-pane">
+        <p>Autofill from resume</p>
+        <input type="file" accept=".pdf,.docx" />
+      </div>
+      <div class="ashby-application-form-container">
+        <div class="ashby-application-form-field-entry">
+          <label for="_systemfield_name">Name</label>
+          <input
+            id="_systemfield_name"
+            name="_systemfield_name"
+            type="text"
+            required
+          />
+        </div>
+        <div class="ashby-application-form-field-entry">
+          <label for="_systemfield_email">Email</label>
+          <input
+            id="_systemfield_email"
+            name="_systemfield_email"
+            type="email"
+            required
+          />
+        </div>
+        <div class="ashby-application-form-field-entry">
+          <label for="_systemfield_resume">Resume</label>
+          <input id="_systemfield_resume" type="file" />
+        </div>
+        <div class="ashby-application-form-field-entry">
+          <label for="phone">Phone</label>
+          <input id="phone" name="phone" type="text" />
+        </div>
+        <div class="ashby-application-form-field-entry">
+          <label for="cover_letter">Cover Letter</label>
+          <input id="cover_letter" type="file" />
+        </div>
+      </div>
+      <div class="ashby-application-form-container">
+        <p>U.S. Equal Employment Opportunity Information</p>
+        <fieldset>
+          <legend>Gender</legend>
+          <label
+            ><input type="radio" name="eeoc_gender" value="Male" /> Male</label
+          >
+          <label
+            ><input type="radio" name="eeoc_gender" value="Female" />
+            Female</label
+          >
+        </fieldset>
+      </div>
+      <button type="button">Submit Application</button>
+    </div>
+    <textarea name="g-recaptcha-response" style="display: none"></textarea>
+  </body>
+</html>

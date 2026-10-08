@@ -20,7 +20,15 @@ describe("clipJob", () => {
       new Response(
         JSON.stringify({
           created: true,
-          job: { id: "0b6f7a9e-3f5c-4e63-9d8e-1a2b3c4d5e6f" },
+          job: {
+            id: "0b6f7a9e-3f5c-4e63-9d8e-1a2b3c4d5e6f",
+            title: "Engineer",
+            company: "Acme",
+            is_catalog: false,
+            last_observed_at: null,
+            posted_at: null,
+            sponsorship: { status: "NOT_OFFERED", quote: "No sponsorship." },
+          },
         }),
         { status: 201 },
       ),
@@ -36,6 +44,12 @@ describe("clipJob", () => {
     ).resolves.toEqual({
       jobId: "0b6f7a9e-3f5c-4e63-9d8e-1a2b3c4d5e6f",
       created: true,
+      title: "Engineer",
+      company: "Acme",
+      isCatalog: false,
+      lastObservedAt: null,
+      postedAt: null,
+      sponsorship: "NOT_OFFERED",
     });
     const [url, init] = request.mock.calls[0];
     expect(url).toBe("http://localhost:8000/jobs/clip");
@@ -88,5 +102,66 @@ describe("downloadResumeVersion", () => {
       contentType: "application/pdf",
       base64: btoa("%PDF"),
     });
+  });
+});
+
+describe("draftAnswer", () => {
+  function client(response: Response) {
+    const request = vi.fn().mockResolvedValue(response);
+    return {
+      request,
+      api: new CareerOsApiClient(
+        "http://localhost:8000",
+        { getToken: vi.fn().mockResolvedValue("token") },
+        request,
+      ),
+    };
+  }
+
+  it("asks for an open-question draft and returns it with its grounding", async () => {
+    const { api, request } = client(
+      new Response(
+        JSON.stringify({
+          kind: "OPEN_QUESTION",
+          text: "I built Kafka pipelines.",
+          evidence: [{ revision_id: "r", content: "Kafka" }],
+          unsupported_points: ["GCP"],
+          writer_version: "v1",
+        }),
+      ),
+    );
+    await expect(
+      api.draftAnswer({ question: "Why us?", jobId: null }),
+    ).resolves.toEqual({
+      status: "DRAFTED",
+      text: "I built Kafka pipelines.",
+      evidenceCount: 1,
+      unsupportedPoints: ["GCP"],
+    });
+    const [url, init] = request.mock.calls[0];
+    expect(url).toBe("http://localhost:8000/drafts");
+    expect(JSON.parse(init.body as string)).toEqual({
+      kind: "OPEN_QUESTION",
+      question: "Why us?",
+      job_id: null,
+    });
+  });
+
+  it("maps refusals to explicit reasons", async () => {
+    const sensitive = client(
+      new Response(
+        JSON.stringify({
+          detail: { code: "SENSITIVE_QUESTION", message: "x" },
+        }),
+        { status: 422 },
+      ),
+    );
+    await expect(
+      sensitive.api.draftAnswer({ question: "Visa?", jobId: null }),
+    ).resolves.toEqual({ status: "REFUSED", reason: "SENSITIVE" });
+    const unavailable = client(new Response("{}", { status: 503 }));
+    await expect(
+      unavailable.api.draftAnswer({ question: "Why?", jobId: null }),
+    ).resolves.toEqual({ status: "REFUSED", reason: "AI_UNAVAILABLE" });
   });
 });

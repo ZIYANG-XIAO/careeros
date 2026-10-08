@@ -288,6 +288,15 @@ export interface ClipJobRequestData {
 export interface ClippedJob {
   jobId: string;
   created: boolean;
+  /** Display details from the saved CareerOS job, when the API provides them. */
+  title?: string;
+  company?: string;
+  /** Shared-catalog postings are re-confirmed by each sync. */
+  isCatalog?: boolean;
+  lastObservedAt?: string | null;
+  postedAt?: string | null;
+  /** Only what the posting explicitly says about visa sponsorship. */
+  sponsorship?: "OFFERED" | "NOT_OFFERED" | null;
 }
 
 /** A value the user typed into a custom question on the active page. */
@@ -295,6 +304,81 @@ export interface TypedCustomAnswer {
   fieldId: string;
   question: string;
   answer: string;
+}
+
+/** Ask CareerOS to draft an answer to one open question on the page. */
+export interface DraftAnswerRequestData {
+  question: string;
+  /** The saved CareerOS job for this page, when known, for context. */
+  jobId: string | null;
+}
+
+/**
+ * A draft grounded only in the user's confirmed Career Brain evidence, or why
+ * none was produced. Sensitive questions are always refused.
+ */
+export type DraftedAnswer =
+  | {
+      status: "DRAFTED";
+      text: string;
+      evidenceCount: number;
+      unsupportedPoints: string[];
+    }
+  | {
+      status: "REFUSED";
+      reason:
+        | "SENSITIVE"
+        | "NO_EVIDENCE"
+        | "NOT_GROUNDED"
+        | "AI_UNAVAILABLE"
+        | "FAILED";
+    };
+
+/** The CareerOS job behind the active page, matched by canonical URL only. */
+export interface PageJob {
+  jobId: string;
+  title: string;
+  company: string;
+  postedAt: string | null;
+  salary: {
+    minimum: number;
+    maximum: number;
+    currency: "USD" | "CAD";
+    period: "YEAR" | "HOUR";
+  } | null;
+  sponsorship: "OFFERED" | "NOT_OFFERED" | null;
+  isCatalog: boolean;
+  lastObservedAt: string | null;
+  isSaved: boolean;
+  /** A bundled logo as a data URL, or null to show a monogram. */
+  logoDataUrl: string | null;
+}
+
+export type RequirementClassification =
+  "STRONG_EVIDENCE" | "HIDDEN_EVIDENCE" | "WEAK_EVIDENCE" | "GENUINE_GAP";
+
+/**
+ * How the user's confirmed evidence covers one job's requirements, counted
+ * from a stored analysis. Never a score.
+ */
+export interface JobMatchSummary {
+  resumeLabel: string;
+  analyzedAt: string;
+  requirements: Array<{
+    description: string;
+    classification: RequirementClassification;
+  }>;
+}
+
+export type AnalyzeJobResult =
+  | { status: "ANALYZED"; summary: JobMatchSummary }
+  | {
+      status: "REFUSED";
+      reason: "AI_UNAVAILABLE" | "REQUIREMENTS_UNAVAILABLE" | "FAILED";
+    };
+
+export interface AutoLauncherState {
+  enabled: boolean;
 }
 
 export interface ReusableAnswerInput {
@@ -358,6 +442,21 @@ export type PopupRequest =
       expectedPageUrl?: string;
     }
   | { type: "CAREEROS_SAVE_REUSABLE_ANSWERS"; answers: ReusableAnswerInput[] }
+  | ({ type: "CAREEROS_DRAFT_ANSWER" } & DraftAnswerRequestData)
+  | { type: "CAREEROS_GET_AUTO_LAUNCHER" }
+  | { type: "CAREEROS_SET_AUTO_LAUNCHER"; enabled: boolean }
+  | { type: "CAREEROS_LOOKUP_PAGE_JOB" }
+  | { type: "CAREEROS_GET_JOB_MATCH"; jobId: string }
+  | { type: "CAREEROS_ANALYZE_JOB"; jobId: string; resumeVersionId: string }
+  | { type: "CAREEROS_OPEN_MATERIALS"; jobId: string; tab: "tailor" | "drafts" }
+  | { type: "CAREEROS_DRAFT_COVER_LETTER"; jobId: string }
+  | {
+      type: "CAREEROS_ATTACH_COVER_LETTER";
+      fieldId: string;
+      text: string;
+      filenameHint: string;
+      expectedPageUrl: string;
+    }
   | {
       type: "CAREEROS_ATTACH_RESUME";
       fieldId: string;
@@ -376,6 +475,11 @@ export interface TabContext {
 
 export type ContentRequest =
   | { type: "CAREEROS_INSPECT_PAGE" }
+  | ({
+      type: "CAREEROS_ATTACH_COVER_LETTER_FILE";
+      fieldId: string;
+      expectedPageUrl: string;
+    } & ResumeFilePayload)
   | {
       type: "CAREEROS_APPLY_FILL_PLAN";
       fields: FillPlanField[];

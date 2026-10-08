@@ -55,7 +55,7 @@ function DropdownMenu({ children, label = "Actions" }: DropdownMenuProps) {
       </button>
       {open && (
         <div
-          className="absolute right-0 z-10 mt-1 w-36 rounded-lg border border-border bg-surface py-1 shadow-overlay"
+          className="absolute right-0 z-10 mt-1 w-max min-w-36 rounded-lg border border-border bg-surface py-1 shadow-overlay"
           role="menu"
         >
           <div onClick={() => setOpen(false)}>{children}</div>

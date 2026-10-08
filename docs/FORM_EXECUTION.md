@@ -98,6 +98,25 @@ content script instead of forbidding every `.files` access: content code may
 assign a file and check whether one is chosen, but must never read a file the
 user selected.
 
+Script-driven dropdowns (react-select, Workday listboxes) render a text input
+with combobox semantics (`role="combobox"`, `aria-autocomplete="list|both"`, or
+`aria-haspopup="listbox"`). Typing into one does not select an option, so since
+Phase Z the extension never types into such a control and never reports it as
+`FILLED`. It marks the field `REVIEW_REQUIRED` with the approved value shown
+("Choose: …") for the user to pick. Simulating the clicks that would select an
+option remains deferred until it is validated on real sites.
+
+After a fill, the in-page assistant lists every field that still needs the
+user (review, input, unresolved, or failed), required fields first. Clicking
+an item scrolls to and focuses the field, and items tick off as the user
+answers them on the page. For free-text custom questions only (no canonical
+key, text or textarea control), the user can ask CareerOS to "Draft from my
+experience". The background worker calls `POST /drafts` (`docs/AI_SPEC.md`
+section 23a); sensitive questions are refused server-side. The draft is shown
+in the panel for editing and is written into the field only when the user
+clicks "Put in this field". That write uses the same rules as other fills:
+empty fields only, a "filled — review" marker, and never a submit.
+
 Custom questions (no canonical key) may be filled only from an answer the user
 explicitly saved for reuse (`REUSABLE_CONFIRMED_ANSWER`); see
 `docs/ANSWER_ENGINE.md` section 7.
@@ -111,3 +130,34 @@ again at the background/content boundary.
 
 No fill plan is persisted. The executor does not read selected files or raw page
 HTML and contains no form-submit operation.
+
+**Opt-in launcher on career sites (Phase Z4).** By default the extension holds
+only `activeTab` plus its own service hosts, and the assistant appears only
+after explicit activation. A settings toggle, off by default, lets the user show
+the CareerOS launcher automatically on a fixed list of career sites (Greenhouse
+`boards`/`job-boards`, Lever `jobs.lever.co`, Ashby `jobs.ashbyhq.com`, and
+Workday `*.myworkdayjobs.com`). That list is declared only as
+`optional_host_permissions` and is enforced by `validate-build.mjs`. Turning the
+toggle on requests those origins and registers the content script for them;
+turning it off unregisters the script and removes the permission. The
+auto-mounted assistant shows only the launcher: nothing on the page is inspected
+until the user asks.
+
+**One-click autofill.** "Autofill this page" runs the existing steps in order
+(inspect, resolve answers, fill approved answers) under the same rules. It is
+one explicit user action, empty fields only, and never a submit.
+
+**Job card and evidence match.** On open, the assistant asks the background to
+look up the active tab's URL (`GET /jobs/lookup`, canonical URL only, apply-page
+suffixes stripped). The page's content is not read for this. The card shows the
+posting's stated salary range and sponsorship statement, its publish date, and
+its confirmed-open time; logos come from images bundled in the extension and are
+read by the background worker. The evidence match counts the latest stored
+analysis's requirement classifications and is never shown as a score.
+
+**Cover letter file.** When a form has a `COVER_LETTER_FILE` control, the user
+can draft a letter from confirmed evidence, edit it, and explicitly attach it.
+The background renders the approved text as DOCX (`POST
+/drafts/cover-letter-file`) and the content script attaches it with the
+resume-attach rules: only that empty upload control, respecting `accept`, and
+never a submit.

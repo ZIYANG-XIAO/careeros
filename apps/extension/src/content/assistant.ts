@@ -19,7 +19,11 @@ import type {
   ApplicationPageContext,
   AttachResumeResult,
   AuthStatus,
+  AnalyzeJobResult,
   ClippedJob,
+  DraftedAnswer,
+  JobMatchSummary,
+  PageJob,
   ExtensionResponse,
   FillExecutionResult,
   PageDetection,
@@ -29,13 +33,25 @@ import type {
   TrackedApplication,
   TypedCustomAnswer,
 } from "../shared/messages";
-import { fillButtonLabel, t } from "../shared/i18n";
+import {
+  extensionLocale,
+  fillButtonLabel,
+  loadStoredLocale,
+  onStoredLocaleChange,
+  saveLocale,
+  t,
+} from "../shared/i18n";
+import buddyImage from "../icons/buddy-96.png";
+import { companyIconKey } from "../shared/company-key";
 import { captureCustomAnswers } from "./answer-capture";
+import { fieldHasValue, fillDraftedAnswer, focusField } from "./form-execution";
+import { hoursSinceConfirmed, reviewItems } from "./review-checklist";
 import { extractJobDraft } from "./job-extraction";
 
 const HOST_ID = "careeros-assistant-host";
 const Z_INDEX = 2147483640;
 const STORAGE_EXPANDED_KEY = "careeros_assistant_panel_expanded";
+const STORAGE_DOCK_KEY = "careeros_assistant_dock";
 const URL_POLL_INTERVAL_MS = 500;
 
 const STYLES = `
@@ -47,32 +63,69 @@ const STYLES = `
   line-height: 1.4;
   color: #0f172a;
 }
-.launcher {
+.dock {
   position: fixed;
-  right: 20px;
-  bottom: 72px;
+  right: 0;
+  top: 60%;
   z-index: ${Z_INDEX};
-  width: 52px;
-  height: 52px;
-  border: none;
-  border-radius: 999px;
-  background: #0f172a;
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.28);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  touch-action: none;
+}
+.dock.left { left: 0; right: auto; flex-direction: row-reverse; }
+.launcher {
+  width: 56px;
+  height: 56px;
+  border: 2px solid #fff;
+  border-radius: 16px 0 0 16px;
+  background: #eceafd;
+  cursor: grab;
+  box-shadow: 0 8px 24px rgba(61, 49, 201, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  overflow: hidden;
+  transition: transform 160ms ease, width 160ms ease;
+}
+.dock.left .launcher { border-radius: 0 16px 16px 0; }
+.launcher:hover { transform: translateX(-3px); }
+.dock.left .launcher:hover { transform: translateX(3px); }
+.launcher.dragging { cursor: grabbing; transform: none; }
+.launcher img { width: 46px; height: 46px; display: block; pointer-events: none; }
+.dock.collapsed .launcher { width: 20px; }
+.dock.collapsed .launcher img { display: none; }
+.dock-controls {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  display: none;
+  gap: 4px;
+}
+.dock.left .dock-controls { left: auto; right: -10px; }
+.dock:hover .dock-controls, .dock:focus-within .dock-controls { display: flex; }
+.dock-controls button {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: none;
+  background: #3d31c9;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
 }
 .launcher:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
-.launcher svg { width: 24px; height: 24px; }
+.launcher svg { width: 24px; height: 24px; color: #3d31c9; }
 .panel {
   position: fixed;
-  right: 20px;
-  bottom: 136px;
+  right: 72px;
+  bottom: 24px;
   z-index: ${Z_INDEX};
   width: min(350px, calc(100vw - 32px));
   max-height: min(500px, calc(100vh - 160px));
@@ -85,6 +138,85 @@ const STYLES = `
   flex-direction: column;
 }
 .panel.open { display: flex; }
+.panel.left { right: auto; left: 72px; }
+.autofill {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #3d31c9, #6c5ce0);
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(61, 49, 201, 0.3);
+}
+.page-job {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.page-job .logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #3d31c9;
+  background: #fff;
+  overflow: hidden;
+}
+.page-job .logo img { width: 34px; height: 34px; }
+.page-job strong { display: block; font-size: 15px; line-height: 1.3; }
+.page-job .meta { font-size: 12px; color: #64748b; margin-top: 2px; }
+.page-job .salary { font-size: 13px; font-weight: 600; color: #0f172a; margin-top: 4px; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.chip {
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: #f1f5f9;
+  color: #334155;
+}
+.chip.good { background: #dcfce7; color: #166534; }
+.section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.section-toggle .toggle-label { font-size: 15px; font-weight: 600; flex: 1; }
+.section-toggle .toggle-chevron { color: #94a3b8; font-size: 14px; }
+.section-toggle-body { margin-top: 10px; }
+.chip.warn { background: #fef3c7; color: #92400e; }
+.link-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.link-row button { padding: 6px 10px; font-size: 12px; }
+.match-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #f1f5f9;
+  margin: 8px 0 4px;
+}
+.match-bar span { display: block; height: 100%; }
+.match-legend { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: #475569; }
+.match-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 999px; margin-right: 4px; }
+.req-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.req-list li { font-size: 12px; color: #334155; display: flex; gap: 6px; }
 .header {
   display: flex;
   align-items: center;
@@ -103,6 +235,18 @@ const STYLES = `
   border-radius: 6px;
   padding: 4px 8px;
 }
+.header-actions { display: flex; align-items: center; gap: 4px; }
+.lang-btn {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #3d31c9;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.lang-btn:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 .close-btn:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
@@ -211,11 +355,139 @@ button:focus-visible {
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
 }
+.checklist {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.check-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px;
+}
+.check-item.done { background: #f0fdf4; border-color: #bbf7d0; }
+.check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.check-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #92400e;
+}
+.check-item.done .check-icon { background: #dcfce7; color: #166534; }
+.check-question { font-size: 13px; color: #0f172a; }
+.check-tag {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #b45309;
+}
+.draft-box {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.draft-box textarea {
+  width: 100%;
+  min-height: 96px;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  border-radius: 6px;
+  padding: 8px;
+  font: inherit;
+  font-size: 13px;
+  color: #0f172a;
+  resize: vertical;
+}
+.draft-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.draft-actions button { padding: 6px 10px; }
+.link-button {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 0 0 26px;
+  cursor: pointer;
+}
+.job-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.job-card strong { display: block; font-size: 14px; }
+.job-card .job-company { font-size: 12px; color: #475569; }
+.job-card .job-meta { margin-top: 6px; font-size: 12px; color: #166534; }
+.job-card .job-meta.warn { color: #b45309; }
 @media (max-width: 480px) {
   .launcher { right: 12px; bottom: 64px; }
   .panel { right: 12px; bottom: 124px; width: calc(100vw - 24px); }
 }
 `;
+
+type DraftState =
+  | { state: "loading" }
+  | {
+      state: "ready";
+      text: string;
+      evidenceCount: number;
+      unsupportedPoints: string[];
+      notice: string | null;
+    }
+  | { state: "error"; message: string };
+
+const DRAFT_REFUSAL_COPY = {
+  SENSITIVE:
+    "This is a sensitive question. Answer it yourself; CareerOS never drafts it.",
+  NO_EVIDENCE:
+    "Confirm some experience in Career Brain first; drafts only use confirmed evidence.",
+  NOT_GROUNDED:
+    "CareerOS could not ground a draft in your confirmed evidence, so none was offered.",
+  AI_UNAVAILABLE: "Drafting is not configured on this CareerOS server.",
+  FAILED: "CareerOS could not draft an answer. Try again.",
+} as const;
+
+type CoverLetterState =
+  | { state: "idle" }
+  | { state: "drafting" }
+  | {
+      state: "ready";
+      text: string;
+      notice: string | null;
+      attaching: boolean;
+      attached: boolean;
+    }
+  | { state: "error"; message: string };
+
+const MATCH_COLORS = {
+  STRONG_EVIDENCE: "#16a34a",
+  HIDDEN_EVIDENCE: "#3d31c9",
+  WEAK_EVIDENCE: "#d97706",
+  GENUINE_GAP: "#cbd5e1",
+} as const;
 
 type LoadState<T> =
   | { state: "idle" }
@@ -314,7 +586,30 @@ export function mountAssistant(): AssistantHandle {
   launcher.setAttribute("aria-label", t("Open CareerOS assistant"));
   launcher.setAttribute("aria-expanded", "false");
   launcher.setAttribute("aria-controls", "careeros-assistant-panel");
-  launcher.append(createLogoSvg());
+  // The CareerOS mascot; pages whose CSP blocks data: images get the SVG mark.
+  const mascot = document.createElement("img");
+  mascot.src = buddyImage;
+  mascot.alt = "";
+  mascot.addEventListener("error", () => {
+    mascot.remove();
+    launcher.append(createLogoSvg());
+  });
+  launcher.append(mascot);
+
+  const dock = document.createElement("div");
+  dock.className = "dock";
+  const dockControls = document.createElement("div");
+  dockControls.className = "dock-controls";
+  const tuckButton = document.createElement("button");
+  tuckButton.type = "button";
+  tuckButton.textContent = "–";
+  tuckButton.setAttribute("aria-label", t("Tuck CareerOS against the edge"));
+  const hideButton = document.createElement("button");
+  hideButton.type = "button";
+  hideButton.textContent = "×";
+  hideButton.setAttribute("aria-label", t("Hide CareerOS on this page"));
+  dockControls.append(tuckButton, hideButton);
+  dock.append(launcher, dockControls);
 
   const panel = document.createElement("section");
   panel.id = "careeros-assistant-panel";
@@ -324,7 +619,7 @@ export function mountAssistant(): AssistantHandle {
   panel.setAttribute("aria-live", "polite");
 
   shadow.append(style, root);
-  root.append(launcher, panel);
+  root.append(dock, panel);
   document.documentElement.append(host);
 
   const state = {
@@ -350,6 +645,16 @@ export function mountAssistant(): AssistantHandle {
     clip: { state: "idle" } as ToolClipState,
     savedAnswers: { state: "idle" } as ToolAnswersState,
     attach: { state: "idle" } as ToolAttachState,
+    drafts: {} as Record<string, DraftState>,
+    pageJob: { state: "idle" } as LoadState<PageJob | null>,
+    match: null as LoadState<JobMatchSummary | "NONE"> | null,
+    analyzing: false,
+    analyzeMessage: null as string | null,
+    showRequirements: false,
+    coverLetter: { state: "idle" } as CoverLetterState,
+    coverLetterExpanded: false,
+    autofilling: false,
+    autofillNotice: null as string | null,
   };
 
   let urlPollTimer: ReturnType<typeof setInterval> | null = null;
@@ -368,6 +673,13 @@ export function mountAssistant(): AssistantHandle {
     state.detection = { state: "idle" };
     state.answers = null;
     state.fillResult = null;
+    state.drafts = {};
+    state.pageJob = { state: "idle" };
+    state.match = null;
+    state.analyzeMessage = null;
+    state.coverLetter = { state: "idle" };
+    state.coverLetterExpanded = false;
+    state.autofillNotice = null;
     state.applicationContext = null;
     state.recordedApplication = null;
     state.recordError = null;
@@ -386,7 +698,23 @@ export function mountAssistant(): AssistantHandle {
     clearStaleFormState();
   }
 
+  // Re-render the review checklist as the user answers fields on the page,
+  // ignoring typing inside the assistant itself.
+  let renderQueued = false;
+  function onPageInput(event: Event): void {
+    if (event.composedPath().includes(host)) return;
+    if (state.fillResult?.state !== "ready" || !state.panelOpen) return;
+    if (renderQueued) return;
+    renderQueued = true;
+    requestAnimationFrame(() => {
+      renderQueued = false;
+      render();
+    });
+  }
+
   function startUrlWatch(): void {
+    document.addEventListener("input", onPageInput, true);
+    document.addEventListener("change", onPageInput, true);
     onPopState = () => handleUrlChange();
     onHashChange = () => handleUrlChange();
     window.addEventListener("popstate", onPopState);
@@ -395,6 +723,8 @@ export function mountAssistant(): AssistantHandle {
   }
 
   function stopUrlWatch(): void {
+    document.removeEventListener("input", onPageInput, true);
+    document.removeEventListener("change", onPageInput, true);
     if (urlPollTimer) {
       clearInterval(urlPollTimer);
       urlPollTimer = null;
@@ -405,6 +735,98 @@ export function mountAssistant(): AssistantHandle {
     onHashChange = null;
   }
 
+  // Dock position (side and height) and tucked state persist per browser.
+  const dockState = {
+    side: "right" as "left" | "right",
+    top: 0.6,
+    tucked: false,
+  };
+  function applyDock(): void {
+    dock.classList.toggle("left", dockState.side === "left");
+    dock.classList.toggle("collapsed", dockState.tucked);
+    panel.classList.toggle("left", dockState.side === "left");
+    dock.style.top = `${Math.round(dockState.top * 100)}%`;
+  }
+  function saveDock(): void {
+    void chrome.storage.local.set({ [STORAGE_DOCK_KEY]: { ...dockState } });
+  }
+  async function loadDock(): Promise<void> {
+    try {
+      const stored = (await chrome.storage.local.get(STORAGE_DOCK_KEY))[
+        STORAGE_DOCK_KEY
+      ] as Partial<typeof dockState> | undefined;
+      if (stored?.side === "left" || stored?.side === "right") {
+        dockState.side = stored.side;
+      }
+      if (
+        typeof stored?.top === "number" &&
+        stored.top >= 0.05 &&
+        stored.top <= 0.9
+      ) {
+        dockState.top = stored.top;
+      }
+      dockState.tucked = stored?.tucked === true;
+    } catch {
+      // Defaults stay in place when storage is unavailable.
+    }
+    applyDock();
+  }
+
+  // Drag the launcher along either edge; a drag never counts as a click.
+  let drag: { startY: number; startTop: number; moved: boolean } | null = null;
+  let suppressClick = false;
+  launcher.addEventListener("pointerdown", (event) => {
+    drag = { startY: event.clientY, startTop: dockState.top, moved: false };
+    launcher.setPointerCapture?.(event.pointerId);
+  });
+  launcher.addEventListener("pointermove", (event) => {
+    if (!drag) return;
+    const dy = event.clientY - drag.startY;
+    if (!drag.moved && Math.abs(dy) < 5 && Math.abs(event.movementX) < 5)
+      return;
+    drag.moved = true;
+    launcher.classList.add("dragging");
+    const height = window.innerHeight || 1;
+    dockState.top = Math.min(0.9, Math.max(0.05, drag.startTop + dy / height));
+    dockState.side =
+      event.clientX < (window.innerWidth || 0) / 2 ? "left" : "right";
+    applyDock();
+  });
+  const endDrag = () => {
+    if (drag?.moved) {
+      suppressClick = true;
+      saveDock();
+    }
+    drag = null;
+    launcher.classList.remove("dragging");
+  };
+  launcher.addEventListener("pointerup", endDrag);
+  launcher.addEventListener("pointercancel", endDrag);
+  tuckButton.addEventListener("click", () => {
+    dockState.tucked = !dockState.tucked;
+    if (dockState.tucked) setPanelOpen(false);
+    applyDock();
+    saveDock();
+  });
+  hideButton.addEventListener("click", () => destroyAssistant());
+
+  // Labels set outside render() follow the language toggle too.
+  function refreshLabels(): void {
+    launcher.setAttribute(
+      "aria-label",
+      state.panelOpen
+        ? t("Close CareerOS assistant")
+        : t("Open CareerOS assistant"),
+    );
+    panel.setAttribute("aria-label", t("CareerOS application assistant"));
+    tuckButton.setAttribute("aria-label", t("Tuck CareerOS against the edge"));
+    hideButton.setAttribute("aria-label", t("Hide CareerOS on this page"));
+  }
+  const stopLocaleSync = onStoredLocaleChange(() => {
+    refreshLabels();
+    render();
+  });
+
   function setPanelOpen(open: boolean, restoreFocus = false): void {
     state.panelOpen = open;
     panel.classList.toggle("open", open);
@@ -414,6 +836,7 @@ export function mountAssistant(): AssistantHandle {
       open ? t("Close CareerOS assistant") : t("Open CareerOS assistant"),
     );
     void chrome.storage.local.set({ [STORAGE_EXPANDED_KEY]: open });
+    if (open) void loadPageJob();
     if (!open && restoreFocus) launcher.focus();
     render();
   }
@@ -893,6 +1316,16 @@ export function mountAssistant(): AssistantHandle {
       const copy = fillCopy(state.fillResult.value);
       setText(title, copy.title);
       setText(body, copy.body);
+      if (state.detection.state === "ready") {
+        const checklist = renderChecklist(
+          reviewItems(state.detection.value, state.fillResult.value),
+        );
+        if (checklist) {
+          section.append(eyebrow, title, body, checklist);
+          container.append(section);
+          return;
+        }
+      }
     } else if (state.fillResult.state === "error") {
       setText(title, state.fillResult.message);
       setText(
@@ -904,6 +1337,245 @@ export function mountAssistant(): AssistantHandle {
     }
     section.append(eyebrow, title, body);
     container.append(section);
+  }
+
+  function renderChecklist(
+    items: ReturnType<typeof reviewItems>,
+  ): HTMLElement | null {
+    if (items.length === 0) return null;
+    const wrapper = document.createElement("div");
+    const done = items.filter((item) =>
+      fieldHasValue(document, state.lastUrl, item.fieldId),
+    ).length;
+    const requiredLeft = items.filter(
+      (item) =>
+        item.required && !fieldHasValue(document, state.lastUrl, item.fieldId),
+    ).length;
+    const heading = document.createElement("p");
+    heading.className = "memory-note";
+    setText(
+      heading,
+      requiredLeft > 0
+        ? t("{count} required fields still need you · {done}/{total} handled", {
+            count: requiredLeft,
+            done,
+            total: items.length,
+          })
+        : t("{done}/{total} handled — check the page before you submit", {
+            done,
+            total: items.length,
+          }),
+    );
+    const list = document.createElement("ul");
+    list.className = "checklist";
+    for (const item of items) {
+      const answered = fieldHasValue(document, state.lastUrl, item.fieldId);
+      const li = document.createElement("li");
+      li.className = answered ? "check-item done" : "check-item";
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "check-row";
+      row.setAttribute(
+        "aria-label",
+        t("Go to: {question}", {
+          question: item.question ?? t("Unlabelled field"),
+        }),
+      );
+      row.addEventListener("click", () => {
+        focusField(document, state.lastUrl, item.fieldId);
+      });
+      const icon = document.createElement("span");
+      icon.className = "check-icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = answered ? "✓" : "!";
+      const label = document.createElement("span");
+      label.className = "check-question";
+      setText(label, item.question ?? t("Unlabelled field"));
+      if (item.required) {
+        const tag = document.createElement("span");
+        tag.className = "check-tag";
+        setText(tag, t("Required"));
+        label.append(tag);
+      }
+      row.append(icon, label);
+      li.append(row);
+      const draft = state.drafts[item.fieldId];
+      if (item.draftable && !answered) {
+        li.append(renderDraft(item));
+      } else if (draft?.state === "ready" && draft.notice) {
+        // Keep the outcome visible after the draft filled the field.
+        li.append(note(draft.notice));
+      }
+      list.append(li);
+    }
+    wrapper.append(heading, list);
+    return wrapper;
+  }
+
+  function renderDraft(
+    item: ReturnType<typeof reviewItems>[number],
+  ): HTMLElement {
+    const draft = state.drafts[item.fieldId];
+    if (!draft || draft.state === "error") {
+      const box = document.createElement("div");
+      if (draft?.state === "error") box.append(note(draft.message, true));
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "link-button";
+      setText(button, t("Draft from my experience"));
+      button.addEventListener("click", () => void requestDraft(item));
+      box.append(button);
+      return box;
+    }
+    if (draft.state === "loading")
+      return note(t("Drafting from your confirmed evidence…"));
+    const box = document.createElement("div");
+    box.className = "draft-box";
+    const area = document.createElement("textarea");
+    area.value = draft.text;
+    area.setAttribute("aria-label", t("Draft answer (editable)"));
+    area.addEventListener("input", () => {
+      draft.text = area.value;
+    });
+    box.append(
+      note(
+        t("Based on {count} confirmed evidence item(s). Edit before using.", {
+          count: draft.evidenceCount,
+        }),
+      ),
+      area,
+    );
+    if (draft.unsupportedPoints.length > 0) {
+      box.append(
+        note(
+          t("Not claimed — your evidence does not cover: {points}", {
+            points: draft.unsupportedPoints.join("; "),
+          }),
+        ),
+      );
+    }
+    const actions = document.createElement("div");
+    actions.className = "draft-actions";
+    const insert = document.createElement("button");
+    insert.type = "button";
+    insert.className = "primary";
+    setText(insert, t("Put in this field"));
+    insert.addEventListener("click", () => {
+      const result = fillDraftedAnswer(
+        document,
+        state.lastUrl,
+        item.fieldId,
+        draft.text.trim(),
+      );
+      draft.notice =
+        result === "FILLED"
+          ? t("Added. Review it on the page before you submit.")
+          : result === "SKIPPED_EXISTING"
+            ? t("That field already has an answer; CareerOS left it alone.")
+            : t("CareerOS could not fill this field; copy the draft instead.");
+      render();
+    });
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.className = "secondary";
+    setText(copy, t("Copy"));
+    copy.addEventListener("click", () => {
+      void navigator.clipboard.writeText(draft.text).then(
+        () => {
+          draft.notice = t("Copied.");
+          render();
+        },
+        () => {
+          draft.notice = t("Copy failed; select the text instead.");
+          render();
+        },
+      );
+    });
+    actions.append(insert, copy);
+    box.append(actions);
+    if (draft.notice) box.append(note(draft.notice));
+    return box;
+  }
+
+  async function requestDraft(
+    item: ReturnType<typeof reviewItems>[number],
+  ): Promise<void> {
+    if (!item.question) return;
+    const capturedGeneration = state.navigationGeneration;
+    state.drafts[item.fieldId] = { state: "loading" };
+    render();
+    try {
+      const response = await sendBackground<DraftedAnswer>({
+        type: "CAREEROS_DRAFT_ANSWER",
+        question: item.question,
+        jobId: state.clip.state === "saved" ? state.clip.job.jobId : null,
+      });
+      if (!isCurrentGeneration(capturedGeneration)) return;
+      if (!response.ok) throw new Error(response.error);
+      state.drafts[item.fieldId] =
+        response.data.status === "DRAFTED"
+          ? {
+              state: "ready",
+              text: response.data.text,
+              evidenceCount: response.data.evidenceCount,
+              unsupportedPoints: response.data.unsupportedPoints,
+              notice: null,
+            }
+          : {
+              state: "error",
+              message: t(DRAFT_REFUSAL_COPY[response.data.reason]),
+            };
+    } catch {
+      if (!isCurrentGeneration(capturedGeneration)) return;
+      state.drafts[item.fieldId] = {
+        state: "error",
+        message: t(DRAFT_REFUSAL_COPY.FAILED),
+      };
+    }
+    render();
+  }
+
+  function renderJobCard(job: ClippedJob): HTMLElement {
+    const card = document.createElement("div");
+    card.className = "job-card";
+    const title = document.createElement("strong");
+    setText(title, job.title ?? t("Saved job"));
+    card.append(title);
+    if (job.company) {
+      const company = document.createElement("span");
+      company.className = "job-company";
+      setText(company, job.company);
+      card.append(company);
+    }
+    const hours = hoursSinceConfirmed(job);
+    if (hours !== null) {
+      const meta = document.createElement("p");
+      meta.className = hours >= 72 ? "job-meta warn" : "job-meta";
+      setText(
+        meta,
+        hours >= 72
+          ? t("May have closed — not seen for {days}d", {
+              days: Math.floor(hours / 24),
+            })
+          : hours < 24
+            ? t("Confirmed open in the last 24 hours")
+            : t("Confirmed open {days}d ago", { days: Math.floor(hours / 24) }),
+      );
+      card.append(meta);
+    }
+    if (job.sponsorship) {
+      card.append(
+        note(
+          job.sponsorship === "OFFERED"
+            ? t("Posting offers visa sponsorship")
+            : t("Posting says no visa sponsorship"),
+        ),
+      );
+    }
+    card.append(
+      note(job.created ? t("Saved to CareerOS") : t("Already in CareerOS")),
+    );
+    return card;
   }
 
   function renderApplicationMemory(container: HTMLElement): void {
@@ -1332,9 +2004,7 @@ export function mountAssistant(): AssistantHandle {
       );
     } else if (clip.state === "saved") {
       section.append(
-        note(
-          clip.job.created ? t("Saved to CareerOS") : t("Already in CareerOS"),
-        ),
+        renderJobCard(clip.job),
         toolButton(t("Open in CareerOS"), () => {
           void sendBackground({
             type: "CAREEROS_OPEN_JOB",
@@ -1473,6 +2143,630 @@ export function mountAssistant(): AssistantHandle {
     if (section.childElementCount > 0) container.append(section);
   }
 
+  // ------------------------------------------------------------------
+  // The job behind this page: card, evidence match, materials, letter
+  // ------------------------------------------------------------------
+
+  function isSignedIn(): boolean {
+    return state.auth.state === "ready" && state.auth.value.authenticated;
+  }
+
+  async function loadPageJob(): Promise<void> {
+    console.log(
+      "[CareerOS DEBUG] loadPageJob called, isSignedIn=",
+      isSignedIn(),
+      "pageJob.state=",
+      state.pageJob.state,
+    );
+    if (!isSignedIn() || state.pageJob.state !== "idle") return;
+    const generation = state.navigationGeneration;
+    state.pageJob = { state: "loading" };
+    try {
+      console.log("[CareerOS DEBUG] sending CAREEROS_LOOKUP_PAGE_JOB");
+      const response = await sendBackground<PageJob | null>({
+        type: "CAREEROS_LOOKUP_PAGE_JOB",
+      });
+      console.log("[CareerOS DEBUG] lookup response", JSON.stringify(response));
+      if (!isCurrentGeneration(generation)) {
+        console.log("[CareerOS DEBUG] stale generation, dropping response");
+        return;
+      }
+      state.pageJob = {
+        state: "ready",
+        value:
+          response.ok &&
+          response.data &&
+          typeof response.data.jobId === "string" &&
+          typeof response.data.title === "string"
+            ? response.data
+            : null,
+      };
+    } catch {
+      if (!isCurrentGeneration(generation)) return;
+      state.pageJob = { state: "ready", value: null };
+    }
+    render();
+    if (state.pageJob.state === "ready" && state.pageJob.value) {
+      void loadMatch(state.pageJob.value.jobId);
+    }
+  }
+
+  async function loadMatch(jobId: string): Promise<void> {
+    const generation = state.navigationGeneration;
+    state.match = { state: "loading" };
+    render();
+    try {
+      const response = await sendBackground<JobMatchSummary | "NONE">({
+        type: "CAREEROS_GET_JOB_MATCH",
+        jobId,
+      });
+      if (!isCurrentGeneration(generation)) return;
+      state.match = response.ok
+        ? { state: "ready", value: response.data }
+        : { state: "error", message: t("The evidence match is unavailable.") };
+    } catch {
+      if (!isCurrentGeneration(generation)) return;
+      state.match = {
+        state: "error",
+        message: t("The evidence match is unavailable."),
+      };
+    }
+    render();
+  }
+
+  function selectedResumeVersion(): string | null {
+    if (state.resumeVersionId) return state.resumeVersionId;
+    const context =
+      state.applicationContext?.state === "ready"
+        ? state.applicationContext.value
+        : null;
+    return context?.resumeVersions[0]?.id ?? null;
+  }
+
+  async function analyzeMatch(jobId: string): Promise<void> {
+    const resumeVersionId = selectedResumeVersion();
+    if (!resumeVersionId) return;
+    const generation = state.navigationGeneration;
+    state.analyzing = true;
+    state.analyzeMessage = null;
+    render();
+    try {
+      const response = await sendBackground<AnalyzeJobResult>({
+        type: "CAREEROS_ANALYZE_JOB",
+        jobId,
+        resumeVersionId,
+      });
+      if (!isCurrentGeneration(generation)) return;
+      if (response.ok && response.data.status === "ANALYZED") {
+        state.match = { state: "ready", value: response.data.summary };
+      } else {
+        state.analyzeMessage =
+          response.ok &&
+          response.data.status === "REFUSED" &&
+          response.data.reason === "AI_UNAVAILABLE"
+            ? t("Analysis is not configured on this CareerOS server.")
+            : t("CareerOS could not analyze this job. Try again.");
+      }
+    } catch {
+      if (!isCurrentGeneration(generation)) return;
+      state.analyzeMessage = t(
+        "CareerOS could not analyze this job. Try again.",
+      );
+    } finally {
+      if (isCurrentGeneration(generation)) state.analyzing = false;
+    }
+    render();
+  }
+
+  /** Exact figures with thousands separators, never rounded (a quoted fact). */
+  function formatMoney(amount: number): string {
+    const decimals = Number.isInteger(amount) ? 0 : 2;
+    return `$${amount.toLocaleString("en-US", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })}`;
+  }
+
+  function renderPageJobSection(container: HTMLElement): void {
+    if (state.pageJob.state !== "ready" || !state.pageJob.value) return;
+    const job = state.pageJob.value;
+    const section = document.createElement("div");
+    section.className = "section";
+    const row = document.createElement("div");
+    row.className = "page-job";
+    const logo = document.createElement("div");
+    logo.className = "logo";
+    const monogram = () => {
+      logo.textContent = (companyIconKey(job.company)[0] ?? "?").toUpperCase();
+    };
+    if (job.logoDataUrl) {
+      const image = document.createElement("img");
+      image.src = job.logoDataUrl;
+      image.alt = "";
+      image.addEventListener("error", () => {
+        image.remove();
+        monogram();
+      });
+      logo.append(image);
+    } else {
+      monogram();
+    }
+    const copy = document.createElement("div");
+    const title = document.createElement("strong");
+    setText(title, job.title);
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    setText(
+      meta,
+      job.postedAt
+        ? t("{company} · Posted {date}", {
+            company: job.company,
+            date: new Date(job.postedAt).toLocaleDateString(),
+          })
+        : job.company,
+    );
+    copy.append(title, meta);
+    if (job.salary) {
+      const salary = document.createElement("div");
+      salary.className = "salary";
+      const span =
+        job.salary.minimum === job.salary.maximum
+          ? formatMoney(job.salary.minimum)
+          : `${formatMoney(job.salary.minimum)} - ${formatMoney(job.salary.maximum)}`;
+      setText(
+        salary,
+        t(
+          job.salary.period === "HOUR"
+            ? "{span} {currency} / hour"
+            : "{span} {currency} / year",
+          {
+            span,
+            currency: job.salary.currency,
+          },
+        ),
+      );
+      copy.append(salary);
+    }
+    const chips = document.createElement("div");
+    chips.className = "chip-row";
+    const chip = (label: string, tone = "") => {
+      const element = document.createElement("span");
+      element.className = tone ? `chip ${tone}` : "chip";
+      setText(element, label);
+      chips.append(element);
+    };
+    const hours = hoursSinceConfirmed({
+      jobId: job.jobId,
+      created: false,
+      isCatalog: job.isCatalog,
+      lastObservedAt: job.lastObservedAt,
+    });
+    if (hours !== null) {
+      chip(
+        hours >= 72
+          ? t("May have closed — not seen for {days}d", {
+              days: Math.floor(hours / 24),
+            })
+          : hours < 24
+            ? t("Confirmed open in the last 24 hours")
+            : t("Confirmed open {days}d ago", { days: Math.floor(hours / 24) }),
+        hours >= 72 ? "warn" : "good",
+      );
+    }
+    if (job.sponsorship) {
+      chip(
+        job.sponsorship === "OFFERED"
+          ? t("Posting offers visa sponsorship")
+          : t("Posting says no visa sponsorship"),
+        job.sponsorship === "OFFERED" ? "good" : "",
+      );
+    }
+    if (job.isSaved) chip(t("Already in CareerOS"));
+    if (chips.childElementCount > 0) copy.append(chips);
+    const links = document.createElement("div");
+    links.className = "link-row";
+    for (const [tab, label] of [
+      ["tailor", t("Tailor resume")],
+      ["drafts", t("Write cover letter")],
+    ] as const) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "secondary";
+      setText(button, label);
+      button.addEventListener("click", () => {
+        void sendBackground({
+          type: "CAREEROS_OPEN_MATERIALS",
+          jobId: job.jobId,
+          tab,
+        });
+      });
+      links.append(button);
+    }
+    copy.append(links);
+    row.append(logo, copy);
+    section.append(row);
+    container.append(section);
+  }
+
+  function renderMatchSection(container: HTMLElement): void {
+    if (
+      state.pageJob.state !== "ready" ||
+      !state.pageJob.value ||
+      !state.match
+    ) {
+      return;
+    }
+    const jobId = state.pageJob.value.jobId;
+    const section = document.createElement("div");
+    section.className = "section";
+    const eyebrow = document.createElement("span");
+    eyebrow.className = "eyebrow";
+    setText(eyebrow, t("Evidence match"));
+    section.append(eyebrow);
+    const resumeVersionId = selectedResumeVersion();
+    const analyzeButton = (label: string) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "secondary";
+      button.disabled = state.analyzing || !resumeVersionId;
+      setText(button, state.analyzing ? t("Analyzing…") : label);
+      button.addEventListener("click", () => void analyzeMatch(jobId));
+      return button;
+    };
+    if (state.match.state === "loading") {
+      section.append(note(t("Checking your evidence for this job…")));
+    } else if (state.match.state === "error") {
+      section.append(note(state.match.message, true));
+    } else if (state.match.state === "ready" && state.match.value === "NONE") {
+      section.append(
+        note(
+          resumeVersionId
+            ? t(
+                "See which of this job's requirements your confirmed evidence covers.",
+              )
+            : t(
+                "Open the application form to pick a resume, then compare it with this job.",
+              ),
+        ),
+        analyzeButton(t("Compare with my evidence")),
+      );
+    } else if (state.match.state === "ready" && state.match.value !== "NONE") {
+      const summary = state.match.value;
+      const total = summary.requirements.length;
+      const count = (kind: keyof typeof MATCH_COLORS) =>
+        summary.requirements.filter((item) => item.classification === kind)
+          .length;
+      const supported = count("STRONG_EVIDENCE") + count("HIDDEN_EVIDENCE");
+      const title = document.createElement("h2");
+      setText(
+        title,
+        t("{supported} of {total} requirements have your evidence", {
+          supported,
+          total,
+        }),
+      );
+      const bar = document.createElement("div");
+      bar.className = "match-bar";
+      bar.setAttribute("aria-hidden", "true");
+      const legend = document.createElement("div");
+      legend.className = "match-legend";
+      for (const [kind, label] of [
+        ["STRONG_EVIDENCE", t("Shown on resume")],
+        ["HIDDEN_EVIDENCE", t("Not on resume yet")],
+        ["WEAK_EVIDENCE", t("Weak evidence")],
+        ["GENUINE_GAP", t("No evidence")],
+      ] as const) {
+        const value = count(kind);
+        if (total > 0 && value > 0) {
+          const part = document.createElement("span");
+          part.style.width = `${(value / total) * 100}%`;
+          part.style.background = MATCH_COLORS[kind];
+          bar.append(part);
+        }
+        const item = document.createElement("span");
+        const dot = document.createElement("i");
+        dot.style.background = MATCH_COLORS[kind];
+        item.append(dot, document.createTextNode(`${label} ${value}`));
+        legend.append(item);
+      }
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "link-button";
+      toggle.style.paddingLeft = "0";
+      setText(
+        toggle,
+        state.showRequirements
+          ? t("Hide requirements")
+          : t("Show requirements"),
+      );
+      toggle.addEventListener("click", () => {
+        state.showRequirements = !state.showRequirements;
+        render();
+      });
+      section.append(title, bar, legend, toggle);
+      if (state.showRequirements) {
+        const list = document.createElement("ul");
+        list.className = "req-list";
+        for (const requirement of summary.requirements) {
+          const li = document.createElement("li");
+          const dot = document.createElement("i");
+          dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:999px;margin-top:4px;flex-shrink:0;background:${MATCH_COLORS[requirement.classification]}`;
+          li.append(dot, document.createTextNode(requirement.description));
+          list.append(li);
+        }
+        section.append(list);
+      }
+      section.append(
+        note(
+          t("Based on {resume}. A comparison, never a score.", {
+            resume: summary.resumeLabel,
+          }),
+        ),
+      );
+      if (resumeVersionId) section.append(analyzeButton(t("Compare again")));
+    }
+    if (state.analyzeMessage) section.append(note(state.analyzeMessage, true));
+    container.append(section);
+  }
+
+  function coverLetterField(): { id: string } | null {
+    if (state.detection.state !== "ready") return null;
+    for (const form of state.detection.value.forms) {
+      const field = form.fields.find(
+        (candidate) => candidate.canonicalKey === "COVER_LETTER_FILE",
+      );
+      if (field) return field;
+    }
+    return null;
+  }
+
+  function letterJobId(): string | null {
+    if (state.pageJob.state === "ready" && state.pageJob.value) {
+      return state.pageJob.value.jobId;
+    }
+    return state.clip.state === "saved" ? state.clip.job.jobId : null;
+  }
+
+  async function draftLetter(jobId: string): Promise<void> {
+    const generation = state.navigationGeneration;
+    state.coverLetter = { state: "drafting" };
+    state.coverLetterExpanded = true;
+    render();
+    try {
+      const response = await sendBackground<DraftedAnswer>({
+        type: "CAREEROS_DRAFT_COVER_LETTER",
+        jobId,
+      });
+      if (!isCurrentGeneration(generation)) return;
+      if (!response.ok) throw new Error(response.error);
+      state.coverLetter =
+        response.data.status === "DRAFTED"
+          ? {
+              state: "ready",
+              text: response.data.text,
+              notice: null,
+              attaching: false,
+              attached: false,
+            }
+          : {
+              state: "error",
+              message: t(DRAFT_REFUSAL_COPY[response.data.reason]),
+            };
+    } catch {
+      if (!isCurrentGeneration(generation)) return;
+      state.coverLetter = {
+        state: "error",
+        message: t(DRAFT_REFUSAL_COPY.FAILED),
+      };
+    }
+    render();
+  }
+
+  async function attachLetter(fieldId: string): Promise<void> {
+    const letter = state.coverLetter;
+    if (letter.state !== "ready" || !letter.text.trim()) return;
+    letter.attaching = true;
+    letter.notice = null;
+    render();
+    const company =
+      state.pageJob.state === "ready" && state.pageJob.value
+        ? state.pageJob.value.company
+        : state.company;
+    try {
+      const response = await sendBackground<{ fieldId: string; state: string }>(
+        {
+          type: "CAREEROS_ATTACH_COVER_LETTER",
+          fieldId,
+          text: letter.text.trim(),
+          filenameHint: company ? `Cover letter - ${company}` : "Cover letter",
+          expectedPageUrl: state.lastUrl,
+        },
+      );
+      const outcome = response.ok ? response.data.state : "FAILED";
+      letter.attached = outcome === "FILLED" || outcome === "SKIPPED_EXISTING";
+      letter.notice =
+        outcome === "FILLED"
+          ? t(
+              "Attached as a Word file. Check it on the page before you submit.",
+            )
+          : outcome === "SKIPPED_EXISTING"
+            ? t("A file is already chosen there; CareerOS left it alone.")
+            : t(
+                "This upload field did not accept the file. Copy the letter instead.",
+              );
+    } catch {
+      letter.notice = t(
+        "This upload field did not accept the file. Copy the letter instead.",
+      );
+    } finally {
+      letter.attaching = false;
+    }
+    render();
+  }
+
+  /** A compact status like Simplify's "Filled (0/1)", for the collapsed row. */
+  function coverLetterStatusLabel(letter: CoverLetterState): string {
+    if (letter.state === "ready" && letter.attached) return t("Filled (1/1)");
+    if (letter.state === "ready") return t("Draft ready");
+    if (letter.state === "drafting") return t("Drafting…");
+    if (letter.state === "error") return t("Needs attention");
+    return t("Filled (0/1)");
+  }
+
+  function renderCoverLetterSection(container: HTMLElement): void {
+    const field = coverLetterField();
+    if (!field || !isSignedIn()) return;
+    const section = document.createElement("div");
+    section.className = "section";
+    const letter = state.coverLetter;
+
+    // Collapsed by default (Simplify-style "Cover Letter · Filled (0/1)");
+    // expands automatically once the user starts drafting.
+    const header = document.createElement("button");
+    header.type = "button";
+    header.className = "section-toggle";
+    header.setAttribute("aria-expanded", String(state.coverLetterExpanded));
+    const label = document.createElement("span");
+    label.className = "toggle-label";
+    setText(label, t("Cover letter"));
+    const status = document.createElement("span");
+    status.className =
+      letter.state === "ready" && letter.attached ? "chip good" : "chip";
+    setText(status, coverLetterStatusLabel(letter));
+    const chevron = document.createElement("span");
+    chevron.className = "toggle-chevron";
+    chevron.setAttribute("aria-hidden", "true");
+    setText(chevron, state.coverLetterExpanded ? "⌄" : "›");
+    header.append(label, status, chevron);
+    header.addEventListener("click", () => {
+      state.coverLetterExpanded = !state.coverLetterExpanded;
+      render();
+    });
+    section.append(header);
+
+    if (state.coverLetterExpanded) {
+      const body = document.createElement("div");
+      body.className = "section-toggle-body";
+      const jobId = letterJobId();
+      if (!jobId) {
+        body.append(
+          note(
+            t("Save this job first; letters are written for a specific job."),
+          ),
+        );
+      } else if (letter.state === "idle" || letter.state === "error") {
+        if (letter.state === "error") body.append(note(letter.message, true));
+        body.append(
+          note(t("This form asks for a cover letter file.")),
+          toolButton(
+            t("Draft from my experience"),
+            () => void draftLetter(jobId),
+          ),
+        );
+      } else if (letter.state === "drafting") {
+        body.append(note(t("Drafting from your confirmed evidence…")));
+      } else {
+        const box = document.createElement("div");
+        box.className = "draft-box";
+        const area = document.createElement("textarea");
+        area.value = letter.text;
+        area.style.minHeight = "160px";
+        area.setAttribute("aria-label", t("Draft answer (editable)"));
+        area.addEventListener("input", () => {
+          letter.text = area.value;
+        });
+        const actions = document.createElement("div");
+        actions.className = "draft-actions";
+        const attach = document.createElement("button");
+        attach.type = "button";
+        attach.className = "primary";
+        attach.disabled = letter.attaching;
+        setText(
+          attach,
+          letter.attaching ? t("Attaching…") : t("Attach as Word file"),
+        );
+        attach.addEventListener("click", () => void attachLetter(field.id));
+        const copy = document.createElement("button");
+        copy.type = "button";
+        copy.className = "secondary";
+        setText(copy, t("Copy"));
+        copy.addEventListener("click", () => {
+          void navigator.clipboard.writeText(letter.text).then(
+            () => {
+              letter.notice = t("Copied.");
+              render();
+            },
+            () => {
+              letter.notice = t("Copy failed; select the text instead.");
+              render();
+            },
+          );
+        });
+        actions.append(attach, copy);
+        box.append(area, actions);
+        if (letter.notice) box.append(note(letter.notice));
+        body.append(box);
+      }
+      section.append(body);
+    }
+    container.append(section);
+  }
+
+  async function autofillThisPage(): Promise<void> {
+    state.autofilling = true;
+    state.autofillNotice = null;
+    render();
+    try {
+      await inspectPage();
+      if (
+        state.detection.state === "ready" &&
+        state.answers?.state === "ready"
+      ) {
+        await applyApprovedAnswers();
+      } else if (
+        state.detection.state === "ready" &&
+        state.detection.value.status !== "APPLICATION_PAGE"
+      ) {
+        // Say so instead of silently doing nothing.
+        state.autofillNotice = t(
+          "No application form found on this page. Open the job's application form, then try again.",
+        );
+      } else if (state.detection.state === "error") {
+        state.autofillNotice = state.detection.message;
+      } else if (state.answers?.state === "error") {
+        state.autofillNotice = state.answers.message;
+      }
+    } finally {
+      state.autofilling = false;
+      render();
+    }
+  }
+
+  function renderAutofill(container: HTMLElement): void {
+    if (!isSignedIn()) return;
+    const wrap = document.createElement("div");
+    wrap.className = "actions";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "autofill";
+    button.disabled = state.autofilling;
+    setText(
+      button,
+      state.autofilling
+        ? t("Filling what CareerOS can…")
+        : t("Autofill this page"),
+    );
+    button.addEventListener("click", () => void autofillThisPage());
+    const hint = note(
+      t(
+        "Fills only approved answers into empty fields. You review and submit.",
+      ),
+    );
+    wrap.append(button, hint);
+    if (state.autofillNotice) wrap.append(note(state.autofillNotice, true));
+    container.append(wrap);
+  }
+
   function renderPanel(): void {
     while (panel.firstChild) panel.removeChild(panel.firstChild);
 
@@ -1486,14 +2780,36 @@ export function mountAssistant(): AssistantHandle {
     closeButton.setAttribute("aria-label", t("Close CareerOS assistant"));
     setText(closeButton, t("Close"));
     closeButton.addEventListener("click", () => setPanelOpen(false, true));
-    header.append(brand, closeButton);
+    const chinese = extensionLocale() === "zh-CN";
+    const languageButton = document.createElement("button");
+    languageButton.type = "button";
+    languageButton.className = "lang-btn";
+    languageButton.textContent = chinese ? "EN" : "中";
+    languageButton.setAttribute(
+      "aria-label",
+      chinese ? "Switch to English" : "切换到中文",
+    );
+    languageButton.addEventListener("click", () => {
+      void saveLocale(chinese ? "en" : "zh-CN").then(() => {
+        refreshLabels();
+        render();
+      });
+    });
+    const headerActions = document.createElement("div");
+    headerActions.className = "header-actions";
+    headerActions.append(languageButton, closeButton);
+    header.append(brand, headerActions);
     panel.append(header);
 
     renderAuthSection(panel);
+    renderPageJobSection(panel);
+    renderAutofill(panel);
+    renderFillSection(panel);
+    renderCoverLetterSection(panel);
+    renderMatchSection(panel);
     renderDetectionSection(panel);
     renderAnswersSection(panel);
     renderActions(panel);
-    renderFillSection(panel);
     renderToolsSection(panel);
     renderApplicationMemory(panel);
 
@@ -1508,6 +2824,15 @@ export function mountAssistant(): AssistantHandle {
   }
 
   launcher.addEventListener("click", () => {
+    if (suppressClick) {
+      suppressClick = false;
+      return;
+    }
+    if (dockState.tucked) {
+      dockState.tucked = false;
+      applyDock();
+      saveDock();
+    }
     setPanelOpen(!state.panelOpen, false);
   });
 
@@ -1522,6 +2847,9 @@ export function mountAssistant(): AssistantHandle {
 
   void (async () => {
     startUrlWatch();
+    await loadStoredLocale();
+    refreshLabels();
+    await loadDock();
     await loadExpandedPreference();
     try {
       const response = await sendBackground<AuthStatus>({
@@ -1534,10 +2862,12 @@ export function mountAssistant(): AssistantHandle {
       state.auth = { state: "error", message: t("CareerOS is unavailable.") };
     }
     render();
+    if (state.panelOpen) void loadPageJob();
   })();
 
   const destroy = (): void => {
     stopUrlWatch();
+    stopLocaleSync();
     if (onKeyDown) shadow.removeEventListener("keydown", onKeyDown);
     host.remove();
     activeHandle = null;

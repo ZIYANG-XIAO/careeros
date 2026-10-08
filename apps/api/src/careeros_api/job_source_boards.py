@@ -10,7 +10,7 @@ import html
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from html.parser import HTMLParser
 from typing import Any
 
@@ -311,6 +311,32 @@ def text_value(value: Any) -> str:
     return value.strip() if isinstance(value, str) else ""
 
 
+def posted_moment(value: Any, observed_at: datetime) -> datetime | None:
+    """A source's publish time (ISO 8601 string or epoch milliseconds).
+
+    Anything unparseable, naive, before 2000, or more than a day after the
+    sync is treated as unknown rather than guessed.
+    """
+    moment: datetime | None = None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int | float):
+        try:
+            moment = datetime.fromtimestamp(value / 1000, tz=UTC)
+        except (OverflowError, OSError, ValueError):
+            return None
+    elif isinstance(value, str) and value.strip():
+        try:
+            moment = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if moment is None or moment.tzinfo is None:
+        return None
+    if moment.year < 2000 or moment > observed_at + timedelta(days=1):
+        return None
+    return moment
+
+
 # --- candidates and fetching -----------------------------------------------
 
 
@@ -327,6 +353,7 @@ def build_candidate(
     workplace: JobWorkplaceType,
     employment: JobEmploymentType,
     observed_at: datetime,
+    posted_at: datetime | None = None,
 ) -> NormalizedJobCandidate | None:
     """A catalog candidate, or None when the posting fails the shared contract."""
     market, country = placement
@@ -342,6 +369,7 @@ def build_candidate(
                 "application_url": application_url or posting_url or None,
                 "canonical_url": canonical_clip_url(posting_url) if posting_url else None,
                 "observed_at": observed_at,
+                "posted_at": posted_at,
                 "availability_status": JobAvailabilityStatus.AVAILABLE,
                 "freshness_status": JobFreshnessStatus.CURRENT,
                 "market": market,

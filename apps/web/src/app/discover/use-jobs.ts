@@ -27,7 +27,8 @@ const initialFilters: Filters = {
   countryCode: "",
   workplaceType: "",
   employmentType: "",
-  sort: "recent",
+  sort: "match",
+  company: "",
 };
 
 export function useJobs(onCreated?: (job: Job) => void) {
@@ -55,7 +56,18 @@ export function useJobs(onCreated?: (job: Job) => void) {
         countryCode: filters.countryCode || undefined,
         workplaceType: filters.workplaceType || undefined,
         employmentType: filters.employmentType || undefined,
-        sort: filters.sort,
+        sort:
+          filters.sort === "title"
+            ? ("title" as const)
+            : filters.sort === "match"
+              ? ("match" as const)
+              : ("recent" as const),
+        company: filters.company || undefined,
+        // A single company's list shows everything; elsewhere mix employers.
+        diversify:
+          (filters.sort === "match" || filters.sort === "mixed") &&
+          !filters.company &&
+          filters.view === "all",
         limit: paged ? PAGE_SIZE : undefined,
         offset: paged ? offset : undefined,
         compact: true,
@@ -206,13 +218,18 @@ export function useJobs(onCreated?: (job: Job) => void) {
     filters.countryCode ||
     filters.workplaceType ||
     filters.employmentType ||
-    filters.sort !== "recent",
+    filters.company ||
+    filters.sort !== "match",
   );
 
   function replaceJob(updated: Job) {
     setJobs((current) =>
       current.map((item) => (item.id === updated.id ? updated : item)),
     );
+  }
+
+  function replaceJobs(next: Job[]) {
+    setJobs(next);
   }
 
   function removeJob(jobId: string) {
@@ -223,6 +240,7 @@ export function useJobs(onCreated?: (job: Job) => void) {
     isLoaded,
     isSignedIn,
     replaceJob,
+    replaceJobs,
     removeJob,
     hasMore,
     loadingMore,

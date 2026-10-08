@@ -1,5 +1,5 @@
 import type { FormAdapter } from "./types";
-import { candidateForms } from "./types";
+import { candidateForms, sameOriginDocuments } from "./types";
 
 const APPLICATION_PATH_PATTERN =
   /(?:apply|application|career|job|position|recruit|campus|zhaopin|zhiye|mokahr)/i;
@@ -37,24 +37,26 @@ function lowestCommonAncestor(elements: Element[]): HTMLElement | null {
  * Many single-page ATSs (including common China-market systems) render the
  * application without a <form>. Treat the smallest element holding all the
  * page's fields as one form, but only when the page looks like an application.
+ * Checked separately per same-origin document, since a container can only
+ * span elements that share one document.
  */
 function formlessApplication(
   document: Document,
   applicationPath: boolean,
 ): HTMLElement[] {
-  const fields = Array.from(
-    document.body?.querySelectorAll(FIELD_SELECTOR) ?? [],
-  );
-  if (fields.length < MIN_FORMLESS_FIELDS) return [];
-  const container = lowestCommonAncestor(fields);
-  if (
-    !container ||
-    !container.querySelector(PERSONAL_FIELD_SELECTOR) ||
-    !hasApplicationSignal(container, applicationPath)
-  ) {
-    return [];
-  }
-  return [container];
+  return sameOriginDocuments(document).flatMap((doc) => {
+    const fields = Array.from(doc.body?.querySelectorAll(FIELD_SELECTOR) ?? []);
+    if (fields.length < MIN_FORMLESS_FIELDS) return [];
+    const container = lowestCommonAncestor(fields);
+    if (
+      !container ||
+      !container.querySelector(PERSONAL_FIELD_SELECTOR) ||
+      !hasApplicationSignal(container, applicationPath)
+    ) {
+      return [];
+    }
+    return [container];
+  });
 }
 
 export const genericFormAdapter: FormAdapter = {
@@ -70,7 +72,11 @@ export const genericFormAdapter: FormAdapter = {
         hasApplicationSignal(form, applicationPath),
     );
     if (forms.length > 0) return forms;
-    if (document.querySelector("form")) return [];
+    if (
+      sameOriginDocuments(document).some((doc) => doc.querySelector("form"))
+    ) {
+      return [];
+    }
     return formlessApplication(document, applicationPath);
   },
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth, useClerk } from "@clerk/nextjs";
+import { useAuth, useClerk, useUser } from "@clerk/nextjs";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ const CONFIRM_WORD = "DELETE";
 export default function AccountPage() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { signOut } = useClerk();
+  const { user } = useUser();
   const { t } = useI18n();
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -63,6 +64,17 @@ export default function AccountPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <MeTabs />
+
+      {user?.primaryEmailAddress?.emailAddress && (
+        <section className="space-y-1 rounded-2xl border border-border bg-surface p-6">
+          <h2 className="text-lg font-semibold text-ink">
+            {t("account.identityTitle")}
+          </h2>
+          <p className="text-sm text-ink-2">
+            {user.primaryEmailAddress.emailAddress}
+          </p>
+        </section>
+      )}
 
       <section className="space-y-3 rounded-2xl border border-border bg-surface p-6">
         <h2 className="text-lg font-semibold text-ink">

@@ -21,6 +21,7 @@ import {
 } from "@/lib/api";
 import { formatCareerDateRange, useI18n } from "@/lib/i18n";
 import type { DetailSummary, ExperienceSummary } from "@/lib/types";
+import { CompanyMark } from "@/components/company-mark";
 
 type ExperienceSectionProps = {
   experiences: ExperienceSummary[];
@@ -178,7 +179,8 @@ function ExperienceSection({ experiences, onMutate }: ExperienceSectionProps) {
               key={exp.id}
               className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 sm:p-5"
             >
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start justify-between gap-3">
+                <CompanyMark company={exp.company} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-slate-900">
                     {exp.title}

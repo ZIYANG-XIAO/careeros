@@ -12,6 +12,7 @@ import type {
   Job,
   JobSearchGoal,
 } from "@/lib/types";
+import { CompanyMark } from "@/components/company-mark";
 
 type DailyBriefingProps = {
   applications: ApplicationSummary[];
@@ -75,9 +76,7 @@ function DailyBriefing({
                 href={`/pipeline?focus=${application.id}`}
                 className="group flex items-center gap-4 px-5 py-4 hover:bg-rail"
               >
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-status-assessment-bg text-sm font-semibold text-status-assessment-ink">
-                  {reason === "CONFIRM_SUBMISSION" ? "✓" : "↗"}
-                </span>
+                <CompanyMark company={application.company} size="sm" />
                 <span className="min-w-0 flex-1">
                   <span className="block text-xs font-semibold uppercase tracking-wide text-ink-3">
                     {reason === "CONFIRM_SUBMISSION"
@@ -104,9 +103,13 @@ function DailyBriefing({
                   href={`/pipeline?focus=${activity.application_id}`}
                   className="group flex items-center gap-4 px-5 py-4 hover:bg-rail"
                 >
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-evidence-strong-bg text-sm font-semibold text-status-offer-ink">
-                    {activity.activity_type === "INTERVIEW" ? "◎" : "↗"}
-                  </span>
+                  {application ? (
+                    <CompanyMark company={application.company} size="sm" />
+                  ) : (
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-evidence-strong-bg text-sm font-semibold text-status-offer-ink">
+                      {activity.activity_type === "INTERVIEW" ? "◎" : "↗"}
+                    </span>
+                  )}
                   <span className="min-w-0 flex-1">
                     <span className="block text-xs font-semibold uppercase tracking-wide text-ink-3">
                       {activity.activity_type === "INTERVIEW"
@@ -181,7 +184,8 @@ function DailyBriefing({
                   className="block px-5 py-4 hover:bg-rail"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="min-w-0">
+                    <CompanyMark company={job.company} size="sm" />
+                    <span className="min-w-0 flex-1">
                       <span className="block truncate text-xs font-semibold text-ink-3">
                         {job.company}
                       </span>

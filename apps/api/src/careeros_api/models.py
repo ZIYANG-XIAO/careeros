@@ -791,6 +791,9 @@ class Job(Base):
     canonical_url: Mapped[str | None] = mapped_column(sa.String(2000))
     first_observed_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
     last_observed_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    # When the employer published the posting, as reported by the source.
+    # Null for manual/clipped jobs and sources that do not report it.
+    posted_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
     availability_status: Mapped[str] = mapped_column(sa.String(50), default="UNKNOWN")
     freshness_status: Mapped[str] = mapped_column(sa.String(50), default="UNKNOWN")
     market: Mapped[str] = mapped_column(sa.String(50), default="UNKNOWN")
@@ -889,6 +892,47 @@ class SavedJob(Base):
         sa.UniqueConstraint("user_id", "job_id"),
         sa.Index("ix_saved_jobs_user_id", "user_id"),
         sa.Index("ix_saved_jobs_job_id", "job_id"),
+    )
+
+
+class JobDismissal(Base):
+    """A user's "not interested" on one job; hides it from their browse list."""
+
+    __tablename__ = "job_dismissals"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"))
+    job_id: Mapped[UUID] = mapped_column(sa.ForeignKey("jobs.id", ondelete="CASCADE"))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    __table_args__ = (
+        sa.UniqueConstraint("user_id", "job_id"),
+        sa.Index("ix_job_dismissals_user_id", "user_id"),
+    )
+
+
+class HiddenCompany(Base):
+    """A company the user never wants to see in their browse list.
+
+    ``company_key`` is the trimmed, lowercased company name, matched against
+    ``lower(trim(jobs.company))``; ``company_name`` keeps the display form.
+    """
+
+    __tablename__ = "hidden_companies"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(sa.ForeignKey("users.id", ondelete="CASCADE"))
+    company_key: Mapped[str] = mapped_column(sa.String(500))
+    company_name: Mapped[str] = mapped_column(sa.String(500))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    __table_args__ = (
+        sa.UniqueConstraint("user_id", "company_key"),
+        sa.Index("ix_hidden_companies_user_id", "user_id"),
     )
 
 

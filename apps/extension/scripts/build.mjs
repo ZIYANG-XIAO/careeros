@@ -86,6 +86,14 @@ async function resolveBuildVersion() {
 
 const buildVersion = await resolveBuildVersion();
 
+const OPTIONAL_HOST_PERMISSIONS = [
+  "https://boards.greenhouse.io/*",
+  "https://job-boards.greenhouse.io/*",
+  "https://jobs.lever.co/*",
+  "https://jobs.ashbyhq.com/*",
+  "https://*.myworkdayjobs.com/*",
+];
+
 function hostPermission(value) {
   const url = new URL(value);
   return `${url.protocol}//${url.host}/*`;
@@ -105,6 +113,9 @@ const manifest = {
       hostPermission(config.frontendApi),
     ]),
   ],
+  // Requested only when the user turns on "Show the CareerOS button on
+  // career sites" (src/shared/ats-hosts.ts); never granted at install.
+  optional_host_permissions: OPTIONAL_HOST_PERMISSIONS,
   action: {
     default_title: "CareerOS Application Assistant",
     default_popup: "popup.html",
@@ -155,6 +166,13 @@ await Promise.all([
   cp(path.join(extensionRoot, "src/icons"), path.join(buildDir, "icons"), {
     recursive: true,
   }),
+  // Bundled employer logos, read only by the background worker so showing a
+  // logo never makes a network request or exposes extension resources.
+  cp(
+    path.join(repositoryRoot, "apps/web/public/company-logos"),
+    path.join(buildDir, "company-logos"),
+    { recursive: true },
+  ),
 ]);
 
 const define = {
@@ -167,6 +185,8 @@ const define = {
 
 const common = {
   bundle: true,
+  // The CareerOS mascot is inlined into the launcher as a data URL.
+  loader: { ".png": "dataurl" },
   sourcemap: true,
   target: "chrome120",
   define,

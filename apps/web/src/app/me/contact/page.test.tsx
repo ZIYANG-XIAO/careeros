@@ -61,9 +61,13 @@ describe("MeContactPage", () => {
     );
     expect(await screen.findByDisplayValue("Ada")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Lovelace")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Career Brain" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute(
       "href",
       "/me",
+    );
+    expect(screen.getByRole("link", { name: "Experience" })).toHaveAttribute(
+      "href",
+      "/me/experience",
     );
     expect(
       screen.getByRole("link", { name: "Contact & answers" }),

@@ -26,6 +26,7 @@ import type {
   ResumeSummary,
 } from "@/lib/types";
 import { useDataFetch } from "@/lib/use-data-fetch";
+import { CompanyMark } from "@/components/company-mark";
 
 type HomeData = {
   applications: ApplicationSummary[];
@@ -256,16 +257,19 @@ function HomeView() {
                 <Link
                   key={job.id}
                   href={`/discover?focus=${job.id}`}
-                  className="block px-5 py-4 hover:bg-rail"
+                  className="flex items-center gap-3 px-5 py-4 hover:bg-rail"
                 >
-                  <span className="text-xs font-semibold text-ink-3">
-                    {job.company}
-                  </span>
-                  <span className="mt-1 block text-sm font-semibold text-ink">
-                    {job.title}
-                  </span>
-                  <span className="mt-1 block text-xs text-ink-3">
-                    {job.location || t("jobs.unknown")}
+                  <CompanyMark company={job.company} size="sm" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-semibold text-ink-3">
+                      {job.company}
+                    </span>
+                    <span className="mt-1 block truncate text-sm font-semibold text-ink">
+                      {job.title}
+                    </span>
+                    <span className="mt-1 block truncate text-xs text-ink-3">
+                      {job.location || t("jobs.unknown")}
+                    </span>
                   </span>
                 </Link>
               ))}
@@ -325,9 +329,10 @@ function HomeView() {
                 <Link
                   key={application.id}
                   href={`/pipeline?focus=${application.id}`}
-                  className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
+                  className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
                 >
-                  <span className="min-w-0">
+                  <CompanyMark company={application.company} size="sm" />
+                  <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-ink">
                       {application.company} · {application.role}
                     </span>

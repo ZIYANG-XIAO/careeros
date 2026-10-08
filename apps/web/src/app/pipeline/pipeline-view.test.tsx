@@ -12,6 +12,8 @@ const mockListJobs = vi.fn();
 const mockListResumes = vi.fn();
 const mockUpdateApplicationStatus = vi.fn();
 const mockCreateApplication = vi.fn();
+const mockListStatusHistory = vi.fn();
+const mockListUpcoming = vi.fn();
 const mockGetToken = vi.fn().mockResolvedValue("token");
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
@@ -43,6 +45,10 @@ vi.mock("@/lib/api", async (importOriginal) => {
     updateApplicationStatus: (...args: unknown[]) =>
       mockUpdateApplicationStatus(...args),
     createApplication: (...args: unknown[]) => mockCreateApplication(...args),
+    listApplicationStatusHistory: (...args: unknown[]) =>
+      mockListStatusHistory(...args),
+    listUpcomingApplicationActivities: (...args: unknown[]) =>
+      mockListUpcoming(...args),
   };
 });
 
@@ -169,6 +175,8 @@ beforeEach(() => {
   mockListResumes.mockReset().mockResolvedValue(resumes);
   mockUpdateApplicationStatus.mockReset();
   mockCreateApplication.mockReset();
+  mockListStatusHistory.mockReset().mockResolvedValue([]);
+  mockListUpcoming.mockReset().mockResolvedValue([]);
   mockPush.mockReset();
   mockReplace.mockReset();
   mockDownloadCsv.mockReset();
@@ -301,7 +309,7 @@ describe("PipelineView", () => {
 
     expect(await screen.findByText(/Show lane/)).toBeInTheDocument();
     expect(
-      screen.queryByText("Together AI · Backend Engineer"),
+      screen.queryByRole("heading", { name: "Closed applications" }),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByText(/Show lane/));
@@ -315,8 +323,16 @@ describe("PipelineView", () => {
     ]);
     renderPipeline();
     expect(
-      await screen.findByText("Together AI · Backend Engineer"),
+      await screen.findByRole("heading", { name: "Closed applications" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("Backend Engineer")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Closed/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("button", { name: /Board/ })).not.toHaveAttribute(
+      "aria-current",
+    );
   });
 
   it("pushes a focus query param when a card is opened", async () => {
@@ -394,5 +410,209 @@ describe("PipelineView", () => {
         status: "PREPARING",
       }),
     );
+  });
+
+  it("shows each stage's own empty-column guidance", async () => {
+    renderPipeline();
+    await screen.findByText("Backend Engineer");
+    expect(
+      screen.getByText("Move a card here when an offer arrives."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Move a card here when an interview is scheduled."),
+    ).toBeInTheDocument();
+  });
+
+  it("filters board cards by search text and reports the match count", async () => {
+    const user = userEvent.setup();
+    renderPipeline();
+    await screen.findByText("Backend Engineer");
+
+    await user.type(
+      screen.getByPlaceholderText("Search company or role"),
+      "figma",
+    );
+
+    expect(screen.getByText("Full Stack Engineer")).toBeInTheDocument();
+    expect(screen.queryByText("Backend Engineer")).not.toBeInTheDocument();
+    expect(screen.getByText("Showing 1 of 2")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Clear filters" }));
+    expect(screen.getByText("Backend Engineer")).toBeInTheDocument();
+  });
+
+  it("filters to stalled applications only", async () => {
+    const user = userEvent.setup();
+    mockListApplications.mockResolvedValue([
+      makeApplication({
+        id: "stalled",
+        role: "Stalled Role",
+        status_updated_at: "2020-01-01T00:00:00Z",
+      }),
+      makeApplication({
+        id: "fresh",
+        role: "Fresh Role",
+        status_updated_at: new Date().toISOString(),
+      }),
+    ]);
+    renderPipeline();
+    await screen.findByText("Fresh Role");
+
+    await user.click(screen.getByRole("button", { name: "Stalled only" }));
+
+    expect(screen.getByText("Stalled Role")).toBeInTheDocument();
+    expect(screen.queryByText("Fresh Role")).not.toBeInTheDocument();
+    expect(screen.queryByText("Full Stack Engineer")).not.toBeInTheDocument();
+  });
+
+  it("renders dated progress steps, resume, and upcoming interview in the list view", async () => {
+    currentSearch = "view=list";
+    mockListApplications.mockResolvedValue([
+      makeApplication({
+        status: "INTERVIEW",
+        resume_version_id: "version-1",
+        status_updated_at: "2026-09-25T12:00:00Z",
+      }),
+    ]);
+    mockListStatusHistory.mockResolvedValue([
+      {
+        application_id: "app-1",
+        from_status: null,
+        to_status: "APPLIED",
+        changed_at: "2026-09-19T12:00:00Z",
+      },
+      {
+        application_id: "app-1",
+        from_status: "APPLIED",
+        to_status: "INTERVIEW",
+        changed_at: "2026-09-25T12:00:00Z",
+      },
+    ]);
+    mockListUpcoming.mockResolvedValue([
+      {
+        id: "activity-1",
+        application_id: "app-1",
+        activity_type: "INTERVIEW",
+        title: "Onsite",
+        body: null,
+        scheduled_at: "2026-10-03T12:00:00Z",
+        completed_at: null,
+        created_at: "2026-09-25T12:00:00Z",
+        updated_at: "2026-09-25T12:00:00Z",
+      },
+    ]);
+    renderPipeline();
+
+    const progress = await screen.findByRole("list", {
+      name: "Progress for Together AI · Backend Engineer",
+    });
+    const steps = within(progress).getAllByRole("listitem");
+    expect(steps).toHaveLength(6);
+    expect(steps[1]).toHaveTextContent("Applied9/19");
+    // Assessment was skipped: reached, but no invented date.
+    expect(steps[2]).toHaveTextContent("Assessment—");
+    expect(steps[3]).toHaveAttribute("aria-current", "step");
+    expect(steps[3]).toHaveTextContent("Interview9/25");
+    expect(steps[4]).toHaveTextContent(/^Final$/);
+    expect(screen.getByText("Resume: Backend Resume v2")).toBeInTheDocument();
+    expect(screen.getByText("Interview 10/3")).toBeInTheDocument();
+  });
+
+  it("starts an application from a saved row in the list view", async () => {
+    currentSearch = "view=list";
+    const user = userEvent.setup();
+    renderPipeline();
+    await user.click(
+      await screen.findByRole("button", { name: "Start application" }),
+    );
+    expect(
+      await screen.findByText("Record this application?"),
+    ).toBeInTheDocument();
+  });
+
+  it("bulk-moves selected applications in the list view", async () => {
+    currentSearch = "view=list";
+    const user = userEvent.setup();
+    mockListApplications.mockResolvedValue([
+      makeApplication({ id: "a", role: "Role A" }),
+      makeApplication({ id: "b", role: "Role B" }),
+    ]);
+    mockUpdateApplicationStatus.mockImplementation(
+      (_token: string, id: string, status: string) =>
+        Promise.resolve(makeApplication({ id, status: status as never })),
+    );
+    renderPipeline();
+
+    await user.click(
+      await screen.findByRole("checkbox", {
+        name: "Select Together AI · Role A",
+      }),
+    );
+    await user.click(
+      screen.getByRole("checkbox", { name: "Select Together AI · Role B" }),
+    );
+    expect(screen.getByText("2 selected")).toBeInTheDocument();
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Move selected to…" }),
+      "Withdrawn",
+    );
+
+    expect(mockUpdateApplicationStatus).toHaveBeenCalledWith(
+      "token",
+      "a",
+      "WITHDRAWN",
+      expect.any(String),
+    );
+    expect(mockUpdateApplicationStatus).toHaveBeenCalledWith(
+      "token",
+      "b",
+      "WITHDRAWN",
+      expect.any(String),
+    );
+  });
+
+  it("confirms a submission straight from the action queue", async () => {
+    const user = userEvent.setup();
+    mockListApplications.mockResolvedValue([
+      makeApplication({
+        status: "PREPARING",
+        status_updated_at: "2020-01-01T00:00:00Z",
+      }),
+    ]);
+    mockUpdateApplicationStatus.mockResolvedValue(
+      makeApplication({ status: "APPLIED" }),
+    );
+    renderPipeline();
+
+    await user.click(
+      await screen.findByRole("button", { name: "I submitted it" }),
+    );
+    expect(mockUpdateApplicationStatus).toHaveBeenCalledWith(
+      "token",
+      "app-1",
+      "APPLIED",
+      expect.any(String),
+    );
+  });
+
+  it("still renders the board when status history cannot be loaded", async () => {
+    mockListStatusHistory.mockRejectedValue(new Error("offline"));
+    renderPipeline();
+    expect(await screen.findByText("Backend Engineer")).toBeInTheDocument();
+  });
+
+  it("restores filters from the URL and mirrors changes back into it", async () => {
+    currentSearch = "q=figma";
+    const user = userEvent.setup();
+    renderPipeline();
+    expect(await screen.findByText("Full Stack Engineer")).toBeInTheDocument();
+    expect(screen.queryByText("Backend Engineer")).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Search company or role")).toHaveValue(
+      "figma",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Stalled only" }));
+    expect(mockReplace).toHaveBeenLastCalledWith("/pipeline?q=figma&stalled=1");
   });
 });

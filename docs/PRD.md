@@ -523,7 +523,10 @@ either flow but is not required.
 - Application Strategy or resume tailoring during formation;
 - cover letters or a full interview platform;
 - email/calendar synchronization;
-- advanced analytics, outcome learning, or predictive personalization;
+- advanced analytics, outcome learning, or predictive personalization
+  (narrowed on 2026-10-01: count-only personal insights over the user's own
+  records are approved, see `docs/ROADMAP.md` Phase X; scores, probabilities,
+  and outcome learning remain excluded);
 - career planning or autonomous agents; and
 - speculative distributed infrastructure.
 

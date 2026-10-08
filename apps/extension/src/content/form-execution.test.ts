@@ -5,7 +5,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import type { FillPlanField } from "../shared/messages";
-import { applyFillPlan } from "./form-execution";
+import { applyFillPlan, fillDraftedAnswer } from "./form-execution";
 
 function fixture(name: string): Document {
   const html = readFileSync(path.join(process.cwd(), "fixtures", name), "utf8");
@@ -205,5 +205,61 @@ describe("safe form execution", () => {
 
     expect(submit).not.toHaveBeenCalled();
     expect(click).not.toHaveBeenCalled();
+  });
+
+  it("never types into a scripted dropdown; asks the user to pick the value", () => {
+    const page = new DOMParser().parseFromString(
+      `<form>
+        <label for="country">Country</label>
+        <input id="country" name="country" type="text" role="combobox"
+          aria-autocomplete="list" aria-expanded="false" />
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" />
+      </form>`,
+      "text/html",
+    );
+    const combobox = page.querySelector<HTMLInputElement>("#country")!;
+    const input = vi.fn();
+    combobox.addEventListener("input", input);
+
+    const result = applyFillPlan(page, "https://careers.example.com/apply", [
+      fill("field-0-0", "Canada", "ADDRESS_COUNTRY", "TEXT"),
+    ]);
+
+    expect(result.fields).toEqual([
+      { fieldId: "field-0-0", state: "REVIEW_REQUIRED" },
+    ]);
+    expect(combobox.value).toBe("");
+    expect(input).not.toHaveBeenCalled();
+    expect(page.body.textContent).toContain(
+      "CareerOS needs your review · Choose: Canada",
+    );
+  });
+
+  it("puts an approved draft only into an empty text field", () => {
+    const page = new DOMParser().parseFromString(
+      `<form>
+        <label for="why">Why us?</label><textarea id="why"></textarea>
+        <label for="note">Notes</label><textarea id="note">mine</textarea>
+      </form>`,
+      "text/html",
+    );
+    const url = "https://careers.example.com/apply";
+    expect(fillDraftedAnswer(page, url, "field-0-0", "Draft text")).toBe(
+      "FILLED",
+    );
+    expect(page.querySelector<HTMLTextAreaElement>("#why")!.value).toBe(
+      "Draft text",
+    );
+    expect(fillDraftedAnswer(page, url, "field-0-1", "Other")).toBe(
+      "SKIPPED_EXISTING",
+    );
+    expect(page.querySelector<HTMLTextAreaElement>("#note")!.value).toBe(
+      "mine",
+    );
+    expect(fillDraftedAnswer(page, url, "field-9-9", "x")).toBe("FAILED");
+    // Re-marking a field replaces its marker instead of stacking another.
+    fillDraftedAnswer(page, url, "field-0-0", "Again");
+    expect(page.querySelectorAll("[data-careeros-marker]")).toHaveLength(2);
   });
 });

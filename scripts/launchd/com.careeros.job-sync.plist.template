@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Local (macOS) schedule for the shared job catalog sync, every 6 hours.
+  Install with scripts/launchd/install-job-sync.sh; production uses its own
+  scheduler (docs/JOB_SOURCE_DECISION.md). __REPO__ is the repository root.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.careeros.job-sync</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__REPO__/.venv/bin/python</string>
+    <string>__REPO__/scripts/sync_job_sources.py</string>
+    <string>--source</string>
+    <string>all</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__REPO__</string>
+  <key>StartInterval</key>
+  <integer>21600</integer>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>LowPriorityIO</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>__REPO__/.local/logs/job-sync.log</string>
+  <key>StandardErrorPath</key>
+  <string>__REPO__/.local/logs/job-sync.log</string>
+</dict>
+</plist>

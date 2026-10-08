@@ -922,6 +922,252 @@ guopin with written authorization).
   postings, not lost coverage — talent-pool listings and previously
   mis-placed non-NA postings).
 
+### Phase W — Pipeline tracker usability pass — implementation complete
+
+Follow-up to a 2026-10-01 comparison with Simplify's Job Tracker. The aim was
+to beat it on CareerOS's own strengths, not copy it.
+
+- Fixes: exclusive Board/List/Closed tabs (the "Action queue" anchor tab and
+  the duplicate view toggle are gone), stage-specific empty-column copy,
+  explicit card time labels ("N days in this stage"), a labeled "Move to…"
+  control, and even metric-strip borders.
+- Search (company/role/location), stage filter, and a "stalled only" toggle
+  across board, list, and closed views.
+- The List view is now a per-application progress stepper. It dates each stage
+  from `ApplicationStatusHistory` via the owner-scoped bulk
+  `GET /applications/status-history`. Skipped stages are never given an
+  invented date, and closed applications are marked at the stage they ended.
+  Rows also show the resume version used, the next scheduled interview or
+  follow-up, and bulk "move to" for selected applications. Saved rows get a
+  one-click "Start application".
+- Stall nudges now apply per stage (`STAGE_STALL_DAYS`), not only to
+  Preparing. They stay neutral and never claim employer silence or ghosting.
+- The Action Center offers an explicit "I submitted it" confirmation inline.
+
+Deliberately not built in this phase: a conversion-funnel/flow chart and
+per-resume outcome attribution. The stage funnel was later added in Phase X
+under the owner-approved count-only insights boundary.
+
+### V1 status (2026-10-01)
+
+V1 feature work is complete: M0–M17 and post-M17 Phases A–W are implemented,
+and M16's representative validation passed. Public launch waits on owner
+actions, not engineering:
+
+- terms sign-off for the Greenhouse catalog source (Phase T);
+- a production scheduler for catalog sync;
+- approval of further sources (Lever, Ashby, and guopin, which needs written
+  authorization);
+- a representative unpacked-Chrome pass of Phase R's resume attach, Workday
+  adapter, and formless detection on real sites; and
+- confirmation that the Wave B validation gate heading reflects M16's passed
+  scenarios.
+
+### Phase X — Count-only personal insights — implementation complete
+
+Owner-approved on 2026-10-01: with V1 feature work complete, the V1
+"advanced analytics" non-goal is narrowed. **Allowed:** descriptive counts and
+lists derived from records the user owns. **Still excluded:** fit or readiness
+scores, outcome or offer probabilities, ghost-job claims, outcome learning,
+and any inferred professional claim. Every number must trace back to stored
+records, and small samples show raw counts instead of rates.
+
+- `GET /insights/requirement-gaps` (`careeros_api/career_insights.py`): for
+  jobs the user saved or has an open application to, takes each job's latest
+  analysis and groups non-strong requirements (genuine gap / weak evidence /
+  hidden evidence) by normalized value, with per-classification job counts and
+  the jobs involved. It counts only; gaps are never filled.
+- `GET /insights/pending-resume-imports`: owner-scoped resume imports still in
+  `READY_FOR_REVIEW`, with active draft item counts. This is the profile's real
+  "waiting for your confirmation" queue, because imported items stay
+  UNCONFIRMED drafts until the user confirms them.
+- Pipeline stage funnel (`stageFunnel` in `lib/pipeline.ts`): applications
+  reaching each stage, derived from status history. Stage-to-stage rates appear
+  only once the previous stage has at least 5 applications, and median stage
+  duration only with 3 completed stints.
+
+### Phase Y — Career Profile overview redesign — implementation complete
+
+- The /me tabs are now real routes: `/me` (overview), `/me/experience`,
+  `/me/projects`, `/me/education` (previously untabbed), and `/me/skills`. This
+  replaces the in-page anchors that could never show an active state. Tabs
+  scroll horizontally on small screens. A shared `useCareerBrain` hook and
+  `CareerBrainGate` load the data.
+- The overview merges the two stacked hero cards into one. The signed-in
+  email moved to Account & data. The metric strip borders are fixed, and the
+  primary call to action becomes "Upload resume" when the profile is empty,
+  with a three-step first-run guide.
+- New count-only panels (`lib/career-profile.ts`):
+  - next profile actions (review pending imports, add achievements to bare
+    roles, add real numbers where available, set a goal, confirm contact, mark
+    focus skills);
+  - evidence tiers (confirmed / waiting for review / missing evidence);
+  - application readiness, which shows which common form sections CareerOS
+    could fill. Contact fields count only once confirmed, matching the Answer
+    Engine. Sensitive questions are always stated as the user's to answer.
+  - the Phase X requirement-gap card.
+- Sources that fail to load show as "unknown" and never generate nagging
+  actions.
+
+### Phase Z — Competitive catch-up and differentiation — implementation complete
+
+Owner-approved on 2026-10-01 ("good features and design can be referenced; do
+everything that can be done") after re-reviewing Simplify, Jobright, Teal, and
+Huntr. Hard lines kept: no fabrication, no inference of sensitive answers, no
+auto-submit or mass apply, no single fit score, and no scraping without terms.
+
+- **Reliability**: the API accepts Clerk tokens with 5 seconds of clock skew
+  (`auth.py`); this was the root cause of intermittent "session expired" banners.
+  `useDataFetch` and the Career Brain loader also retry once, silently, after a 401.
+- **Polish**: the profile overview renders once without layout shift. The
+  Pipeline funnel starts collapsed below 5 applications. Pipeline filters are
+  mirrored into the URL (`q`, `stage`, `stalled`).
+- **Daily opportunities and browse feedback**: Discover marks jobs first seen
+  since the previous visit (per browser) and offers "Not interested" and "Hide
+  this company" with undo, plus a hidden-companies manager. Listings report
+  the user's application status per job. Data model section 17a.
+- **Sponsorship statements** (`job_sponsorship.py`): only what a posting
+  explicitly says, `OFFERED` or `NOT_OFFERED`, with the quoted sentence. It is
+  deterministic, never inferred, and skips export-control boilerplate and vague
+  mentions. Tuned on 10,114 local catalog postings: 141 refusals and 490 offers,
+  each a real statement. Discover can hide postings that say no sponsorship.
+- **Application Packet** (`GET /applications/{id}/packet`, `/pipeline/packet/[id]`):
+  the resume version sent, answers, contacts, a timeline, and the job
+  description snapshot chosen by time with its basis labelled. It is
+  printable or savable as PDF.
+- **Evidence-grounded materials** (`/materials/[jobId]`, AI_SPEC section 23a):
+  tailoring suggestions accepted edit by edit into a new `TAILORED` resume
+  version; cover-letter and open-question drafts that list unsupported points
+  instead of claiming them, with an optional save as a reusable answer; and an
+  interview prep plan of stories, likely questions, and honest gap framing.
+  Ungrounded output is dropped by server-side checks.
+- **Extension**: scripted comboboxes are never typed into or reported as
+  filled; the field is marked for review with the value to choose
+  (FORM_EXECUTION section 6).
+
+Still deferred: simulated option selection in scripted dropdowns (needs
+real-site validation), iCIMS/Taleo adapters, notification delivery (no
+outbound email), and pinning the exact Job Snapshot on each Application.
+
+### Phase Z2 — Discover listing quality — implementation complete
+
+- Jobs store the employer's own publish time (`jobs.posted_at`, migration
+  0026): Greenhouse `first_published`, Lever `createdAt`, and Ashby
+  `publishedAt`, parsed by `posted_moment`. Unparseable or implausible values
+  are stored as unknown. "Newest posted" orders by
+  `coalesce(posted_at, first_observed_at, created_at)` instead of insertion
+  time, which previously grouped each employer's sync batch together.
+- The default Discover order is "Best match" (`sort=match`,
+  `careeros_api/job_ranking.py`). It ranks by fit with the user's active Job
+  Search Goal using the same rules as the Web Preference Fit: each stated and
+  met criterion is +2, each stated and unmet one is −1, unknown values are
+  ignored, blocklisted companies sink to the bottom, and recency breaks ties.
+  The score is never shown. Without an active goal it is newest first, and
+  Discover prompts the user to set a goal. It is combined with `diversify=true`:
+  at most two rows per company (that company's best matches), each carrying the
+  company's total, with an "N more at {company}" link to an exact `company=`
+  filter. "Newest, mixed companies", "Newest posted", and "Job title" remain as
+  options. A company-grouped view was tried and dropped as low value; random
+  shuffling was rejected because it gives an unstable order across refreshes
+  and pages and buries new postings.
+- Rows are about two thirds the previous height. The title comes first, then
+  the company, then one meta line with the posted or found age. "Remote" is no
+  longer repeated as a workplace chip. Explicit sponsorship refusals are a quiet
+  line rather than a red badge on every row; offers stay a green chip. The goal
+  fit chip names the matched criteria.
+
+### Phase Z3 — Freshness, coverage, and the in-page review checklist — implementation complete
+
+- **Freshness**: a local launchd job (`scripts/launchd/`) runs
+  `sync_job_sources.py` every 6 hours on the development Mac; production still
+  needs its own scheduler. Catalog jobs show "confirmed open N hours ago" in
+  the job panel and a "may have closed" warning in lists once a sync has not
+  seen them for 72 hours (`lib/freshness.ts`). Amplitude was removed from the
+  Greenhouse seed because its board returns 404.
+- **Coverage**: `scripts/verify_job_boards.py` checks candidate employer boards
+  against each source's public API (existence and posting count) before they
+  are added. Each verified board's own name was checked against the intended
+  company, and mismatches were removed or renamed. The seeds grew from 86 to
+  163 employers (Greenhouse 101, Lever 12, Ashby 50), and the local catalog from
+  about 10,200 to 20,950 open North American postings on 2026-10-02. Every
+  employer has a bundled logo; `company-mark.tsx` now reads its logo list from
+  `public/company-logos/catalog.json`. Public launch still waits on the terms
+  sign-off for these sources.
+- **Workday**: a source record is proposed in `docs/JOB_SOURCE_DECISION.md`
+  but not implemented, pending owner and legal approval.
+- **Extension**: after a fill the in-page assistant lists the fields still
+  needing the user (required first, click to focus, ticking off as answered),
+  offers evidence-grounded drafts for free-text custom questions with an
+  explicit "Put in this field", and shows a saved-job card with confirmed-open
+  time and the posting's sponsorship statement (FORM_EXECUTION section 6).
+
+### Phase Z4 — Extension parity: launcher, one-click fill, job card, letters — implementation complete
+
+Owner-approved on 2026-10-02 ("do all of it, with our own mascot"), including
+the optional career-site permission.
+
+- **Launcher**: the CareerOS mascot docks on the right edge. It can be dragged
+  vertically or to the left edge, tucked against the edge, or hidden for the
+  page; the position persists per browser. An opt-in settings toggle shows it
+  automatically on Greenhouse, Lever, Ashby, and Workday via
+  `optional_host_permissions` and a dynamically registered content script
+  (FORM_EXECUTION section 7). It is off by default, and turning it off returns
+  the permission.
+- **One-click "Autofill this page"** chains inspect, resolve, and fill.
+- **Job card**: `GET /jobs/lookup` finds the CareerOS job for the tab's URL. The
+  card shows a bundled logo, the publish date, the salary range the posting
+  states (`job_salary.py`: explicit ranges only, USD/CAD, yearly or hourly;
+  13,416 of 20,950 local catalog postings carry one), the confirmed-open time,
+  and the sponsorship statement, with links into `/materials` to tailor the
+  resume or write a cover letter.
+- **Evidence match** in the extension: requirement coverage from the latest
+  stored analysis, with optional re-analysis using the selected resume
+  (requirements are extracted first when needed). It is never a score.
+- **Cover letter file**: draft, edit, and attach as DOCX to an empty cover
+  letter upload control (`POST /drafts/cover-letter-file`).
+- **Web**: Discover rows and the job panel show the stated salary range.
+
+Not done: a hands-on pass of the new extension UI in Chrome on real career
+sites, and simulated dropdown selection (still needs real-site validation).
+
+### Phase Z5 — Ashby formless detection fix, extension polish, same-origin iframe forms — implementation complete
+
+Owner-approved on 2026-10-02 ("先做了 到时候不行再调整" — go ahead, adjust later
+if it doesn't hold up).
+
+- **Ashby bug fix**: current Ashby application pages render with no `<form>`
+  element (verified live against a real posting); `ashby.ts` now also
+  recognizes the `.ashby-application-form-container` wrapper divs, excluding
+  the unrelated "Autofill from resume" upload and the recaptcha control. The
+  one-click autofill button also now shows an explicit message when no
+  application form is found anywhere on the page, instead of doing nothing.
+- **Salary display**: shows the posting's exact figures ("$59,600 - $100,000
+  USD / year"), not rounded to "K", in both the web app and the extension job
+  card.
+- **Cover letter section**: collapses to a one-line status ("Filled (0/1)" /
+  "Filled (1/1)") by default, expanding on click or once drafting starts, to
+  keep the panel compact.
+- **Same-origin iframe form detection**: some ATSs (legacy iCIMS, Taleo, and
+  SuccessFactors skins) embed the application in a same-origin `<iframe>`
+  rather than the top document; `candidateForms` and the generic adapter's
+  formless detection now also search same-origin iframe documents
+  (`content/adapters/types.ts`'s `sameOriginDocuments`). Cross-origin iframes
+  are out of scope — they need dedicated host permissions and real-site
+  validation, not attempted here.
+- **Realm-safety fix** (found while building the above): `instanceof
+  HTMLInputElement`/`HTMLSelectElement`/`HTMLTextAreaElement` checks fail for
+  an element from a different window/realm — including a genuine same-origin
+  iframe, whose element constructors are distinct objects from the top
+  frame's. This affected field-type detection and fill execution across
+  `form-normalization.ts`, `form-execution.ts`, `answer-capture.ts`, and
+  `resume-attach.ts`. Replaced with realm-safe tag-name checks
+  (`content/dom-elements.ts`); behavior for the existing non-iframe case is
+  unchanged (177/177 extension tests pass, including the pre-existing suite).
+
+Not done: dedicated adapters for iCIMS/Taleo/SmartRecruiters/etc. (needs a
+real posting from each inspected before writing selectors — not guessed), and
+cross-origin iframe support (needs a host-permission and scope decision first).
+
 ### Product-direction backlog from the 2026-09 review (not yet scheduled)
 
 Not approved work. Preserve these candidates for a later scoping and policy
@@ -1051,7 +1297,8 @@ Do not make these blockers for V1 formation:
 - Application Strategy and resume tailoring;
 - cover letters and interview preparation;
 - sophisticated recommendations or outcome learning;
-- advanced analytics;
+- advanced analytics (count-only personal insights were approved separately in
+  Phase X);
 - career planning or autonomous agents; and
 - microservices, Kafka, Kubernetes, Neo4j, standalone vector database, or generic
   plugin/event infrastructure.
@@ -1095,7 +1342,8 @@ After a milestone:
 
 M16 is complete: automated hardening, repository-level validation, and the
 representative unpacked-Chrome gate for both scenarios have all passed. M17 and
-the post-M17 wave (Phases A–V) are implemented. Phase R's resume attach,
+the post-M17 wave (Phases A–Z) are implemented; see "V1 status (2026-10-01)"
+for the owner actions that public launch waits on. Phase R's resume attach,
 Workday adapter, and formless detection still need a representative
 unpacked-Chrome pass on real sites.
 

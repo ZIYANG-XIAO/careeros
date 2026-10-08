@@ -277,4 +277,44 @@ describe("useDataFetch", () => {
       expect(result.current.data).toEqual(["user-b-job"]);
     });
   });
+
+  it("silently retries once after an unauthenticated error", async () => {
+    const fetch = vi
+      .fn<() => Promise<string[]>>()
+      .mockRejectedValueOnce(new ApiError("expired", 401, "unauthenticated"))
+      .mockResolvedValueOnce(["job-1"]);
+
+    const { result } = renderHook(() =>
+      useDataFetch({
+        resetKey: "user-a",
+        initialData: [] as string[],
+        fetch,
+        deps: [],
+      }),
+    );
+
+    await waitFor(() => expect(result.current.data).toEqual(["job-1"]));
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(result.current.loadError).toBeNull();
+  });
+
+  it("reports the error when the retry is also unauthenticated", async () => {
+    const fetch = vi
+      .fn<() => Promise<string[]>>()
+      .mockRejectedValue(new ApiError("expired", 401, "unauthenticated"));
+
+    const { result } = renderHook(() =>
+      useDataFetch({
+        resetKey: "user-a",
+        initialData: [] as string[],
+        fetch,
+        deps: [],
+      }),
+    );
+
+    await waitFor(() =>
+      expect(result.current.loadError?.category).toBe("unauthenticated"),
+    );
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
 });

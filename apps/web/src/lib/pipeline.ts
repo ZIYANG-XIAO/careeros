@@ -1,4 +1,9 @@
-import type { ApplicationStatus, ApplicationSummary, Job } from "./types";
+import type {
+  ApplicationStatus,
+  ApplicationStatusHistoryBulkEntry,
+  ApplicationSummary,
+  Job,
+} from "./types";
 
 export const PIPELINE_STAGES: ApplicationStatus[] = [
   "PREPARING",
@@ -137,6 +142,241 @@ export function pipelineSummary(
 
 export function isClosedStatus(status: ApplicationStatus): boolean {
   return CLOSED_STATUSES.has(status);
+}
+
+// ---------------------------------------------------------------------------
+// Stage progress, dwell time, and filtering
+// ---------------------------------------------------------------------------
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Days in a stage after which a card is flagged as worth a look. A neutral
+ * nudge only: it never claims an employer has gone silent or that a job is a
+ * ghost posting. Offer has no threshold since the decision is the user's.
+ */
+export const STAGE_STALL_DAYS: Partial<Record<ApplicationStatus, number>> = {
+  PREPARING: 3,
+  APPLIED: 7,
+  ASSESSMENT: 7,
+  INTERVIEW: 10,
+  FINAL: 10,
+};
+
+export type StageDwell = { days: number; stalled: boolean };
+
+export function stageDwell(
+  application: ApplicationSummary,
+  now: Date = new Date(),
+): StageDwell {
+  const days = Math.max(
+    0,
+    Math.floor(
+      (now.getTime() - Date.parse(application.status_updated_at)) / DAY_MS,
+    ),
+  );
+  const threshold = STAGE_STALL_DAYS[application.status];
+  return { days, stalled: threshold !== undefined && days >= threshold };
+}
+
+/** Bulk status history grouped by application, each list oldest first. */
+export function groupStatusHistory(
+  entries: ApplicationStatusHistoryBulkEntry[],
+): Map<string, ApplicationStatusHistoryBulkEntry[]> {
+  const grouped = new Map<string, ApplicationStatusHistoryBulkEntry[]>();
+  for (const entry of entries) {
+    const list = grouped.get(entry.application_id) ?? [];
+    list.push(entry);
+    grouped.set(entry.application_id, list);
+  }
+  for (const list of grouped.values()) {
+    list.sort((a, b) => a.changed_at.localeCompare(b.changed_at));
+  }
+  return grouped;
+}
+
+export type ProgressStepState = "done" | "current" | "closed" | "upcoming";
+
+export type ProgressStep = {
+  stage: ApplicationStatus;
+  state: ProgressStepState;
+  /** When the application most recently entered this stage; null if skipped or unknown. */
+  date: string | null;
+};
+
+/**
+ * One step per open stage, with the date the application entered it. Stages
+ * the user skipped (e.g. straight to Interview) read as done without a date
+ * rather than inventing one. A closed application stops at the stage it was
+ * closed from, which is marked "closed".
+ */
+export function progressSteps(
+  application: ApplicationSummary,
+  history: ApplicationStatusHistoryBulkEntry[] = [],
+): ProgressStep[] {
+  const entered = new Map<ApplicationStatus, string>();
+  for (const entry of history) entered.set(entry.to_status, entry.changed_at);
+
+  let reached: ApplicationStatus | null = application.status;
+  const closed = CLOSED_STATUSES.has(application.status);
+  if (closed) {
+    const closing = [...history]
+      .reverse()
+      .find((entry) => entry.to_status === application.status);
+    reached = closing?.from_status ?? null;
+    if (reached && CLOSED_STATUSES.has(reached)) reached = null;
+  } else if (!entered.has(application.status)) {
+    entered.set(application.status, application.status_updated_at);
+  }
+  const reachedIndex = reached ? PIPELINE_STAGES.indexOf(reached) : -1;
+
+  return PIPELINE_STAGES.map((stage, index) => ({
+    stage,
+    state:
+      index < reachedIndex
+        ? "done"
+        : index === reachedIndex
+          ? closed
+            ? "closed"
+            : "current"
+          : "upcoming",
+    date: index <= reachedIndex ? (entered.get(stage) ?? null) : null,
+  }));
+}
+
+export type PipelineFilters = {
+  query: string;
+  stage: ApplicationStatus | "SAVED" | "ALL";
+  attentionOnly: boolean;
+};
+
+export const EMPTY_PIPELINE_FILTERS: PipelineFilters = {
+  query: "",
+  stage: "ALL",
+  attentionOnly: false,
+};
+
+export function hasActiveFilters(filters: PipelineFilters): boolean {
+  return (
+    filters.query.trim() !== "" ||
+    filters.stage !== "ALL" ||
+    filters.attentionOnly
+  );
+}
+
+function matchesQuery(query: string, ...fields: (string | null)[]): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  return fields.some((field) => field?.toLowerCase().includes(needle));
+}
+
+export function filterApplications(
+  applications: ApplicationSummary[],
+  filters: PipelineFilters,
+  now: Date = new Date(),
+): ApplicationSummary[] {
+  if (filters.stage === "SAVED") return [];
+  return applications.filter(
+    (application) =>
+      (filters.stage === "ALL" || application.status === filters.stage) &&
+      (!filters.attentionOnly || stageDwell(application, now).stalled) &&
+      matchesQuery(filters.query, application.company, application.role),
+  );
+}
+
+export function filterSavedJobs(jobs: Job[], filters: PipelineFilters): Job[] {
+  if (filters.attentionOnly) return [];
+  if (filters.stage !== "ALL" && filters.stage !== "SAVED") return [];
+  return jobs.filter((job) =>
+    matchesQuery(filters.query, job.company, job.title, job.location),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Stage funnel (count-only)
+// ---------------------------------------------------------------------------
+
+/** Below this many applications a stage-to-stage rate is not shown. */
+export const FUNNEL_MIN_SAMPLE = 5;
+/** Below this many completed stints a median stage duration is not shown. */
+export const FUNNEL_MIN_DURATIONS = 3;
+
+export type FunnelStage = {
+  stage: ApplicationStatus;
+  /** Applications that reached this stage or any later one. */
+  reached: number;
+  /** reached / previous stage's reached, only with a big enough sample. */
+  rateFromPrevious: number | null;
+  /** Median whole days spent in the stage across completed stints. */
+  medianDays: number | null;
+};
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : Math.round((sorted[middle - 1] + sorted[middle]) / 2);
+}
+
+/**
+ * How far applications got and how long completed stages took, derived only
+ * from recorded status history. Descriptive counts, never a prediction.
+ */
+export function stageFunnel(
+  applications: ApplicationSummary[],
+  historyByApplication: Map<string, ApplicationStatusHistoryBulkEntry[]>,
+): FunnelStage[] {
+  const furthest: number[] = [];
+  const durations = new Map<ApplicationStatus, number[]>();
+
+  for (const application of applications) {
+    const history = historyByApplication.get(application.id) ?? [];
+    let reachedIndex = CLOSED_STATUSES.has(application.status)
+      ? -1
+      : PIPELINE_STAGES.indexOf(application.status);
+    for (const entry of history) {
+      for (const status of [entry.from_status, entry.to_status]) {
+        if (status) {
+          reachedIndex = Math.max(
+            reachedIndex,
+            PIPELINE_STAGES.indexOf(status),
+          );
+        }
+      }
+    }
+    furthest.push(reachedIndex);
+
+    for (let index = 0; index < history.length - 1; index += 1) {
+      const stage = history[index].to_status;
+      if (CLOSED_STATUSES.has(stage)) continue;
+      const days =
+        (Date.parse(history[index + 1].changed_at) -
+          Date.parse(history[index].changed_at)) /
+        DAY_MS;
+      const list = durations.get(stage) ?? [];
+      list.push(Math.max(0, Math.round(days)));
+      durations.set(stage, list);
+    }
+  }
+
+  return PIPELINE_STAGES.map((stage, index) => {
+    const reached = furthest.filter((value) => value >= index).length;
+    const previous =
+      index === 0
+        ? null
+        : furthest.filter((value) => value >= index - 1).length;
+    const stints = durations.get(stage) ?? [];
+    return {
+      stage,
+      reached,
+      rateFromPrevious:
+        previous !== null && previous >= FUNNEL_MIN_SAMPLE
+          ? reached / previous
+          : null,
+      medianDays: stints.length >= FUNNEL_MIN_DURATIONS ? median(stints) : null,
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------

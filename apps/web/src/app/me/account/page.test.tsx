@@ -15,6 +15,9 @@ vi.mock("@clerk/nextjs", () => ({
     getToken: vi.fn().mockResolvedValue("token"),
   }),
   useClerk: () => ({ signOut: mockSignOut }),
+  useUser: () => ({
+    user: { primaryEmailAddress: { emailAddress: "ada@example.com" } },
+  }),
 }));
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/me/account" }));
@@ -31,6 +34,18 @@ describe("AccountPage", () => {
   beforeEach(() => {
     mockDeleteAccount.mockReset().mockResolvedValue(undefined);
     mockSignOut.mockReset().mockResolvedValue(undefined);
+  });
+
+  it("shows the sign-in identity on the account page", () => {
+    render(
+      <LocaleProvider>
+        <AccountPage />
+      </LocaleProvider>,
+    );
+    expect(
+      screen.getByRole("heading", { name: "Sign-in identity" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("ada@example.com")).toBeInTheDocument();
   });
 
   it("deletes only after the confirmation word is typed, then signs out", async () => {

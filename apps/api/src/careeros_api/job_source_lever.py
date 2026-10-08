@@ -26,6 +26,7 @@ from careeros_api.job_source_boards import (
     is_standing_interest_posting,
     north_american_country,
     placement_from_countries,
+    posted_moment,
     resolve_north_america,
     text_value,
 )
@@ -112,6 +113,7 @@ def map_postings(
             ),
             employment=_COMMITMENT.get(commitment) or employment_from_title(title),
             observed_at=moment,
+            posted_at=posted_moment(raw.get("createdAt"), moment),
         )
         if candidate is None:
             invalid += 1

@@ -6,6 +6,11 @@ import type {
 import { t } from "../shared/i18n";
 import { selectFormAdapter } from "./adapters/registry";
 import {
+  isInputElement,
+  isSelectElement,
+  isTextAreaElement,
+} from "./dom-elements";
+import {
   inspectFormTargets,
   type NormalizedFieldTarget,
   type SupportedControl,
@@ -62,6 +67,7 @@ function markTarget(
   document: Document,
   target: NormalizedFieldTarget,
   state: FillFieldState,
+  pickHint: string | null = null,
 ): void {
   const firstControl = target.controls[0];
   const visualTarget =
@@ -69,10 +75,14 @@ function markTarget(
       ? (firstControl.closest("fieldset") ?? firstControl)
       : firstControl;
   visualTarget.setAttribute(STATE_ATTRIBUTE, state);
+  const previous = visualTarget.nextElementSibling;
+  if (previous?.hasAttribute(MARKER_ATTRIBUTE)) previous.remove();
   const marker = document.createElement("span");
   marker.setAttribute(MARKER_ATTRIBUTE, "true");
   marker.setAttribute("role", "status");
-  marker.textContent = t(STATE_LABELS[state]);
+  marker.textContent = pickHint
+    ? `${t(STATE_LABELS[state])} · ${t("Choose: {value}", { value: pickHint })}`
+    : t(STATE_LABELS[state]);
   visualTarget.insertAdjacentElement("afterend", marker);
 }
 
@@ -80,10 +90,13 @@ function setNativeValue(
   control: HTMLInputElement | HTMLTextAreaElement,
   value: string,
 ): void {
-  const prototype =
-    control instanceof HTMLTextAreaElement
-      ? HTMLTextAreaElement.prototype
-      : HTMLInputElement.prototype;
+  // Use the control's OWN window's constructors: a same-origin iframe has a
+  // distinct realm, so the top frame's HTMLInputElement is a different
+  // object from the iframe's, and its prototype would not match.
+  const view = control.ownerDocument.defaultView ?? window;
+  const prototype = isTextAreaElement(control)
+    ? view.HTMLTextAreaElement.prototype
+    : view.HTMLInputElement.prototype;
   const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
   if (setter) setter.call(control, value);
   else control.value = value;
@@ -95,15 +108,31 @@ function notifyFrameworks(control: SupportedControl): void {
 }
 
 function hasExistingValue(control: SupportedControl): boolean {
-  if (control instanceof HTMLSelectElement)
-    return control.value.trim().length > 0;
-  if (
-    control instanceof HTMLInputElement &&
-    ["radio", "checkbox"].includes(control.type)
-  ) {
+  if (isSelectElement(control)) return control.value.trim().length > 0;
+  if (isInputElement(control) && ["radio", "checkbox"].includes(control.type)) {
     return control.checked;
   }
   return control.value.trim().length > 0;
+}
+
+/**
+ * Script-driven dropdowns (react-select, Workday listboxes) render a text
+ * input with combobox semantics. Typing into one does not select an option,
+ * so it must never be reported as filled. Choosing the option means
+ * simulating clicks, which waits on real-site validation (docs/ROADMAP.md);
+ * until then the user picks it, with the approved value shown beside it.
+ */
+export function isScriptedCombobox(control: SupportedControl): boolean {
+  if (!isInputElement(control)) return false;
+  const role = control.getAttribute("role");
+  const autocomplete = control.getAttribute("aria-autocomplete");
+  const popup = control.getAttribute("aria-haspopup");
+  return (
+    role === "combobox" ||
+    autocomplete === "list" ||
+    autocomplete === "both" ||
+    popup === "listbox"
+  );
 }
 
 function fillTextControl(
@@ -147,10 +176,12 @@ function fillRadioGroup(
     (option) => option.label.trim().toLocaleLowerCase() === normalized,
   );
   const control = target.controls[optionIndex];
-  if (!(control instanceof HTMLInputElement) || control.disabled)
+  if (!control || !isInputElement(control) || control.disabled) {
     return "FAILED";
+  }
+  const view = control.ownerDocument.defaultView ?? window;
   const setter = Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
+    view.HTMLInputElement.prototype,
     "checked",
   )?.set;
   if (setter) setter.call(control, true);
@@ -167,11 +198,8 @@ function applyApprovedAnswer(
   if (target.field.controlType === "RADIO_GROUP") {
     return fillRadioGroup(target, value);
   }
-  if (control instanceof HTMLSelectElement) return fillSelect(control, value);
-  if (
-    control instanceof HTMLInputElement &&
-    ["checkbox", "file"].includes(control.type)
-  ) {
+  if (isSelectElement(control)) return fillSelect(control, value);
+  if (isInputElement(control) && ["checkbox", "file"].includes(control.type)) {
     return "REVIEW_REQUIRED";
   }
   return fillTextControl(
@@ -225,12 +253,99 @@ export function applyFillPlan(
       ) {
         return { fieldId: field.fieldId, state: "FAILED" };
       }
+      const combobox = isScriptedCombobox(target.controls[0]);
+      const pickHint =
+        combobox && field.action === "FILL" ? field.proposedAnswer : null;
       const state =
         field.action === "FILL" && field.proposedAnswer !== null
-          ? applyApprovedAnswer(target, field.proposedAnswer)
+          ? combobox
+            ? hasExistingValue(target.controls[0])
+              ? "SKIPPED_EXISTING"
+              : "REVIEW_REQUIRED"
+            : applyApprovedAnswer(target, field.proposedAnswer)
           : stateWithoutFill(field.action);
-      markTarget(document, target, state);
+      markTarget(
+        document,
+        target,
+        state,
+        state === "REVIEW_REQUIRED" ? pickHint : null,
+      );
       return { fieldId: field.fieldId, state };
     }),
   };
+}
+
+function findTarget(
+  document: Document,
+  pageUrl: string,
+  fieldId: string,
+): NormalizedFieldTarget | null {
+  let url: URL;
+  try {
+    url = new URL(pageUrl);
+  } catch {
+    return null;
+  }
+  const adapter = selectFormAdapter(document, url);
+  const forms = adapter.findForms(document, url).slice(0, MAX_FORMS);
+  for (const [formIndex, form] of forms.entries()) {
+    const target = inspectFormTargets(form, formIndex).find(
+      (candidate) => candidate.field.id === fieldId,
+    );
+    if (target) return target;
+  }
+  return null;
+}
+
+/** Whether the user has answered a field yet (used by the review checklist). */
+export function fieldHasValue(
+  document: Document,
+  pageUrl: string,
+  fieldId: string,
+): boolean {
+  const target = findTarget(document, pageUrl, fieldId);
+  return Boolean(target?.controls.some(hasExistingValue));
+}
+
+/** Scroll a field into view and focus it so the user can answer it. */
+export function focusField(
+  document: Document,
+  pageUrl: string,
+  fieldId: string,
+): boolean {
+  const target = findTarget(document, pageUrl, fieldId);
+  const control = target?.controls[0];
+  if (!control) return false;
+  control.scrollIntoView({ block: "center", behavior: "smooth" });
+  control.focus({ preventScroll: true });
+  return true;
+}
+
+/**
+ * Put a draft the user explicitly approved into one empty text field. Never
+ * overwrites an existing answer, never touches other controls, never submits.
+ */
+export function fillDraftedAnswer(
+  document: Document,
+  pageUrl: string,
+  fieldId: string,
+  text: string,
+): FillFieldState {
+  const target = findTarget(document, pageUrl, fieldId);
+  const control = target?.controls[0];
+  if (
+    !target ||
+    !control ||
+    !(
+      isTextAreaElement(control) ||
+      (isInputElement(control) && ["text", ""].includes(control.type))
+    ) ||
+    isScriptedCombobox(control)
+  ) {
+    return "FAILED";
+  }
+  installStyles(document);
+  const state = fillTextControl(control, text);
+  markTarget(document, target, state);
+  return state;
 }

@@ -417,6 +417,30 @@ AI or Answer Engine failure must:
 - provide a manual path; and
 - expose a useful failure category without logging private content.
 
+## 23a. Evidence-grounded materials (Phase Z)
+
+`careeros_api/materials_writer.py` (prompt version `materials-writer-v1`) is the
+single boundary for resume tailoring suggestions, cover-letter and
+open-question drafts, and interview preparation. Its inputs are the job's
+parsed requirements, the user's **confirmed** Career Evidence, and the selected
+resume text, all passed as untrusted data. `materials_schemas.py` enforces
+deterministically, independent of the model:
+
+- every cited evidence revision and requirement must come from the supplied set;
+- a rewrite's `original_text` and an insertion's `insert_after` must exist
+  verbatim in the resume;
+- new text may not contain a number absent from the cited evidence or the
+  original line;
+- drafts must cite at least one evidence revision, and interview stories must
+  rest on evidence.
+
+Failing items are dropped, never repaired, and the response reports how many
+were dropped. Sensitive questions (section 19) are refused before any model
+call. Nothing generated changes a resume until the user accepts specific
+edits. Acceptance creates a new immutable Resume Version
+(`source = TAILORED`, `source_version_id` = base, plain DOCX) and never edits
+the base version.
+
 ## 24. Provider abstraction and prompt management
 
 Domain and application services depend on task-oriented interfaces, not scattered

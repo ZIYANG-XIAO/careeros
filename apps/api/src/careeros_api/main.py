@@ -7,17 +7,21 @@ from careeros_api.account import router as account_router
 from careeros_api.answer_engine import router as answer_engine_router
 from careeros_api.application import router as application_router
 from careeros_api.application_contacts import router as application_contacts_router
+from careeros_api.application_packet import router as application_packet_router
 from careeros_api.calendar_export import router as calendar_router
 from careeros_api.career_brain import router as career_brain_router
+from careeros_api.career_insights import router as career_insights_router
 from careeros_api.config import Settings, get_settings
 from careeros_api.contact_info import router as contact_info_router
 from careeros_api.education import router as education_router
 from careeros_api.experience import router as experience_router
 from careeros_api.health import router as health_router
 from careeros_api.job import router as job_router
+from careeros_api.job_feedback import router as job_feedback_router
 from careeros_api.job_intelligence import router as job_intelligence_router
 from careeros_api.job_preferences import router as job_preferences_router
 from careeros_api.job_search_goals import router as job_search_goals_router
+from careeros_api.materials import router as materials_router
 from careeros_api.observability import RequestContextMiddleware
 from careeros_api.project import router as project_router
 from careeros_api.resume import router as resume_router
@@ -47,17 +51,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(job_preferences_router)
     application.include_router(job_search_goals_router)
     application.include_router(career_brain_router)
+    application.include_router(career_insights_router)
     application.include_router(education_router)
     application.include_router(experience_router)
     application.include_router(project_router)
     application.include_router(skill_router)
     application.include_router(resume_router)
+    application.include_router(job_feedback_router)
+    application.include_router(materials_router)
     application.include_router(job_router)
     application.include_router(job_intelligence_router)
     application.include_router(answer_engine_router)
     application.include_router(reusable_answers_router)
     application.include_router(application_router)
     application.include_router(application_contacts_router)
+    application.include_router(application_packet_router)
     application.include_router(calendar_router)
     return application
 

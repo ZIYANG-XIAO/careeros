@@ -175,10 +175,6 @@
       "company": "Intercom"
     },
     {
-      "token": "amplitude",
-      "company": "Amplitude"
-    },
-    {
       "token": "mixpanel",
       "company": "Mixpanel"
     },
@@ -209,6 +205,206 @@
     {
       "token": "hootsuite",
       "company": "Hootsuite"
+    },
+    {
+      "token": "fivetran",
+      "company": "Fivetran"
+    },
+    {
+      "token": "launchdarkly",
+      "company": "LaunchDarkly"
+    },
+    {
+      "token": "honeycomb",
+      "company": "Honeycomb.io"
+    },
+    {
+      "token": "grafanalabs",
+      "company": "Grafana Labs"
+    },
+    {
+      "token": "chainguard",
+      "company": "Chainguard"
+    },
+    {
+      "token": "tailscale",
+      "company": "Tailscale"
+    },
+    {
+      "token": "calendly",
+      "company": "Calendly"
+    },
+    {
+      "token": "nextdoor",
+      "company": "Nextdoor"
+    },
+    {
+      "token": "epicgames",
+      "company": "Epic Games"
+    },
+    {
+      "token": "riotgames",
+      "company": "Riot Games"
+    },
+    {
+      "token": "stitchfix",
+      "company": "Stitch Fix"
+    },
+    {
+      "token": "verkada",
+      "company": "Verkada"
+    },
+    {
+      "token": "gomotive",
+      "company": "Motive"
+    },
+    {
+      "token": "lucidmotors",
+      "company": "Lucid Motors"
+    },
+    {
+      "token": "relativity",
+      "company": "Relativity Space"
+    },
+    {
+      "token": "spacex",
+      "company": "SpaceX"
+    },
+    {
+      "token": "andurilindustries",
+      "company": "Anduril"
+    },
+    {
+      "token": "checkr",
+      "company": "Checkr"
+    },
+    {
+      "token": "mercury",
+      "company": "Mercury"
+    },
+    {
+      "token": "fastly",
+      "company": "Fastly"
+    },
+    {
+      "token": "cockroachlabs",
+      "company": "Cockroach Labs"
+    },
+    {
+      "token": "singlestore",
+      "company": "SingleStore"
+    },
+    {
+      "token": "starburst",
+      "company": "Starburst"
+    },
+    {
+      "token": "braze",
+      "company": "Braze"
+    },
+    {
+      "token": "iterable",
+      "company": "Iterable"
+    },
+    {
+      "token": "newrelic",
+      "company": "New Relic"
+    },
+    {
+      "token": "sumologic",
+      "company": "Sumo Logic"
+    },
+    {
+      "token": "peloton",
+      "company": "Peloton"
+    },
+    {
+      "token": "roku",
+      "company": "Roku"
+    },
+    {
+      "token": "oscar",
+      "company": "Oscar Health"
+    },
+    {
+      "token": "abnormalsecurity",
+      "company": "Abnormal Security"
+    },
+    {
+      "token": "sentinellabs",
+      "company": "SentinelOne"
+    },
+    {
+      "token": "tanium",
+      "company": "Tanium"
+    },
+    {
+      "token": "huntress",
+      "company": "Huntress"
+    },
+    {
+      "token": "expel",
+      "company": "Expel"
+    },
+    {
+      "token": "bitwarden",
+      "company": "Bitwarden"
+    },
+    {
+      "token": "dashlane",
+      "company": "Dashlane"
+    },
+    {
+      "token": "labelbox",
+      "company": "Labelbox"
+    },
+    {
+      "token": "snorkelai",
+      "company": "Snorkel AI"
+    },
+    {
+      "token": "descript",
+      "company": "Descript"
+    },
+    {
+      "token": "figure",
+      "company": "Figure Lending"
+    },
+    {
+      "token": "kodiak",
+      "company": "Kodiak Robotics"
+    },
+    {
+      "token": "current",
+      "company": "Current"
+    },
+    {
+      "token": "monzo",
+      "company": "Monzo"
+    },
+    {
+      "token": "betterment",
+      "company": "Betterment"
+    },
+    {
+      "token": "justworks",
+      "company": "Justworks"
+    },
+    {
+      "token": "greenhouse",
+      "company": "Greenhouse"
+    },
+    {
+      "token": "workato",
+      "company": "Workato"
+    },
+    {
+      "token": "celonis",
+      "company": "Celonis"
+    },
+    {
+      "token": "offerup",
+      "company": "OfferUp"
     }
   ]
 }

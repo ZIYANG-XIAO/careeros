@@ -1,9 +1,12 @@
+import logoCatalog from "../../public/company-logos/catalog.json";
+
 type CompanyMarkProps = {
   company: string;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
 };
 
 const SIZE_CLASSES = {
+  xs: "h-7 w-7 rounded-lg text-xs",
   sm: "h-9 w-9 rounded-xl text-sm",
   md: "h-10 w-10 rounded-lg text-base",
   lg: "h-14 w-14 rounded-xl text-lg",
@@ -49,97 +52,13 @@ const LOCAL_COMPANY_ICONS: Record<string, string> = {
   zapier: "#FF4F00",
 };
 
-// Every employer in the current Greenhouse, Lever, and Ashby catalog has a
-// bundled website icon. Keeping these same-origin avoids leaking the user's
-// job browsing to a logo service at render time.
-const LOCAL_COMPANY_LOGOS = new Set([
-  "1password",
-  "affirm",
-  "airbnb",
-  "airtable",
-  "amplitude",
-  "anthropic",
-  "asana",
-  "benchling",
-  "block",
-  "brex",
-  "carta",
-  "chime",
-  "cloudflare",
-  "cohere",
-  "coinbase",
-  "cursor",
-  "databricks",
-  "datadog",
-  "discord",
-  "doordash",
-  "dropbox",
-  "duolingo",
-  "elastic",
-  "elevenlabs",
-  "faire",
-  "figma",
-  "flexport",
-  "gemini",
-  "gitlab",
-  "gusto",
-  "harvey",
-  "hex",
-  "hootsuite",
-  "instacart",
-  "intercom",
-  "jumpcloud",
-  "klaviyo",
-  "kraken",
-  "lattice",
-  "lemonade",
-  "linear",
-  "lyft",
-  "mixpanel",
-  "modal",
-  "mongodb",
-  "notion",
-  "nuro",
-  "okta",
-  "openai",
-  "outreach",
-  "pagerduty",
-  "palantir",
-  "perplexity",
-  "pinterest",
-  "plaid",
-  "posthog",
-  "quora",
-  "ramp",
-  "reddit",
-  "replit",
-  "ro",
-  "robinhood",
-  "roblox",
-  "runway",
-  "samsara",
-  "scaleai",
-  "sierra",
-  "snowflake",
-  "sofi",
-  "spotify",
-  "squarespace",
-  "stripe",
-  "supabase",
-  "toast",
-  "twilio",
-  "twitch",
-  "vanta",
-  "vercel",
-  "watershed",
-  "waymo",
-  "wealthfront",
-  "wealthsimple",
-  "webflow",
-  "zapier",
-  "zoox",
-  "zscaler",
-]);
+// Every employer in the current Greenhouse, Lever, and Ashby catalogs has a
+// bundled website icon (public/company-logos, listed in catalog.json). Keeping
+// these same-origin avoids leaking the user's job browsing to a logo service
+// at render time.
+const LOCAL_COMPANY_LOGOS: ReadonlySet<string> = new Set(
+  Object.keys(logoCatalog),
+);
 
 const DARK_LOGO_TILES = new Set(["chime", "samsara"]);
 

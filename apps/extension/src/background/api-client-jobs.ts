@@ -1,6 +1,8 @@
 import type {
   ClipJobRequestData,
   ClippedJob,
+  DraftAnswerRequestData,
+  DraftedAnswer,
   ResumeFilePayload,
   ReusableAnswerInput,
   SavedReusableAnswers,
@@ -56,11 +58,38 @@ export async function clipJob(
   ) {
     throw new Error("CareerOS returned an invalid saved job");
   }
-  const job = (body as { job?: { id?: unknown } }).job;
+  const job = (
+    body as {
+      job?: {
+        id?: unknown;
+        title?: unknown;
+        company?: unknown;
+        is_catalog?: unknown;
+        last_observed_at?: unknown;
+        posted_at?: unknown;
+        sponsorship?: { status?: unknown } | null;
+      };
+    }
+  ).job;
   if (typeof job?.id !== "string" || !uuidPattern.test(job.id)) {
     throw new Error("CareerOS returned an invalid saved job");
   }
-  return { jobId: job.id, created: (body as { created: boolean }).created };
+  const text = (value: unknown): string | undefined =>
+    typeof value === "string" && value.trim() ? value.slice(0, 500) : undefined;
+  const sponsorship = job.sponsorship?.status;
+  return {
+    jobId: job.id,
+    created: (body as { created: boolean }).created,
+    title: text(job.title),
+    company: text(job.company),
+    isCatalog: job.is_catalog === true,
+    lastObservedAt: text(job.last_observed_at) ?? null,
+    postedAt: text(job.posted_at) ?? null,
+    sponsorship:
+      sponsorship === "OFFERED" || sponsorship === "NOT_OFFERED"
+        ? sponsorship
+        : null,
+  };
 }
 
 /**
@@ -142,5 +171,78 @@ export async function downloadResumeVersion(
       response.headers.get("Content-Type") ?? "application/octet-stream"
     ).slice(0, 100),
     base64: toBase64(await response.arrayBuffer()),
+  };
+}
+
+const DRAFT_REFUSALS: Record<
+  string,
+  "SENSITIVE" | "NO_EVIDENCE" | "NOT_GROUNDED"
+> = {
+  SENSITIVE_QUESTION: "SENSITIVE",
+  NO_CONFIRMED_EVIDENCE: "NO_EVIDENCE",
+  DRAFT_NOT_GROUNDED: "NOT_GROUNDED",
+};
+
+/** Draft one open-question answer from the user's confirmed evidence. */
+export async function draftAnswer(
+  apiUrl: string,
+  tokenProvider: TokenProvider,
+  request: typeof fetch,
+  input: DraftAnswerRequestData,
+): Promise<DraftedAnswer | null> {
+  const token = await tokenProvider.getToken();
+  if (!token) return null;
+  const response = await request(`${apiUrl}/drafts`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      kind: "OPEN_QUESTION",
+      question: input.question,
+      job_id: input.jobId,
+    }),
+  });
+  return parseDraftResponse(response);
+}
+
+/** Maps a POST /drafts response to a draft or an explicit refusal reason. */
+export async function parseDraftResponse(
+  response: Response,
+): Promise<DraftedAnswer | null> {
+  if (response.status === 401) return null;
+  if (response.status === 503) {
+    return { status: "REFUSED", reason: "AI_UNAVAILABLE" };
+  }
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const code =
+      typeof body === "object" &&
+      body !== null &&
+      typeof (body as { detail?: { code?: unknown } }).detail?.code === "string"
+        ? (body as { detail: { code: string } }).detail.code
+        : "";
+    return { status: "REFUSED", reason: DRAFT_REFUSALS[code] ?? "FAILED" };
+  }
+  const draft = body as {
+    text?: unknown;
+    evidence?: unknown;
+    unsupported_points?: unknown;
+  };
+  if (
+    typeof draft?.text !== "string" ||
+    !Array.isArray(draft.evidence) ||
+    !Array.isArray(draft.unsupported_points)
+  ) {
+    return { status: "REFUSED", reason: "FAILED" };
+  }
+  return {
+    status: "DRAFTED",
+    text: draft.text,
+    evidenceCount: draft.evidence.length,
+    unsupportedPoints: draft.unsupported_points.filter(
+      (point): point is string => typeof point === "string",
+    ),
   };
 }

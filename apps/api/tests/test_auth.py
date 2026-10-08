@@ -61,6 +61,37 @@ async def test_valid_token_accepted(rsa_keypair: tuple, mock_jwk_client: MagicMo
     assert result["email"] == "test@example.com"
 
 
+# ---------- clock skew tolerance ----------
+
+
+@pytest.mark.asyncio
+async def test_token_issued_slightly_in_the_future_accepted(
+    rsa_keypair: tuple, mock_jwk_client: MagicMock
+) -> None:
+    """A server clock a moment behind Clerk's must not reject fresh tokens."""
+    private_key, _ = rsa_keypair
+    issued = datetime.now(UTC) + timedelta(seconds=2)
+    token = _encode(private_key, iat=issued, nbf=issued)
+
+    result = await verify_clerk_token(_creds(token), make_test_settings())
+
+    assert result["sub"] == "user_123"
+
+
+@pytest.mark.asyncio
+async def test_token_issued_well_in_the_future_rejected_401(
+    rsa_keypair: tuple, mock_jwk_client: MagicMock
+) -> None:
+    private_key, _ = rsa_keypair
+    issued = datetime.now(UTC) + timedelta(minutes=5)
+    token = _encode(private_key, iat=issued, nbf=issued)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await verify_clerk_token(_creds(token), make_test_settings())
+
+    assert exc_info.value.status_code == 401
+
+
 # ---------- expired token → 401 ----------
 
 

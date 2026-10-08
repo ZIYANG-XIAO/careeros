@@ -76,6 +76,84 @@ export function parsePopupRequest(value: unknown): PopupRequest | null {
   );
   if (readAnswers) return readAnswers;
   if (isSaveReusableAnswersRequest(value)) return value;
+  if (isDraftAnswerRequest(value)) return value;
+  if (isExactMessage(value, "CAREEROS_GET_AUTO_LAUNCHER")) {
+    return { type: "CAREEROS_GET_AUTO_LAUNCHER" };
+  }
+  if (isExactMessage(value, "CAREEROS_LOOKUP_PAGE_JOB")) {
+    return { type: "CAREEROS_LOOKUP_PAGE_JOB" };
+  }
+  if (
+    isRecord(value) &&
+    hasExactKeys(value, ["type", "enabled"]) &&
+    value.type === "CAREEROS_SET_AUTO_LAUNCHER" &&
+    typeof value.enabled === "boolean"
+  ) {
+    return { type: "CAREEROS_SET_AUTO_LAUNCHER", enabled: value.enabled };
+  }
+  if (
+    isRecord(value) &&
+    hasExactKeys(value, ["type", "jobId"]) &&
+    (value.type === "CAREEROS_GET_JOB_MATCH" ||
+      value.type === "CAREEROS_DRAFT_COVER_LETTER") &&
+    typeof value.jobId === "string" &&
+    UUID_PATTERN.test(value.jobId)
+  ) {
+    return { type: value.type, jobId: value.jobId };
+  }
+  if (
+    isRecord(value) &&
+    hasExactKeys(value, ["type", "jobId", "resumeVersionId"]) &&
+    value.type === "CAREEROS_ANALYZE_JOB" &&
+    typeof value.jobId === "string" &&
+    UUID_PATTERN.test(value.jobId) &&
+    typeof value.resumeVersionId === "string" &&
+    UUID_PATTERN.test(value.resumeVersionId)
+  ) {
+    return {
+      type: "CAREEROS_ANALYZE_JOB",
+      jobId: value.jobId,
+      resumeVersionId: value.resumeVersionId,
+    };
+  }
+  if (
+    isRecord(value) &&
+    hasExactKeys(value, ["type", "jobId", "tab"]) &&
+    value.type === "CAREEROS_OPEN_MATERIALS" &&
+    typeof value.jobId === "string" &&
+    UUID_PATTERN.test(value.jobId) &&
+    (value.tab === "tailor" || value.tab === "drafts")
+  ) {
+    return {
+      type: "CAREEROS_OPEN_MATERIALS",
+      jobId: value.jobId,
+      tab: value.tab,
+    };
+  }
+  if (
+    isRecord(value) &&
+    hasExactKeys(value, [
+      "type",
+      "fieldId",
+      "text",
+      "filenameHint",
+      "expectedPageUrl",
+    ]) &&
+    value.type === "CAREEROS_ATTACH_COVER_LETTER" &&
+    isBoundedText(value.fieldId, 1, 200) &&
+    isBoundedText(value.text, 1, 8000) &&
+    typeof value.filenameHint === "string" &&
+    value.filenameHint.length <= 120 &&
+    isExpectedPageUrl(value.expectedPageUrl)
+  ) {
+    return {
+      type: "CAREEROS_ATTACH_COVER_LETTER",
+      fieldId: value.fieldId as string,
+      text: value.text as string,
+      filenameHint: value.filenameHint,
+      expectedPageUrl: value.expectedPageUrl as string,
+    };
+  }
   if (isPopupAttachResumeRequest(value)) return value;
   if (isExactMessage(value, "CAREEROS_OPEN_SIGN_IN")) {
     return { type: "CAREEROS_OPEN_SIGN_IN" };
@@ -103,6 +181,7 @@ export function parseContentRequest(value: unknown): ContentRequest | null {
   }
   if (isContentFillPlanRequest(value)) return value;
   if (isContentAttachResumeRequest(value)) return value;
+  if (isContentAttachCoverLetterRequest(value)) return value;
   return null;
 }
 
@@ -626,6 +705,24 @@ function isSaveReusableAnswersRequest(value: unknown): value is {
   );
 }
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isDraftAnswerRequest(value: unknown): value is {
+  type: "CAREEROS_DRAFT_ANSWER";
+  question: string;
+  jobId: string | null;
+} {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ["type", "question", "jobId"]) &&
+    value.type === "CAREEROS_DRAFT_ANSWER" &&
+    isBoundedText(value.question, 1, 2000) &&
+    (value.jobId === null ||
+      (typeof value.jobId === "string" && UUID_PATTERN.test(value.jobId)))
+  );
+}
+
 function isPopupAttachResumeRequest(value: unknown): value is {
   type: "CAREEROS_ATTACH_RESUME";
   fieldId: string;
@@ -650,6 +747,23 @@ function isPopupAttachResumeRequest(value: unknown): value is {
 
 // 10 MB resume limit on the API, base64-encoded.
 const MAX_RESUME_BASE64 = Math.ceil((10 * 1024 * 1024 * 4) / 3) + 4;
+
+function isContentAttachCoverLetterRequest(value: unknown): value is {
+  type: "CAREEROS_ATTACH_COVER_LETTER_FILE";
+  fieldId: string;
+  expectedPageUrl: string;
+  fileName: string;
+  contentType: string;
+  base64: string;
+} {
+  if (!isRecord(value) || value.type !== "CAREEROS_ATTACH_COVER_LETTER_FILE") {
+    return false;
+  }
+  return isContentAttachResumeRequest({
+    ...value,
+    type: "CAREEROS_ATTACH_RESUME",
+  });
+}
 
 function isContentAttachResumeRequest(value: unknown): value is {
   type: "CAREEROS_ATTACH_RESUME";

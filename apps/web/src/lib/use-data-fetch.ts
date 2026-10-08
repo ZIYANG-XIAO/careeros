@@ -12,6 +12,8 @@ import {
 import { toApiError } from "./api-error-message";
 import type { ApiError } from "./api";
 
+const AUTH_RETRY_DELAY_MS = 800;
+
 export type UseDataFetchOptions<T> = {
   enabled?: boolean;
   resetKey?: string;
@@ -87,7 +89,20 @@ export function useDataFetch<T>({
 
     void (async () => {
       try {
-        const result = await fetchRef.current();
+        let result: T;
+        try {
+          result = await fetchRef.current();
+        } catch (error) {
+          // A just-minted or just-refreshed session token can be rejected
+          // once (clock skew, refresh race). Retry silently a single time
+          // before telling the user their session expired.
+          if (toApiError(error).category !== "unauthenticated") throw error;
+          await new Promise((resolve) =>
+            setTimeout(resolve, AUTH_RETRY_DELAY_MS),
+          );
+          if (cancelled) return;
+          result = await fetchRef.current();
+        }
         if (cancelled) return;
         setData(result);
         setLoadError(null);

@@ -2,7 +2,8 @@
  * Extension copy localization. Strings are written in English at the call
  * site (gettext style) and looked up in the catalog for other locales, so a
  * missing translation falls back to English instead of showing a raw key.
- * The locale follows the browser UI language; job market never changes it.
+ * The locale follows the browser UI language unless the user picks one with
+ * the 中/EN toggle; job market never changes it.
  */
 
 export type ExtensionLocale = "en" | "zh-CN";
@@ -29,6 +30,58 @@ export function extensionLocale(): ExtensionLocale {
     language = navigator.language ?? "";
   }
   return language.toLowerCase().startsWith("zh") ? "zh-CN" : "en";
+}
+
+export const LOCALE_STORAGE_KEY = "careeros.extensionLocale";
+
+function isLocale(value: unknown): value is ExtensionLocale {
+  return value === "en" || value === "zh-CN";
+}
+
+/** Applies the language the user picked, if any; call before first render. */
+export async function loadStoredLocale(): Promise<void> {
+  try {
+    const stored = await chrome.storage.local.get(LOCALE_STORAGE_KEY);
+    const value = stored[LOCALE_STORAGE_KEY];
+    setExtensionLocale(isLocale(value) ? value : null);
+  } catch {
+    // Storage unavailable: keep following the browser language.
+  }
+}
+
+/** Remembers the user's pick so the popup and every page assistant share it. */
+export async function saveLocale(locale: ExtensionLocale): Promise<void> {
+  setExtensionLocale(locale);
+  try {
+    await chrome.storage.local.set({ [LOCALE_STORAGE_KEY]: locale });
+  } catch {
+    // The choice still applies to this view.
+  }
+}
+
+/** Calls back when the language is changed from another extension view. */
+export function onStoredLocaleChange(callback: () => void): () => void {
+  const listener = (
+    changes: Record<string, chrome.storage.StorageChange>,
+    area: string,
+  ) => {
+    if (area !== "local" || !(LOCALE_STORAGE_KEY in changes)) return;
+    const value = changes[LOCALE_STORAGE_KEY].newValue;
+    setExtensionLocale(isLocale(value) ? value : null);
+    callback();
+  };
+  try {
+    chrome.storage.onChanged.addListener(listener);
+  } catch {
+    return () => undefined;
+  }
+  return () => {
+    try {
+      chrome.storage.onChanged.removeListener(listener);
+    } catch {
+      // Nothing to clean up.
+    }
+  };
 }
 
 export function t(text: string, params?: CopyParams): string {
@@ -279,4 +332,108 @@ export const ZH_CN: Readonly<Record<string, string>> = {
   "CareerOS left this unresolved": "CareerOS 未处理此项",
   "CareerOS kept your existing answer": "CareerOS 保留了你已有的回答",
   "CareerOS could not fill this field": "CareerOS 无法填写此字段",
+  "Choose: {value}": "请选择：{value}",
+
+  // Review checklist and grounded drafts
+  "{count} required fields still need you · {done}/{total} handled":
+    "还有 {count} 个必填项需要你处理 · 已处理 {done}/{total}",
+  "{done}/{total} handled — check the page before you submit":
+    "已处理 {done}/{total} — 提交前请在页面上检查一遍",
+  "Go to: {question}": "跳到：{question}",
+  "Unlabelled field": "未命名字段",
+  Required: "必填",
+  "Draft from my experience": "用我的经历起草",
+  "Drafting from your confirmed evidence…": "正在根据你确认过的证据起草…",
+  "Draft answer (editable)": "草稿（可编辑）",
+  "Based on {count} confirmed evidence item(s). Edit before using.":
+    "依据 {count} 条已确认证据。使用前请先修改润色。",
+  "Not claimed — your evidence does not cover: {points}":
+    "没有写入——你的证据还不能支撑：{points}",
+  "Put in this field": "填入此字段",
+  "Added. Review it on the page before you submit.":
+    "已填入。提交前请在页面上检查。",
+  "That field already has an answer; CareerOS left it alone.":
+    "这个字段已有内容，CareerOS 没有改动。",
+  "CareerOS could not fill this field; copy the draft instead.":
+    "CareerOS 无法填写这个字段，请改为复制草稿。",
+  Copy: "复制",
+  "Copied.": "已复制。",
+  "Copy failed; select the text instead.": "复制失败，请手动选择文本。",
+  "This is a sensitive question. Answer it yourself; CareerOS never drafts it.":
+    "这是敏感问题，请自己回答，CareerOS 不会代写。",
+  "Confirm some experience in Career Brain first; drafts only use confirmed evidence.":
+    "请先在职业档案中确认一些经历；草稿只使用确认过的证据。",
+  "CareerOS could not ground a draft in your confirmed evidence, so none was offered.":
+    "无法以你确认过的证据为依据起草，因此没有提供草稿。",
+  "Drafting is not configured on this CareerOS server.":
+    "这台 CareerOS 服务器尚未配置起草功能。",
+  "CareerOS could not draft an answer. Try again.":
+    "CareerOS 没能起草回答，请重试。",
+
+  // Job card
+  "Saved job": "已保存的职位",
+  "May have closed — not seen for {days}d": "可能已下架（{days} 天未确认）",
+  "Confirmed open in the last 24 hours": "24 小时内确认仍在招",
+  "Confirmed open {days}d ago": "{days} 天前确认仍在招",
+  "Posting offers visa sponsorship": "职位写明可担保签证",
+  "Posting says no visa sponsorship": "职位写明不提供签证担保",
+
+  // Job card, evidence match, cover letter, dock, and settings
+  "A file is already chosen there; CareerOS left it alone.":
+    "那里已经选择了文件，CareerOS 没有改动。",
+  "Access was not granted, so it stays off.": "没有获得授权，因此保持关闭。",
+  "Analysis is not configured on this CareerOS server.":
+    "这台 CareerOS 服务器尚未配置分析功能。",
+  "Analyzing…": "分析中…",
+  "Attach as Word file": "作为 Word 文件附加",
+  "Attached as a Word file. Check it on the page before you submit.":
+    "已作为 Word 文件附加。提交前请在页面上检查。",
+  "Attaching…": "附加中…",
+  "Autofill this page": "自动填写此页",
+  "No application form found on this page. Open the job's application form, then try again.":
+    "这个页面没有找到申请表。请打开职位的申请表页面后再试。",
+  "Based on {resume}. A comparison, never a score.":
+    "基于 {resume}。这是逐条对比，不是打分。",
+  "CareerOS could not analyze this job. Try again.":
+    "CareerOS 没能分析这个职位，请重试。",
+  "Checking your evidence for this job…": "正在对照你的证据…",
+  "Compare again": "重新对比",
+  "Compare with my evidence": "和我的证据对比",
+  "Cover letter": "求职信",
+  "Filled (0/1)": "已填 (0/1)",
+  "Filled (1/1)": "已填 (1/1)",
+  "Draft ready": "草稿已就绪",
+  "Needs attention": "需要处理",
+  "Evidence match": "证据对比",
+  "Filling what CareerOS can…": "正在填写 CareerOS 能填的内容…",
+  "Fills only approved answers into empty fields. You review and submit.":
+    "只把已批准的回答填进空白字段。由你检查并提交。",
+  "Greenhouse, Lever, Ashby, and Workday only. CareerOS still reads a page only when you ask.":
+    "仅限 Greenhouse、Lever、Ashby 和 Workday。CareerOS 仍然只在你要求时读取页面。",
+  "Hide CareerOS on this page": "在本页隐藏 CareerOS",
+  "Hide requirements": "收起要求",
+  "No evidence": "没有证据",
+  "Not on resume yet": "简历未体现",
+  "Open the application form to pick a resume, then compare it with this job.":
+    "打开网申表单并选择一份简历后，就能和这个职位对比。",
+  "Save this job first; letters are written for a specific job.":
+    "请先保存这个职位；求职信需要针对具体职位来写。",
+  "See which of this job's requirements your confirmed evidence covers.":
+    "看看这个职位的要求里，哪些有你确认过的证据。",
+  "Show requirements": "展开要求",
+  "Show the CareerOS button on career sites": "在招聘网站上显示 CareerOS 按钮",
+  "Shown on resume": "简历已体现",
+  "Tailor resume": "定制简历",
+  "The evidence match is unavailable.": "暂时无法获取证据对比。",
+  "This form asks for a cover letter file.": "这个表单需要上传求职信文件。",
+  "This upload field did not accept the file. Copy the letter instead.":
+    "这个上传框不接受该文件，请改为复制求职信。",
+  "Tuck CareerOS against the edge": "把 CareerOS 收到边缘",
+  "Weak evidence": "证据较弱",
+  "Write cover letter": "写求职信",
+  "{company} · Posted {date}": "{company} · 发布于 {date}",
+  "{supported} of {total} requirements have your evidence":
+    "{total} 条要求中有 {supported} 条有你的证据",
+  "{span} {currency} / hour": "{span} {currency} / 小时",
+  "{span} {currency} / year": "{span} {currency} / 年",
 };

@@ -1,9 +1,10 @@
 "use client";
 
 import { applicationStatusLabel, useI18n, type MessageKey } from "@/lib/i18n";
-import { PIPELINE_STAGES } from "@/lib/pipeline";
-import { daysSince, formatRelativeTime } from "@/lib/relative-time";
+import { PIPELINE_STAGES, stageDwell } from "@/lib/pipeline";
+import { daysSince } from "@/lib/relative-time";
 import type { ApplicationStatus, ApplicationSummary, Job } from "@/lib/types";
+import { CompanyMark } from "@/components/company-mark";
 
 export type DragPayload =
   | { kind: "saved"; jobId: string; title: string }
@@ -20,6 +21,7 @@ type PipelineCardProps = {
   onDragStart: (payload: DragPayload) => void;
   onDragEnd: () => void;
   dragging: boolean;
+  resumeLabel?: string | null;
 };
 
 const STAGE_LABEL_KEY: Record<ApplicationStatus, MessageKey> = {
@@ -40,14 +42,12 @@ function PipelineCard({
   onDragStart,
   onDragEnd,
   dragging,
+  resumeLabel = null,
 }: PipelineCardProps) {
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
   const isSaved = card.kind === "saved";
   const company = isSaved ? card.job.company : card.application.company;
   const title = isSaved ? card.job.title : card.application.role;
-  const timestamp = isSaved
-    ? card.job.saved_at
-    : card.application.status_updated_at;
   const moveOptions: MoveTarget[] = isSaved
     ? PIPELINE_STAGES
     : [
@@ -55,12 +55,22 @@ function PipelineCard({
         "REJECTED",
         "WITHDRAWN",
       ];
-  const stale =
-    !isSaved &&
-    card.application.status === "PREPARING" &&
-    daysSince(card.application.status_updated_at) >= 3
-      ? daysSince(card.application.status_updated_at)
-      : null;
+  const dwell = isSaved ? null : stageDwell(card.application);
+  const days = isSaved
+    ? card.job.saved_at
+      ? daysSince(card.job.saved_at)
+      : null
+    : (dwell?.days ?? null);
+  const timeLabel =
+    days === null
+      ? ""
+      : isSaved
+        ? days < 1
+          ? t("pipeline.card.savedToday")
+          : t("pipeline.card.savedDays", { days })
+        : days < 1
+          ? t("pipeline.card.inStageToday")
+          : t("pipeline.card.inStageDays", { days });
 
   return (
     <div
@@ -82,27 +92,39 @@ function PipelineCard({
         dragging ? "opacity-40" : ""
       }`}
     >
-      <button type="button" onClick={onOpen} className="block w-full text-left">
-        <p className="truncate text-xs font-semibold text-ink-2">{company}</p>
-        <p className="mt-0.5 truncate text-sm font-semibold text-ink">
-          {title}
-        </p>
-      </button>
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <span className="text-[11px] text-ink-3">
-          {timestamp ? formatRelativeTime(timestamp, locale) : ""}
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex w-full items-start gap-2.5 text-left"
+      >
+        <CompanyMark company={company} size="xs" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-xs font-semibold text-ink-2">
+            {company}
+          </span>
+          <span className="mt-0.5 block truncate text-sm font-semibold text-ink hover:text-accent">
+            {title}
+          </span>
         </span>
-        {stale !== null && (
+      </button>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5">
+        <span className="text-[11px] text-ink-3">{timeLabel}</span>
+        {dwell?.stalled && (
           <span className="rounded-full bg-status-assessment-bg px-1.5 py-0.5 text-[10px] font-semibold text-status-assessment-ink">
-            {t("pipeline.stale", { days: stale })}
+            {t("pipeline.stale", { days: dwell.days })}
           </span>
         )}
       </div>
+      {resumeLabel && (
+        <p className="mt-1 truncate text-[11px] text-ink-3">
+          {t("pipeline.resume", { name: resumeLabel })}
+        </p>
+      )}
       <label
         className="sr-only"
         htmlFor={`move-${isSaved ? card.job.id : card.application.id}`}
       >
-        {t("pipeline.dropTo", { stage: "" })}
+        {t("pipeline.moveTo")}
       </label>
       <select
         id={`move-${isSaved ? card.job.id : card.application.id}`}
@@ -112,7 +134,7 @@ function PipelineCard({
         }}
         className="mt-2 w-full rounded-md border border-border bg-rail px-2 py-1 text-xs text-ink-2"
       >
-        <option value="">···</option>
+        <option value="">{t("pipeline.moveTo")}</option>
         {moveOptions.map((option) => (
           <option key={option} value={option}>
             {applicationStatusLabel(option, t)}

@@ -26,6 +26,7 @@ from careeros_api.job_source_boards import (
     fetch_json,
     is_generic_location,
     is_standing_interest_posting,
+    posted_moment,
     resolve_north_america,
     text_value,
     workplace_from_text,
@@ -106,6 +107,7 @@ def map_board_jobs(
             workplace=workplace_from_text(location),
             employment=employment_from_title(title),
             observed_at=moment,
+            posted_at=posted_moment(raw.get("first_published"), moment),
         )
         if candidate is None:
             invalid += 1

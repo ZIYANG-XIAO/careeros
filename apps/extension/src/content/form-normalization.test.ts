@@ -280,4 +280,78 @@ describe("provider-neutral form normalization", () => {
     expect(result.forms[0].fields[0].question).toHaveLength(500);
     expect(result.forms[0].fields[0].options).toHaveLength(100);
   });
+
+  it("finds Ashby applications rendered without a <form>", () => {
+    const result = detectApplicationPage(
+      fixture("ashby-formless-application.html"),
+      "https://jobs.ashbyhq.com/skydio/123/application",
+    );
+    expect(result.status).toBe("APPLICATION_PAGE");
+    expect(result.adapter).toBe("ashby");
+    expect(result.forms).toHaveLength(2);
+    const fields = result.forms.flatMap((form) => form.fields);
+    expect(fields.map((field) => field.canonicalKey)).toEqual(
+      expect.arrayContaining([
+        "CONTACT_EMAIL",
+        "RESUME_FILE",
+        "COVER_LETTER_FILE",
+      ]),
+    );
+    // The "Autofill from resume" helper is not an application field: only the
+    // form's own resume upload counts.
+    expect(
+      fields.filter((field) => field.canonicalKey === "RESUME_FILE"),
+    ).toHaveLength(1);
+  });
+
+  it("finds a form embedded in a same-origin iframe (legacy iCIMS/Taleo-style skins)", () => {
+    document.body.innerHTML = `<h1>Careers at Acme</h1>`;
+    const iframe = document.createElement("iframe");
+    document.body.appendChild(iframe);
+    const inner = iframe.contentDocument!;
+    inner.body.innerHTML = `
+      <form aria-label="Job application">
+        <label>First name <input name="first_name" autocomplete="given-name" /></label>
+        <label>Email <input type="email" name="email" autocomplete="email" /></label>
+        <label>Resume <input type="file" name="resume" /></label>
+        <button type="submit">Apply</button>
+      </form>
+    `;
+
+    const result = detectApplicationPage(
+      document,
+      "https://careers.acme.com/apply/123",
+    );
+
+    expect(result.status).toBe("APPLICATION_PAGE");
+    expect(result.adapter).toBe("generic");
+    expect(result.forms).toHaveLength(1);
+    expect(result.forms[0].fields.map((field) => field.canonicalKey)).toEqual(
+      expect.arrayContaining([
+        "PERSON_FIRST_NAME",
+        "CONTACT_EMAIL",
+        "RESUME_FILE",
+      ]),
+    );
+  });
+
+  it("ignores a cross-origin iframe instead of throwing", () => {
+    document.body.innerHTML = `<h1>Careers at Acme</h1>`;
+    const iframe = document.createElement("iframe");
+    // Simulate cross-origin: contentDocument is inaccessible (null in real
+    // browsers; jsdom throws on access, which the traversal must swallow).
+    Object.defineProperty(iframe, "contentDocument", {
+      get() {
+        throw new DOMException("Blocked a frame with origin", "SecurityError");
+      },
+    });
+    document.body.appendChild(iframe);
+
+    const result = detectApplicationPage(
+      document,
+      "https://careers.acme.com/apply/123",
+    );
+
+    expect(result.status).toBe("NOT_APPLICATION_PAGE");
+  });
 });

@@ -9,13 +9,16 @@ import { SavedAnswersSection } from "./saved-answers-section";
 const mockList = vi.fn();
 const mockSave = vi.fn();
 const mockRevoke = vi.fn();
+// Stable across renders, like Clerk's real getToken; a fresh vi.fn() per
+// render would change the fetch deps and refetch mid-test.
+const mockGetToken = vi.fn().mockResolvedValue("token");
 
 vi.mock("@clerk/nextjs", () => ({
   useAuth: () => ({
     isLoaded: true,
     isSignedIn: true,
     userId: "user-1",
-    getToken: vi.fn().mockResolvedValue("token"),
+    getToken: mockGetToken,
   }),
 }));
 

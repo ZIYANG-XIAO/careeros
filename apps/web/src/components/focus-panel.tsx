@@ -6,6 +6,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { CompanyMark } from "@/components/company-mark";
+import { FreshnessNote } from "@/components/freshness-note";
+import { formatSalary } from "@/lib/salary";
+import { SponsorshipQuote } from "@/components/sponsorship-note";
 import { JobEditForm } from "@/components/job-edit-form";
 import { Button } from "@/components/ui/button";
 import { ApplicationActivitySection } from "@/components/application-activity-section";
@@ -194,6 +197,32 @@ function StageControl({
         </span>
       )}
     </div>
+  );
+}
+
+/** Entry points into the evidence-grounded materials workspace. */
+function MaterialsLinks({ jobId }: { jobId: string }) {
+  const { t } = useI18n();
+  const links = [
+    ["tailor", t("materials.tab.tailor")],
+    ["drafts", t("materials.tab.drafts")],
+    ["prep", t("materials.tab.prep")],
+  ] as const;
+  return (
+    <section className="rounded-lg border border-accent-soft-border bg-accent-tint p-3">
+      <p className="text-sm font-semibold text-ink">{t("materials.open")}</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {links.map(([tab, label]) => (
+          <Link
+            key={tab}
+            href={`/materials/${jobId}?tab=${tab}`}
+            className="rounded-full border border-accent-soft-border bg-surface px-3 py-1 text-xs font-semibold text-accent hover:bg-accent-soft"
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -446,7 +475,15 @@ function ApplicationPanelBody({
         <p className="col-span-2 border-t border-border pt-2 text-xs text-ink-3">
           {t("panel.frozen")}
         </p>
+        <Link
+          href={`/pipeline/packet/${application.id}`}
+          className="col-span-2 text-sm font-semibold text-accent hover:underline"
+        >
+          {t("packet.open")} →
+        </Link>
       </dl>
+
+      {application.job_id && <MaterialsLinks jobId={application.job_id} />}
 
       {application.job_id && (
         <div className="rounded-lg border border-border p-3">
@@ -838,8 +875,26 @@ function JobPanelBody({
           <p className="mt-2 text-xs text-ink-3">
             {jobSourceSummary(job, locale)}
           </p>
+          {job.salary && (
+            <p
+              className="mt-2 text-sm font-semibold text-ink"
+              title={job.salary.quote}
+            >
+              {formatSalary(job.salary, locale)}
+              <span className="ml-1 text-xs font-normal text-ink-3">
+                {t("salary.fromPosting")}
+              </span>
+            </p>
+          )}
+          <div className="mt-1">
+            <FreshnessNote job={job} />
+          </div>
         </div>
       </div>
+
+      {job.sponsorship && <SponsorshipQuote statement={job.sponsorship} />}
+
+      <MaterialsLinks jobId={job.id} />
 
       {linkedApplication ? (
         <div className="flex flex-col gap-2 rounded-lg border border-accent-soft-border bg-accent-tint p-3">

@@ -1,6 +1,12 @@
 import { CareerOsApiClient } from "./api-client";
 import { tokenProvider } from "./auth";
 import {
+  ATS_ORIGIN_PATTERNS,
+  AUTO_LAUNCHER_SCRIPT_ID,
+  AUTO_LAUNCHER_STORAGE_KEY,
+} from "../shared/ats-hosts";
+import { companyIconKey } from "../shared/company-key";
+import {
   parsePopupRequest,
   type AnswerResolution,
   type ApplicationPageContext,
@@ -8,6 +14,9 @@ import {
   type AttachResumeResult,
   type ClippedJob,
   type JobDraft,
+  type AutoLauncherState,
+  type DraftedAnswer,
+  type PageJob,
   type SavedReusableAnswers,
   type TypedCustomAnswer,
   type ExtensionResponse,
@@ -321,6 +330,127 @@ async function clipJob(
     : { ok: false, error: "UNAUTHENTICATED" };
 }
 
+// ---------------------------------------------------------------------------
+// Opt-in launcher on career sites
+// ---------------------------------------------------------------------------
+
+const ATS_PERMISSION = { origins: [...ATS_ORIGIN_PATTERNS] };
+
+async function syncAutoLauncher(): Promise<AutoLauncherState> {
+  const stored = await chrome.storage.local.get(AUTO_LAUNCHER_STORAGE_KEY);
+  const wanted = stored[AUTO_LAUNCHER_STORAGE_KEY] === true;
+  const granted = await chrome.permissions.contains(ATS_PERMISSION);
+  const registered = await chrome.scripting.getRegisteredContentScripts({
+    ids: [AUTO_LAUNCHER_SCRIPT_ID],
+  });
+  const enabled = wanted && granted;
+  if (enabled && registered.length === 0) {
+    await chrome.scripting.registerContentScripts([
+      {
+        id: AUTO_LAUNCHER_SCRIPT_ID,
+        matches: [...ATS_ORIGIN_PATTERNS],
+        js: ["content.js"],
+        runAt: "document_idle",
+      },
+    ]);
+  } else if (!enabled && registered.length > 0) {
+    await chrome.scripting.unregisterContentScripts({
+      ids: [AUTO_LAUNCHER_SCRIPT_ID],
+    });
+  }
+  return { enabled };
+}
+
+async function setAutoLauncher(enabled: boolean): Promise<AutoLauncherState> {
+  await chrome.storage.local.set({ [AUTO_LAUNCHER_STORAGE_KEY]: enabled });
+  if (!enabled) {
+    await syncAutoLauncher();
+    // Give the career-site access back; nothing else uses it.
+    await chrome.permissions.remove(ATS_PERMISSION).catch(() => false);
+    return { enabled: false };
+  }
+  return syncAutoLauncher();
+}
+
+chrome.runtime.onStartup?.addListener(() => void syncAutoLauncher());
+chrome.permissions?.onRemoved?.addListener(() => void syncAutoLauncher());
+// The popup may close while Chrome shows the permission prompt; finish the
+// opt-in here once access is granted.
+chrome.permissions?.onAdded?.addListener(() => void syncAutoLauncher());
+
+async function bundledLogo(company: string): Promise<string | null> {
+  const key = companyIconKey(company);
+  if (!key) return null;
+  try {
+    const response = await fetch(
+      chrome.runtime.getURL(`company-logos/${key}.png`),
+    );
+    if (!response.ok) return null;
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    let binary = "";
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return `data:image/png;base64,${btoa(binary)}`;
+  } catch {
+    return null;
+  }
+}
+
+async function lookupPageJob(
+  tabUrl: string,
+): Promise<ExtensionResponse<PageJob | null>> {
+  if (!isSupportedPageUrl(tabUrl)) return { ok: true, data: null };
+  const job = await api.lookupPageJob(tabUrl);
+  if (job === null) return { ok: false, error: "UNAUTHENTICATED" };
+  if (job === "NOT_FOUND") return { ok: true, data: null };
+  return {
+    ok: true,
+    data: { ...job, logoDataUrl: await bundledLogo(job.company) },
+  };
+}
+
+async function attachCoverLetter(
+  tab: PinnedTab,
+  request: Extract<
+    ReturnType<typeof parsePopupRequest>,
+    { type: "CAREEROS_ATTACH_COVER_LETTER" }
+  >,
+): Promise<ExtensionResponse<AttachResumeResult>> {
+  if (
+    request.expectedPageUrl !== tab.tabUrl ||
+    (await isStalePage(tab.tabId, request.expectedPageUrl))
+  ) {
+    return { ok: false, error: "STALE_PAGE" };
+  }
+  const file = await api.coverLetterFile(request.text, request.filenameHint);
+  if (!file) return { ok: false, error: "UNAUTHENTICATED" };
+  try {
+    return (await chrome.tabs.sendMessage(tab.tabId, {
+      type: "CAREEROS_ATTACH_COVER_LETTER_FILE",
+      fieldId: request.fieldId,
+      expectedPageUrl: request.expectedPageUrl,
+      ...file,
+    })) as ExtensionResponse<AttachResumeResult>;
+  } catch {
+    return { ok: false, error: "UNAVAILABLE" };
+  }
+}
+
+function respondWith<T>(
+  promise: Promise<T | null>,
+  sendResponse: (response: unknown) => void,
+): true {
+  promise
+    .then((data) =>
+      sendResponse(
+        data === null
+          ? { ok: false, error: "UNAUTHENTICATED" }
+          : { ok: true, data },
+      ),
+    )
+    .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
+  return true;
+}
+
 function handlePopupRequest(
   request: NonNullable<ReturnType<typeof parsePopupRequest>>,
   sendResponse: (response: unknown) => void,
@@ -382,6 +512,90 @@ function handlePopupRequest(
             : { ok: false, error: "UNAUTHENTICATED" },
         ),
       )
+      .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
+    return true;
+  }
+
+  if (request.type === "CAREEROS_DRAFT_ANSWER") {
+    api
+      .draftAnswer({ question: request.question, jobId: request.jobId })
+      .then((data) =>
+        sendResponse(
+          data
+            ? ({ ok: true, data } satisfies ExtensionResponse<DraftedAnswer>)
+            : { ok: false, error: "UNAUTHENTICATED" },
+        ),
+      )
+      .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
+    return true;
+  }
+
+  // Settings changes come only from the popup, never from a page.
+  if (
+    request.type === "CAREEROS_GET_AUTO_LAUNCHER" ||
+    request.type === "CAREEROS_SET_AUTO_LAUNCHER"
+  ) {
+    if (pinnedTab) {
+      sendResponse({ ok: false, error: "UNSUPPORTED_PAGE" });
+      return false;
+    }
+    (request.type === "CAREEROS_SET_AUTO_LAUNCHER"
+      ? setAutoLauncher(request.enabled)
+      : syncAutoLauncher()
+    )
+      .then((data) => sendResponse({ ok: true, data }))
+      .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
+    return true;
+  }
+
+  if (request.type === "CAREEROS_LOOKUP_PAGE_JOB") {
+    void (async () => {
+      const tab = pinnedTab ?? (await resolveActiveTab());
+      if (!tab) {
+        sendResponse({ ok: true, data: null });
+        return;
+      }
+      try {
+        sendResponse(await lookupPageJob(tab.tabUrl));
+      } catch {
+        sendResponse({ ok: false, error: "UNAVAILABLE" });
+      }
+    })();
+    return true;
+  }
+
+  if (request.type === "CAREEROS_GET_JOB_MATCH") {
+    return respondWith(api.getJobMatch(request.jobId), sendResponse);
+  }
+
+  if (request.type === "CAREEROS_ANALYZE_JOB") {
+    return respondWith(
+      api.analyzeJob(request.jobId, request.resumeVersionId),
+      sendResponse,
+    );
+  }
+
+  if (request.type === "CAREEROS_DRAFT_COVER_LETTER") {
+    return respondWith(api.draftCoverLetter(request.jobId), sendResponse);
+  }
+
+  if (request.type === "CAREEROS_ATTACH_COVER_LETTER") {
+    if (!pinnedTab) {
+      sendResponse({ ok: false, error: "STALE_PAGE" });
+      return false;
+    }
+    attachCoverLetter(pinnedTab, request)
+      .then(sendResponse)
+      .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
+    return true;
+  }
+
+  if (request.type === "CAREEROS_OPEN_MATERIALS") {
+    chrome.tabs
+      .create({
+        url: `${__CAREEROS_WEB_URL__}/materials/${request.jobId}?tab=${request.tab}`,
+      })
+      .then(() => sendResponse({ ok: true, data: { opened: true } }))
       .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
     return true;
   }

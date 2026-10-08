@@ -4,6 +4,17 @@ import type {
   ReusableAnswer,
   ApplicationActivity,
   ApplicationStatus,
+  ApplicationPacket,
+  DraftKind,
+  DraftResult,
+  InterviewPrep,
+  TailoredEdit,
+  TailoredVersion,
+  TailoringResult,
+  ApplicationStatusHistoryBulkEntry,
+  HiddenCompany,
+  PendingResumeImport,
+  RequirementGapsResponse,
   ApplicationStatusHistoryEntry,
   ApplicationSummary,
   CareerBrain,
@@ -505,7 +516,11 @@ export type JobListFilters = {
   countryCode?: string;
   workplaceType?: string;
   employmentType?: string;
-  sort?: "recent" | "title";
+  sort?: "recent" | "title" | "match";
+  /** Exact company (case-insensitive). */
+  company?: string;
+  /** At most two rows per company; rows report their company's total. */
+  diversify?: boolean;
   /** "mine" = jobs the user added; "catalog" = shared career-site jobs. */
   source?: "all" | "mine" | "catalog";
   limit?: number;
@@ -537,6 +552,8 @@ export async function listJobs(
   if (filters.offset) query.set("offset", String(filters.offset));
   if (filters.compact) query.set("compact", "true");
   if (filters.collapse) query.set("collapse", "true");
+  if (filters.company?.trim()) query.set("company", filters.company.trim());
+  if (filters.diversify) query.set("diversify", "true");
   const suffix = query.size ? `?${query.toString()}` : "";
   const response = await fetch(`${apiBaseUrl()}/jobs${suffix}`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -782,6 +799,17 @@ export async function getApplicationStatusHistory(
     },
   );
   return handleResponse<ApplicationStatusHistoryEntry[]>(response);
+}
+
+/** Every status transition across the caller's applications, oldest first. */
+export async function listApplicationStatusHistory(
+  token: string,
+): Promise<ApplicationStatusHistoryBulkEntry[]> {
+  const response = await fetch(`${apiBaseUrl()}/applications/status-history`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  return handleResponse<ApplicationStatusHistoryBulkEntry[]>(response);
 }
 
 export async function listApplicationActivities(
@@ -1083,4 +1111,145 @@ export async function deleteSkill(token: string, id: string): Promise<void> {
     headers: { Authorization: `Bearer ${token}` },
   });
   await handleEmptyResponse(response);
+}
+
+export async function getRequirementGaps(
+  token: string,
+): Promise<RequirementGapsResponse> {
+  const response = await fetch(`${apiBaseUrl()}/insights/requirement-gaps`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  return handleResponse<RequirementGapsResponse>(response);
+}
+
+export async function listPendingResumeImports(
+  token: string,
+): Promise<PendingResumeImport[]> {
+  const response = await fetch(
+    `${apiBaseUrl()}/insights/pending-resume-imports`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    },
+  );
+  return handleResponse<PendingResumeImport[]>(response);
+}
+
+export async function dismissJob(token: string, jobId: string): Promise<void> {
+  const response = await fetch(`${apiBaseUrl()}/jobs/${jobId}/dismiss`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleEmptyResponse(response);
+}
+
+export async function undismissJob(
+  token: string,
+  jobId: string,
+): Promise<void> {
+  const response = await fetch(`${apiBaseUrl()}/jobs/${jobId}/dismiss`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleEmptyResponse(response);
+}
+
+export async function listHiddenCompanies(
+  token: string,
+): Promise<HiddenCompany[]> {
+  const response = await fetch(`${apiBaseUrl()}/hidden-companies`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  return handleResponse<HiddenCompany[]>(response);
+}
+
+export async function hideCompany(
+  token: string,
+  company: string,
+): Promise<HiddenCompany> {
+  const response = await fetch(`${apiBaseUrl()}/hidden-companies`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ company }),
+  });
+  return handleResponse<HiddenCompany>(response);
+}
+
+export async function unhideCompany(
+  token: string,
+  hiddenId: string,
+): Promise<void> {
+  const response = await fetch(`${apiBaseUrl()}/hidden-companies/${hiddenId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleEmptyResponse(response);
+}
+
+export async function getApplicationPacket(
+  token: string,
+  applicationId: string,
+): Promise<ApplicationPacket> {
+  const response = await fetch(
+    `${apiBaseUrl()}/applications/${applicationId}/packet`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    },
+  );
+  return handleResponse<ApplicationPacket>(response);
+}
+
+export async function suggestTailoring(
+  token: string,
+  jobId: string,
+  resumeVersionId: string,
+): Promise<TailoringResult> {
+  const response = await fetch(`${apiBaseUrl()}/jobs/${jobId}/tailoring`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ resume_version_id: resumeVersionId }),
+  });
+  return handleResponse<TailoringResult>(response);
+}
+
+export async function createTailoredVersion(
+  token: string,
+  data: {
+    base_resume_version_id: string;
+    job_id: string;
+    edits: TailoredEdit[];
+  },
+): Promise<TailoredVersion> {
+  const response = await fetch(`${apiBaseUrl()}/resumes/tailored`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<TailoredVersion>(response);
+}
+
+export async function createDraft(
+  token: string,
+  data: { kind: DraftKind; job_id?: string | null; question?: string | null },
+): Promise<DraftResult> {
+  const response = await fetch(`${apiBaseUrl()}/drafts`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<DraftResult>(response);
+}
+
+export async function getInterviewPrep(
+  token: string,
+  jobId: string,
+): Promise<InterviewPrep> {
+  const response = await fetch(`${apiBaseUrl()}/jobs/${jobId}/interview-prep`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+  return handleResponse<InterviewPrep>(response);
 }

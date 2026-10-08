@@ -537,14 +537,26 @@ An Answer Engine decision should be able to identify:
 Not every transient decision must become a permanent table. Persist only what is
 required for the approved user experience, auditability, and Application Memory.
 
+## 17a. Browse feedback (Phase Z)
+
+- `job_dismissals(user_id, job_id)`, unique per pair: the user's "not
+  interested". It hides the job from browse listings only.
+- `hidden_companies(user_id, company_key, company_name)`, unique per
+  `(user_id, company_key)`, where `company_key = lower(trim(company))`. Browse
+  listings exclude jobs whose `lower(trim(jobs.company))` matches.
+
+Neither table edits or deletes a job. Saved jobs, the user's own jobs, and
+applications are never hidden. Both tables cascade with the user and are
+included in the data export.
+
 ## 18. Product service relationships
 
 ```text
 Career Brain ─┬─ Job Intelligence
               ├─ Answer Engine
               ├─ Autofill
-              ├─ Resume Tailoring (deferred)
-              ├─ Interview Preparation (future)
+              ├─ Resume Tailoring (Phase Z: suggestions → user-accepted TAILORED version)
+              ├─ Interview Preparation (Phase Z: stateless, evidence-cited plan)
               └─ Recommendation (future)
 
 Job ──────────┬─ Job Discovery

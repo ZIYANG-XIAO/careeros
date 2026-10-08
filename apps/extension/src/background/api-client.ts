@@ -5,6 +5,8 @@ import type {
   AuthStatus,
   ClipJobRequestData,
   ClippedJob,
+  DraftAnswerRequestData,
+  DraftedAnswer,
   ResumeFilePayload,
   ReusableAnswerInput,
   SavedReusableAnswers,
@@ -13,10 +15,18 @@ import type {
   TrackedApplication,
 } from "../shared/messages";
 import { resolveAnswers } from "./api-client-answers";
+import {
+  analyzeJob,
+  coverLetterFile,
+  draftCoverLetter,
+  getJobMatch,
+  lookupPageJob,
+} from "./api-client-insights";
 import { getAuthStatus } from "./api-client-auth";
 import {
   clipJob,
   downloadResumeVersion,
+  draftAnswer,
   saveReusableAnswers,
 } from "./api-client-jobs";
 import {
@@ -96,6 +106,54 @@ export class CareerOsApiClient {
       input,
       pageUrl,
     );
+  }
+
+  lookupPageJob(pageUrl: string) {
+    return lookupPageJob(
+      this.apiUrl,
+      this.tokenProvider,
+      this.request,
+      pageUrl,
+    );
+  }
+
+  getJobMatch(jobId: string) {
+    return getJobMatch(this.apiUrl, this.tokenProvider, this.request, jobId);
+  }
+
+  analyzeJob(jobId: string, resumeVersionId: string) {
+    return analyzeJob(
+      this.apiUrl,
+      this.tokenProvider,
+      this.request,
+      jobId,
+      resumeVersionId,
+    );
+  }
+
+  draftCoverLetter(jobId: string) {
+    return draftCoverLetter(
+      this.apiUrl,
+      this.tokenProvider,
+      this.request,
+      jobId,
+    );
+  }
+
+  coverLetterFile(letter: string, filenameHint: string) {
+    return coverLetterFile(
+      this.apiUrl,
+      this.tokenProvider,
+      this.request,
+      letter,
+      filenameHint,
+    );
+  }
+
+  async draftAnswer(
+    input: DraftAnswerRequestData,
+  ): Promise<DraftedAnswer | null> {
+    return draftAnswer(this.apiUrl, this.tokenProvider, this.request, input);
   }
 
   async saveReusableAnswers(

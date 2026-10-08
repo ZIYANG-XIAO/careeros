@@ -252,3 +252,15 @@ footer .build-version {
   background: none;
   color: #7f1d1d;
 }
+
+.lang-toggle {
+  width: auto;
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #3d31c9;
+  font-size: 12px;
+  font-weight: 700;
+}

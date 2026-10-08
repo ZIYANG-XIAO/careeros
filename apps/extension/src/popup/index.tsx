@@ -1,9 +1,10 @@
-import { StrictMode } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import { AnswerSection } from "./answer-section";
 import { AttachResumeSection } from "./attach-resume-section";
 import { AuthSection } from "./auth-section";
+import { AutoLauncherSection } from "./auto-launcher-section";
 import { ClipSection } from "./clip-section";
 import { ConnectionDiagnostic } from "./connection-diagnostic";
 import { DetectionSection } from "./detection-section";
@@ -12,9 +13,22 @@ import { PopupFooter } from "./footer";
 import { MemorySection } from "./memory-section";
 import { SaveAnswersSection } from "./save-answers-section";
 import { usePopupState } from "./use-popup-state";
-import { t } from "../shared/i18n";
+import {
+  extensionLocale,
+  loadStoredLocale,
+  onStoredLocaleChange,
+  saveLocale,
+  t,
+} from "../shared/i18n";
 
 function App() {
+  // Re-render every section when the language changes here or elsewhere.
+  const [, setLocaleVersion] = useState(0);
+  useEffect(
+    () => onStoredLocaleChange(() => setLocaleVersion((value) => value + 1)),
+    [],
+  );
+  const chinese = extensionLocale() === "zh-CN";
   const {
     auth,
     authenticated,
@@ -67,6 +81,18 @@ function App() {
           <span className="eyebrow">{t("APPLY ANYWHERE")}</span>
           <h1>CareerOS</h1>
         </div>
+        <button
+          type="button"
+          className="lang-toggle"
+          aria-label={chinese ? "Switch to English" : "切换到中文"}
+          onClick={() =>
+            void saveLocale(chinese ? "en" : "zh-CN").then(() =>
+              setLocaleVersion((value) => value + 1),
+            )
+          }
+        >
+          {chinese ? "EN" : "中"}
+        </button>
       </header>
 
       <AuthSection auth={auth} authenticated={authenticated} />
@@ -155,13 +181,17 @@ function App() {
         </button>
       ) : null}
 
+      <AutoLauncherSection />
+
       <PopupFooter />
     </main>
   );
 }
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+void loadStoredLocale().then(() => {
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+});

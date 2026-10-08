@@ -29,6 +29,26 @@
     {
       "token": "jumpcloud",
       "company": "JumpCloud"
+    },
+    {
+      "token": "gopuff",
+      "company": "Gopuff"
+    },
+    {
+      "token": "shieldai",
+      "company": "Shield AI"
+    },
+    {
+      "token": "lyrahealth",
+      "company": "Lyra Health"
+    },
+    {
+      "token": "waabi",
+      "company": "Waabi"
+    },
+    {
+      "token": "olo",
+      "company": "Olo"
     }
   ]
 }

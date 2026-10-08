@@ -133,3 +133,39 @@ def test_status_history_requires_authentication() -> None:
     application = create_app(make_test_settings())
     with TestClient(application) as client:
         assert client.get(f"/applications/{uuid4()}/status-history").status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_bulk_status_history_lists_only_owned_transitions() -> None:
+    async with make_integration_client() as client_a:
+        first = (await client_a.post("/applications", json=external_payload())).json()
+        second = (
+            await client_a.post("/applications", json=external_payload(status="APPLIED"))
+        ).json()
+        await client_a.patch(
+            f"/applications/{first['id']}/status",
+            json={"idempotency_key": str(uuid4()), "status": "APPLIED"},
+        )
+
+        async with make_integration_client() as client_b:
+            await client_b.post("/applications", json=external_payload())
+            other = (await client_b.get("/applications/status-history")).json()
+            assert {entry["application_id"] for entry in other}.isdisjoint(
+                {first["id"], second["id"]}
+            )
+
+        history = (await client_a.get("/applications/status-history")).json()
+        assert len(history) == 3
+        assert {
+            (entry["application_id"], entry["from_status"], entry["to_status"]) for entry in history
+        } == {
+            (first["id"], None, "PREPARING"),
+            (first["id"], "PREPARING", "APPLIED"),
+            (second["id"], None, "APPLIED"),
+        }
+
+
+def test_bulk_status_history_requires_authentication() -> None:
+    application = create_app(make_test_settings())
+    with TestClient(application) as client:
+        assert client.get("/applications/status-history").status_code == 401

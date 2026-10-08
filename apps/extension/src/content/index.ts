@@ -5,6 +5,7 @@ import { applyFillPlan } from "./form-execution";
 import { extractJobDraft } from "./job-extraction";
 import { attachResumeFile } from "./resume-attach";
 import { parseContentRequest } from "../shared/messages";
+import { AUTO_LAUNCHER_STORAGE_KEY, isAtsUrl } from "../shared/ats-hosts";
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const request = parseContentRequest(message);
@@ -65,6 +66,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return false;
   }
 
+  if (request.type === "CAREEROS_ATTACH_COVER_LETTER_FILE") {
+    if (window.location.href !== request.expectedPageUrl) {
+      sendResponse({ ok: false, error: "STALE_PAGE" });
+      return false;
+    }
+    sendResponse({
+      ok: true,
+      data: attachResumeFile(
+        document,
+        window.location.href,
+        request.fieldId,
+        request,
+        "COVER_LETTER_FILE",
+      ),
+    });
+    return false;
+  }
+
   if (request.type === "CAREEROS_APPLY_FILL_PLAN") {
     if (window.location.href !== request.expectedPageUrl) {
       sendResponse({ ok: false, error: "STALE_PAGE" });
@@ -77,3 +96,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   return false;
 });
+
+// When the user opted in from settings, this script is registered for known
+// career sites and shows only the launcher. Nothing on the page is inspected
+// until the user asks.
+void (async () => {
+  if (!isAtsUrl(window.location.href)) return;
+  try {
+    const stored = await chrome.storage.local.get(AUTO_LAUNCHER_STORAGE_KEY);
+    if (stored[AUTO_LAUNCHER_STORAGE_KEY] === true) mountAssistant();
+  } catch {
+    // Storage unavailable: stay hidden until the user activates CareerOS.
+  }
+})();

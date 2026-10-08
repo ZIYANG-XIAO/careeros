@@ -52,6 +52,7 @@ class NormalizedJobCandidate(BaseModel):
     application_url: AnyHttpUrl | None = None
     canonical_url: AnyHttpUrl | None = None
     observed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    posted_at: datetime | None = None
     availability_status: JobAvailabilityStatus = JobAvailabilityStatus.UNKNOWN
     freshness_status: JobFreshnessStatus = JobFreshnessStatus.UNKNOWN
     market: JobMarket = JobMarket.UNKNOWN
@@ -245,6 +246,8 @@ async def ingest_job_source(
         job.country_code = candidate.country_code.value
         job.workplace_type = candidate.workplace_type.value
         job.employment_type = candidate.employment_type.value
+        if candidate.posted_at is not None:
+            job.posted_at = candidate.posted_at
         if job.first_observed_at is None or candidate.observed_at < job.first_observed_at:
             job.first_observed_at = candidate.observed_at
         if job.last_observed_at is None or candidate.observed_at > job.last_observed_at:

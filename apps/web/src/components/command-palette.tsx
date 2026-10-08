@@ -7,12 +7,14 @@ import { type KeyboardEvent, useEffect, useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { listApplications, listJobs } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { CompanyMark } from "@/components/company-mark";
 
 type PaletteItem = {
   id: string;
   label: string;
   sublabel: string;
   href: string;
+  company?: string;
 };
 
 type CommandPaletteProps = {
@@ -95,6 +97,7 @@ function CommandPalette({ open, onClose }: CommandPaletteProps) {
           (application) => ({
             id: `application-${application.id}`,
             label: `${application.company} · ${application.role}`,
+            company: application.company,
             sublabel: t("nav.applications"),
             href: `/pipeline?focus=${application.id}`,
           }),
@@ -102,6 +105,7 @@ function CommandPalette({ open, onClose }: CommandPaletteProps) {
         const jobItems: PaletteItem[] = jobs.map((job) => ({
           id: `job-${job.id}`,
           label: `${job.company} · ${job.title}`,
+          company: job.company,
           sublabel: t("nav.discover"),
           href: `/discover?focus=${job.id}`,
         }));
@@ -176,7 +180,12 @@ function CommandPalette({ open, onClose }: CommandPaletteProps) {
                   : "text-ink-2 hover:bg-sunken"
               }`}
             >
-              <span className="truncate">{item.label}</span>
+              <span className="flex min-w-0 items-center gap-2.5">
+                {item.company && (
+                  <CompanyMark company={item.company} size="xs" />
+                )}
+                <span className="truncate">{item.label}</span>
+              </span>
               {item.sublabel && (
                 <span className="ml-2 shrink-0 text-xs text-ink-3">
                   {item.sublabel}

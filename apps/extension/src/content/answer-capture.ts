@@ -1,5 +1,6 @@
 import type { TypedCustomAnswer } from "../shared/messages";
 import { selectFormAdapter } from "./adapters/registry";
+import { isInputElement, isSelectElement } from "./dom-elements";
 import {
   inspectFormTargets,
   type NormalizedFieldTarget,
@@ -18,12 +19,12 @@ const CAPTURABLE = new Set([
 function currentAnswer(target: NormalizedFieldTarget): string {
   if (target.field.controlType === "RADIO_GROUP") {
     const index = target.controls.findIndex(
-      (control) => control instanceof HTMLInputElement && control.checked,
+      (control) => isInputElement(control) && control.checked,
     );
     return index >= 0 ? (target.field.options[index]?.label ?? "") : "";
   }
   const control = target.controls[0];
-  if (control instanceof HTMLSelectElement) {
+  if (isSelectElement(control)) {
     const option = control.selectedOptions[0];
     return control.value ? (option?.textContent ?? "").trim() : "";
   }
