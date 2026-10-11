@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { ExtensionStatusCard } from "@/components/extension-status-card";
 import { useI18n } from "@/lib/i18n";
 
 const CLERK_EXTENSION_DOCS =
@@ -57,6 +58,8 @@ export default function SetupPage() {
           </Link>
         </p>
       </header>
+
+      <ExtensionStatusCard />
 
       <SetupSection title={t("setup.buildExtension.title")}>
         <p>{t("setup.buildExtension.body")}</p>

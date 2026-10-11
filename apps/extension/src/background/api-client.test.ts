@@ -27,6 +27,44 @@ describe("CareerOsApiClient", () => {
     expect(JSON.stringify(status)).not.toContain("secret-session-token");
   });
 
+  it("reports presence with only the build version", async () => {
+    const request = vi
+      .fn()
+      .mockResolvedValue(new Response("{}", { status: 200 }));
+    const client = new CareerOsApiClient(
+      "http://localhost:8000",
+      { getToken: vi.fn().mockResolvedValue("session-token") },
+      request,
+    );
+
+    await client.reportPresence("abc1234");
+
+    expect(request).toHaveBeenCalledWith(
+      "http://localhost:8000/me/extension-presence",
+      {
+        method: "PUT",
+        headers: {
+          Authorization: "Bearer session-token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ build_version: "abc1234" }),
+      },
+    );
+  });
+
+  it("skips the presence report without a session", async () => {
+    const request = vi.fn();
+    const client = new CareerOsApiClient(
+      "http://localhost:8000",
+      { getToken: vi.fn().mockResolvedValue(null) },
+      request,
+    );
+
+    await client.reportPresence("abc1234");
+
+    expect(request).not.toHaveBeenCalled();
+  });
+
   it("does not call the API without a session", async () => {
     const request = vi.fn();
     const client = new CareerOsApiClient(

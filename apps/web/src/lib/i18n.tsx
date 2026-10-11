@@ -204,6 +204,14 @@ const messages = {
     "setup.subtitle":
       "Build, load, and verify the CareerOS Application Assistant during local development.",
     "setup.backToWelcome": "Back to welcome onboarding",
+    "setup.status.title": "Extension status",
+    "setup.status.checking": "Checking whether your extension has connected…",
+    "setup.status.connected": "Extension connected",
+    "setup.status.notDetected": "Extension not detected yet",
+    "setup.status.lastSeen": "Last reported {time} · build {version}",
+    "setup.status.notDetectedHint":
+      "Install the extension, sign in, and open its popup once. It reports here each time the popup opens while you are signed in.",
+    "setup.status.checkAgain": "Check again",
     "setup.buildExtension.title": "Build the extension",
     "setup.buildExtension.body":
       "From the repository root, compile the unpacked extension into apps/extension/build:",
@@ -1514,6 +1522,14 @@ const messages = {
     "setup.subtitle":
       "在本地开发中构建、加载并验证 CareerOS Application Assistant。",
     "setup.backToWelcome": "返回欢迎页",
+    "setup.status.title": "扩展状态",
+    "setup.status.checking": "正在检查扩展是否已连接…",
+    "setup.status.connected": "扩展已连接",
+    "setup.status.notDetected": "尚未检测到扩展",
+    "setup.status.notDetectedHint":
+      "安装扩展并登录后,打开一次扩展弹窗。登录状态下每次打开弹窗,扩展都会在这里上报。",
+    "setup.status.lastSeen": "最近上报:{time} · 构建版本 {version}",
+    "setup.status.checkAgain": "重新检查",
     "setup.buildExtension.title": "构建扩展",
     "setup.buildExtension.body":
       "在仓库根目录执行以下命令，将未打包扩展编译到 apps/extension/build：",

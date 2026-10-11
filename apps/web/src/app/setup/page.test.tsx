@@ -1,7 +1,22 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { LocaleProvider } from "@/lib/i18n";
+
+vi.mock("@clerk/nextjs", () => ({
+  useAuth: () => ({
+    getToken: vi.fn().mockResolvedValue("token"),
+    isLoaded: true,
+    isSignedIn: true,
+    userId: "user-1",
+  }),
+}));
+
+vi.mock("@/lib/api", () => ({
+  getExtensionPresence: vi
+    .fn()
+    .mockResolvedValue({ last_seen_at: null, build_version: null }),
+}));
 
 describe("SetupPage", () => {
   it("renders key setup and diagnostic content", async () => {

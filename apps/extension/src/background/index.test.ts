@@ -7,6 +7,7 @@ const IDEMPOTENCY_KEY = "00000000-0000-4000-8000-000000000001";
 
 const {
   mockGetAuthStatus,
+  mockReportPresence,
   mockResolveAnswers,
   mockGetApplicationContext,
   mockRecordApplication,
@@ -18,6 +19,7 @@ const {
   mockExecuteScript,
 } = vi.hoisted(() => ({
   mockGetAuthStatus: vi.fn(),
+  mockReportPresence: vi.fn(),
   mockResolveAnswers: vi.fn(),
   mockGetApplicationContext: vi.fn(),
   mockRecordApplication: vi.fn(),
@@ -40,6 +42,7 @@ let onMessageListener:
 vi.mock("./api-client", () => ({
   CareerOsApiClient: class {
     getAuthStatus = mockGetAuthStatus;
+    reportPresence = mockReportPresence;
     resolveAnswers = mockResolveAnswers;
     getApplicationContext = mockGetApplicationContext;
     recordApplication = mockRecordApplication;
@@ -599,5 +602,47 @@ describe("background message tab targeting", () => {
       "Engineer",
     );
     expect(response).toEqual(expect.objectContaining({ ok: true }));
+  });
+});
+
+describe("background extension presence", () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    installChromeMocks();
+    await import("./index");
+  });
+
+  it("reports presence with the build version once signed in", async () => {
+    mockGetAuthStatus.mockResolvedValue({ authenticated: true });
+    mockReportPresence.mockResolvedValue(undefined);
+
+    const response = await dispatchMessage(
+      { type: "CAREEROS_GET_AUTH_STATUS" },
+      popupSender(),
+    );
+
+    expect(response).toEqual({ ok: true, data: { authenticated: true } });
+    expect(mockReportPresence).toHaveBeenCalledWith("test-build");
+  });
+
+  it("does not report presence while signed out", async () => {
+    mockGetAuthStatus.mockResolvedValue({ authenticated: false });
+
+    await dispatchMessage({ type: "CAREEROS_GET_AUTH_STATUS" }, popupSender());
+
+    expect(mockReportPresence).not.toHaveBeenCalled();
+  });
+
+  it("keeps the popup working when the presence report fails", async () => {
+    mockGetAuthStatus.mockResolvedValue({ authenticated: true });
+    mockReportPresence.mockRejectedValue(new Error("offline"));
+
+    const response = await dispatchMessage(
+      { type: "CAREEROS_GET_AUTH_STATUS" },
+      popupSender(),
+    );
+
+    expect(response).toEqual({ ok: true, data: { authenticated: true } });
   });
 });

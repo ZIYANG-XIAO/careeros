@@ -316,6 +316,14 @@ async def test_clean_migration_creates_expected_schema() -> None:
                 for tbl in intelligence_tables:
                     assert tbl in table_names, f"Missing Job Intelligence table: {tbl}"
 
+                assert "extension_presence" in table_names, "Missing extension_presence"
+                presence_cols = await conn.run_sync(
+                    lambda sync_conn: {
+                        c["name"] for c in inspect(sync_conn).get_columns("extension_presence")
+                    }
+                )
+                assert presence_cols == {"id", "user_id", "build_version", "last_seen_at"}
+
                 assert "saved_jobs" in table_names, "Missing M8 saved_jobs table"
                 saved_job_cols = await conn.run_sync(
                     lambda sync_conn: {

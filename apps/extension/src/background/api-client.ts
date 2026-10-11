@@ -22,7 +22,7 @@ import {
   getJobMatch,
   lookupPageJob,
 } from "./api-client-insights";
-import { getAuthStatus } from "./api-client-auth";
+import { getAuthStatus, reportPresence } from "./api-client-auth";
 import {
   clipJob,
   downloadResumeVersion,
@@ -48,6 +48,15 @@ export class CareerOsApiClient {
 
   async getAuthStatus(): Promise<AuthStatus> {
     return getAuthStatus(this.apiUrl, this.tokenProvider, this.request);
+  }
+
+  async reportPresence(buildVersion: string): Promise<void> {
+    return reportPresence(
+      this.apiUrl,
+      this.tokenProvider,
+      this.request,
+      buildVersion,
+    );
   }
 
   async resolveAnswers(

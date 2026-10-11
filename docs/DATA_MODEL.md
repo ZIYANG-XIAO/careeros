@@ -164,6 +164,14 @@ independent of interface language. The old `job_preferences` table remains
 temporarily available for rollout compatibility but is no longer the Web
 editing surface.
 
+Migration `0027_extension_presence` adds one owner-scoped row per user
+recording when the signed-in browser extension last reported to the API and
+its build version. The timestamp is server-assigned; no page URL, form, or
+browsing data is stored. The Web `/setup` page reads it to show whether the
+extension is connected, because the extension exposes no page bridge the Web
+could query directly. It is included in account export and removed by
+account deletion.
+
 ### Planned, not implemented
 
 - Reusable Answer;

@@ -459,7 +459,13 @@ function handlePopupRequest(
   if (request.type === "CAREEROS_GET_AUTH_STATUS") {
     api
       .getAuthStatus()
-      .then((data) => sendResponse({ ok: true, data }))
+      .then((data) => {
+        sendResponse({ ok: true, data });
+        // Best effort: a failed report must never block the popup.
+        if (data.authenticated) {
+          api.reportPresence(__CAREEROS_BUILD_VERSION__).catch(() => undefined);
+        }
+      })
       .catch(() => sendResponse({ ok: false, error: "UNAVAILABLE" }));
     return true;
   }

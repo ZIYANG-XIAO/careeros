@@ -303,6 +303,24 @@ class JobPreferences(Base):
     user: Mapped["User"] = relationship(back_populates="job_preferences")
 
 
+class ExtensionPresence(Base):
+    """When the user's signed-in browser extension last reached the API.
+
+    One row per user, overwritten on each report. It records only the
+    extension's build version and a server-side timestamp — never the page
+    the user was on.
+    """
+
+    __tablename__ = "extension_presence"
+
+    id: Mapped[UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        sa.ForeignKey("users.id", ondelete="CASCADE"), unique=True
+    )
+    build_version: Mapped[str] = mapped_column(sa.String(64))
+    last_seen_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True))
+
+
 class ReusableAnswer(Base):
     """A user-approved answer to a custom, non-sensitive application question.
 

@@ -29,6 +29,7 @@ import type {
   Education,
   Experience,
   ExperienceDetailResponse,
+  ExtensionPresence,
   Job,
   JobAnalysis,
   JobPreferences,
@@ -263,6 +264,16 @@ export async function updateJobPreferences(
     body: JSON.stringify(data),
   });
   return handleResponse<JobPreferences>(response);
+}
+
+export async function getExtensionPresence(
+  token: string,
+): Promise<ExtensionPresence> {
+  const response = await fetch(`${apiBaseUrl()}/me/extension-presence`, {
+    headers: authHeaders(token),
+    cache: "no-store",
+  });
+  return handleResponse<ExtensionPresence>(response);
 }
 
 export async function listJobSearchGoals(

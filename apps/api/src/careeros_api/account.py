@@ -29,6 +29,7 @@ from careeros_api.models import (
     EvidenceMatch,
     Experience,
     ExperienceDetail,
+    ExtensionPresence,
     HiddenCompany,
     Job,
     JobAnalysis,
@@ -97,6 +98,7 @@ async def build_account_export(session: AsyncSession, user: User) -> dict[str, A
     sections: dict[str, Select[Any]] = {
         "contact_info": select(UserContactInfo).where(UserContactInfo.user_id == user.id),
         "job_preferences": select(JobPreferences).where(JobPreferences.user_id == user.id),
+        "extension_presence": select(ExtensionPresence).where(ExtensionPresence.user_id == user.id),
         "job_search_goals": select(JobSearchGoal).where(JobSearchGoal.user_id == user.id),
         "reusable_answers": select(ReusableAnswer).where(ReusableAnswer.user_id == user.id),
         "educations": select(Education).where(Education.career_brain_id == brain_id),

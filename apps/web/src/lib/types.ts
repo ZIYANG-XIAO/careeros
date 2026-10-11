@@ -100,6 +100,12 @@ export type JobPreferences = {
   security_clearance_interest: boolean;
 };
 
+/** When the signed-in extension last reached the API; both null if never. */
+export type ExtensionPresence = {
+  last_seen_at: string | null;
+  build_version: string | null;
+};
+
 export type JobSearchGoalMarket = "UNKNOWN" | "NORTH_AMERICA" | "CHINA";
 
 export type JobSearchGoal = {
