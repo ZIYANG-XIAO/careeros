@@ -1,0 +1,206 @@
+{
+  "source_key": "icims",
+  "description": "North America: iCIMS career portals, each verified to allow its sitemap and job pages in robots.txt. Read via sitemap.xml and the framed job page JSON-LD; only postings located in the US or Canada are kept.",
+  "boards": [
+    {
+      "token": "careers-daddario",
+      "company": "D'Addario",
+      "site_url": "https://careers-daddario.icims.com"
+    },
+    {
+      "token": "careers-sscgp",
+      "company": "Southern Star Central Gas Pipeline",
+      "site_url": "https://careers-sscgp.icims.com"
+    },
+    {
+      "token": "careers-decisionpointcorp",
+      "company": "DecisionPoint",
+      "site_url": "https://careers-decisionpointcorp.icims.com"
+    },
+    {
+      "token": "careers-riversideresearch",
+      "company": "Riverside Research",
+      "site_url": "https://careers-riversideresearch.icims.com"
+    },
+    {
+      "token": "careers-bruno",
+      "company": "Bruno Independent Living Aids",
+      "site_url": "https://careers-bruno.icims.com"
+    },
+    {
+      "token": "careers-gdms",
+      "company": "General Dynamics Mission Systems",
+      "site_url": "https://careers-gdms.icims.com"
+    },
+    {
+      "token": "careers-peraton",
+      "company": "Peraton",
+      "site_url": "https://careers-peraton.icims.com"
+    },
+    {
+      "token": "campus-americas",
+      "company": "Atlassian",
+      "site_url": "https://campus-americas.icims.com"
+    },
+    {
+      "token": "careers-nakupuna",
+      "company": "Nakupuna Companies",
+      "site_url": "https://careers-nakupuna.icims.com"
+    },
+    {
+      "token": "careers-apogeeusa",
+      "company": "Apogee Engineering",
+      "site_url": "https://careers-apogeeusa.icims.com"
+    },
+    {
+      "token": "careers-americansystems",
+      "company": "AMERICAN SYSTEMS",
+      "site_url": "https://careers-americansystems.icims.com"
+    },
+    {
+      "token": "careers-sri",
+      "company": "SRI International",
+      "site_url": "https://careers-sri.icims.com"
+    },
+    {
+      "token": "uscareers-idemia",
+      "company": "IDEMIA",
+      "site_url": "https://uscareers-idemia.icims.com"
+    },
+    {
+      "token": "careers-sas",
+      "company": "SAS",
+      "site_url": "https://careers-sas.icims.com"
+    },
+    {
+      "token": "campus-us-corgan",
+      "company": "Corgan",
+      "site_url": "https://campus-us-corgan.icims.com"
+    },
+    {
+      "token": "careers-iridium",
+      "company": "Iridium Communications",
+      "site_url": "https://careers-iridium.icims.com"
+    },
+    {
+      "token": "uscareers-lennox",
+      "company": "Lennox International",
+      "site_url": "https://uscareers-lennox.icims.com"
+    },
+    {
+      "token": "careers-berkley",
+      "company": "W.R. Berkley",
+      "site_url": "https://careers-berkley.icims.com"
+    },
+    {
+      "token": "us-erac",
+      "company": "Enterprise Holdings",
+      "site_url": "https://us-erac.icims.com"
+    },
+    {
+      "token": "careers-gdeb",
+      "company": "General Dynamics Electric Boat",
+      "site_url": "https://careers-gdeb.icims.com"
+    },
+    {
+      "token": "homeoffice-na-urbn",
+      "company": "URBN",
+      "site_url": "https://homeoffice-na-urbn.icims.com"
+    },
+    {
+      "token": "careersus-shure",
+      "company": "Shure",
+      "site_url": "https://careersus-shure.icims.com"
+    },
+    {
+      "token": "careers-federatedinsurance",
+      "company": "Federated Insurance",
+      "site_url": "https://careers-federatedinsurance.icims.com"
+    },
+    {
+      "token": "careers-steeldynamics",
+      "company": "Steel Dynamics",
+      "site_url": "https://careers-steeldynamics.icims.com"
+    },
+    {
+      "token": "careers-aluminumdynamics",
+      "company": "Aluminum Dynamics",
+      "site_url": "https://careers-aluminumdynamics.icims.com"
+    },
+    {
+      "token": "careers-rovisys",
+      "company": "RoviSys",
+      "site_url": "https://careers-rovisys.icims.com"
+    },
+    {
+      "token": "careers-americas",
+      "company": "Atlassian",
+      "site_url": "https://careers-americas.icims.com"
+    },
+    {
+      "token": "careers-westernsouthern",
+      "company": "Western & Southern Financial Group",
+      "site_url": "https://careers-westernsouthern.icims.com"
+    },
+    {
+      "token": "careers-empiricalfoods",
+      "company": "Empirical Foods",
+      "site_url": "https://careers-empiricalfoods.icims.com"
+    },
+    {
+      "token": "careers-springswindowfashions",
+      "company": "Springs Window Fashions",
+      "site_url": "https://careers-springswindowfashions.icims.com"
+    },
+    {
+      "token": "careersenus-itt-inc",
+      "company": "ITT",
+      "site_url": "https://careersenus-itt-inc.icims.com"
+    },
+    {
+      "token": "careers-blackhawknetwork",
+      "company": "Blackhawk Network Holdings",
+      "site_url": "https://careers-blackhawknetwork.icims.com"
+    },
+    {
+      "token": "campus-libertymutual",
+      "company": "Liberty Mutual",
+      "site_url": "https://campus-libertymutual.icims.com"
+    },
+    {
+      "token": "careers-thesilverlining",
+      "company": "West Bend Insurance",
+      "site_url": "https://careers-thesilverlining.icims.com"
+    },
+    {
+      "token": "careers-growfinancial",
+      "company": "Grow Financial Federal Credit Union",
+      "site_url": "https://careers-growfinancial.icims.com"
+    },
+    {
+      "token": "careers-tighebond",
+      "company": "Tighe & Bond",
+      "site_url": "https://careers-tighebond.icims.com"
+    },
+    {
+      "token": "externalhourly-highgate",
+      "company": "Highgate",
+      "site_url": "https://externalhourly-highgate.icims.com"
+    },
+    {
+      "token": "uscareeropenings-alliancelaundry",
+      "company": "Alliance Laundry Systems",
+      "site_url": "https://uscareeropenings-alliancelaundry.icims.com"
+    },
+    {
+      "token": "careers-hexagonpositioning",
+      "company": "Hexagon AB",
+      "site_url": "https://careers-hexagonpositioning.icims.com"
+    },
+    {
+      "token": "careers-aa",
+      "company": "Envoy Air",
+      "site_url": "https://careers-aa.icims.com"
+    }
+  ]
+}

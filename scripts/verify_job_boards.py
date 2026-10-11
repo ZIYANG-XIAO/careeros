@@ -23,6 +23,7 @@ SEEDS = {
     "greenhouse": ROOT / "apps/api/job_sources/greenhouse_north_america.json",
     "lever": ROOT / "apps/api/job_sources/lever_north_america.json",
     "ashby": ROOT / "apps/api/job_sources/ashby_north_america.json",
+    "workable": ROOT / "apps/api/job_sources/workable_north_america.json",
 }
 
 
@@ -34,6 +35,10 @@ def count_jobs(client: httpx.Client, source: str, token: str) -> int | None:
     elif source == "lever":
         response = client.get(
             f"https://api.lever.co/v0/postings/{token}", params={"mode": "json"}
+        )
+    elif source == "workable":
+        response = client.get(
+            f"https://apply.workable.com/api/v1/widget/accounts/{token}"
         )
     else:
         response = client.get(f"https://api.ashbyhq.com/posting-api/job-board/{token}")

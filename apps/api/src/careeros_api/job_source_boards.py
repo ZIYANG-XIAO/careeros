@@ -1,4 +1,4 @@
-"""Shared plumbing for employer ATS job-board sources (Greenhouse, Lever, Ashby).
+"""Shared plumbing for employer ATS job-board sources (Greenhouse, Lever, Ashby, Workday).
 
 Each source module only knows its own URL and payload shape; everything else —
 the board seed model, HTML-to-text, the conservative North America placement
@@ -6,13 +6,16 @@ rule, candidate construction, and fetching — lives here so the sources behave
 identically.
 """
 
+import asyncio
 import html
+import json
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from html.parser import HTMLParser
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 from pydantic import ValidationError
@@ -43,6 +46,9 @@ class SourceBoard:
 
     token: str
     company: str
+    # Only for sources addressed by a full site URL rather than a token alone
+    # (Workday: ``https://{tenant}.wd{N}.myworkdayjobs.com/{site}``).
+    site_url: str | None = None
 
     def __post_init__(self) -> None:
         if not _BOARD_TOKEN.match(self.token):
@@ -69,13 +75,19 @@ class BoardMapping:
     skipped_outside_market: int
     skipped_invalid: int
     skipped_not_opening: int = 0
+    # Already-catalogued postings still listed (or not yet re-checked) that a
+    # source chose not to re-fetch this run. They stay open.
+    retained_external_ids: frozenset[str] = frozenset()
 
     @property
     def seen_external_ids(self) -> frozenset[str]:
-        return frozenset(
-            candidate.external_job_id
-            for candidate in self.candidates
-            if candidate.external_job_id is not None
+        return (
+            frozenset(
+                candidate.external_job_id
+                for candidate in self.candidates
+                if candidate.external_job_id is not None
+            )
+            | self.retained_external_ids
         )
 
 
@@ -232,9 +244,49 @@ _NOT_AN_OPENING = re.compile(
     r"general application|talent (?:pool|community|network)|join our talent|"
     r"future (?:opportunit|consideration|roles?\b)|expression of interest|"
     r"don'?t see (?:the|a|your)|open application|resume drop|speculative application|"
-    r"stay in touch|keep in touch",
+    r"stay in touch|keep in touch|\bevergreen\b",
     re.I,
 )
+# A posting first published this long ago is treated as an always-open
+# listing rather than a current opening, even if the employer still lists it.
+STALE_AFTER = timedelta(days=365)
+
+
+def is_stale_posting(posted_at: datetime | None, observed_at: datetime) -> bool:
+    return posted_at is not None and posted_at < observed_at - STALE_AFTER
+
+
+def json_ld_expired(posting: dict[str, Any], observed_at: datetime) -> bool:
+    """True when a schema.org posting's ``validThrough`` has passed."""
+    value = posting.get("validThrough")
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        until = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if until.tzinfo is None:
+        until = until.replace(tzinfo=UTC)
+    return until < observed_at
+
+
+def without_stale(mapping: "BoardMapping", observed_at: datetime) -> "BoardMapping":
+    """Drop candidates first published more than ``STALE_AFTER`` ago.
+
+    They leave ``seen_external_ids`` too, so a sync closes any such posting
+    already in the catalog.
+    """
+    kept = tuple(c for c in mapping.candidates if not is_stale_posting(c.posted_at, observed_at))
+    if len(kept) == len(mapping.candidates):
+        return mapping
+    return BoardMapping(
+        kept,
+        mapping.fetched,
+        mapping.skipped_outside_market,
+        mapping.skipped_invalid,
+        mapping.skipped_not_opening + len(mapping.candidates) - len(kept),
+        retained_external_ids=mapping.retained_external_ids,
+    )
 
 
 def is_standing_interest_posting(title: str) -> bool:
@@ -400,3 +452,218 @@ async def fetch_json(
         return response.json()
     except ValueError as error:
         raise BoardFetchError(f"{board.token}: invalid JSON") from error
+
+
+# --- HTML career pages (sitemap + structured data) ---------------------------
+
+_LOC = re.compile(r"<loc>\s*([^<\s]+)\s*</loc>")
+_JSON_LD = re.compile(r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>', re.S)
+
+
+async def fetch_page(client: httpx.AsyncClient, board: SourceBoard, url: str) -> httpx.Response:
+    """GET one page as CareerOS. Raises ``BoardFetchError`` on network failure."""
+    try:
+        return await client.get(url, headers={"User-Agent": USER_AGENT}, follow_redirects=True)
+    except httpx.HTTPError as error:
+        raise BoardFetchError(f"{board.token}: {type(error).__name__}") from error
+
+
+async def fetch_page_retrying(
+    client: httpx.AsyncClient, board: SourceBoard, url: str, pause: float
+) -> httpx.Response | None:
+    """One page, retried once; None when the network fails both times.
+
+    A single bad page must not fail a whole site and discard pages already read.
+    """
+    for attempt in range(2):
+        try:
+            return await fetch_page(client, board, url)
+        except BoardFetchError:
+            if attempt == 0:
+                await asyncio.sleep(pause * 3)
+    return None
+
+
+class Robots:
+    """robots.txt rules for CareerOS, per RFC 9309.
+
+    The group naming our product token applies, else the ``*`` group. Within
+    it the longest matching rule wins and ``Allow`` wins a tie; ``*`` and a
+    trailing ``$`` are supported. (``urllib.robotparser`` instead takes the
+    first matching line, which misreads ``Disallow: /`` followed by
+    ``Allow: /api``.)
+    """
+
+    PRODUCT_TOKEN = "careeros-jobsync"
+
+    def __init__(self, text: str) -> None:
+        groups: list[tuple[list[str], list[tuple[bool, str]]]] = []
+        agents: list[str] = []
+        rules: list[tuple[bool, str]] = []
+        for raw in text.splitlines():
+            line = raw.split("#", 1)[0].strip()
+            if ":" not in line:
+                continue
+            key, value = (part.strip() for part in line.split(":", 1))
+            key = key.lower()
+            if key == "user-agent":
+                if rules:
+                    groups.append((agents, rules))
+                    agents, rules = [], []
+                agents.append(value.lower())
+            elif key in ("allow", "disallow") and agents:
+                if value:
+                    rules.append((key == "allow", value))
+        if agents:
+            groups.append((agents, rules))
+        mine = [
+            r for a, r in groups if any(self.PRODUCT_TOKEN.startswith(x) and x != "*" for x in a)
+        ]
+        anyone = [r for a, r in groups if "*" in a]
+        chosen = mine or anyone
+        self._rules = [rule for group in chosen for rule in group]
+
+    @staticmethod
+    def _pattern(path: str) -> re.Pattern[str]:
+        anchored = path.endswith("$")
+        body = re.escape(path[:-1] if anchored else path).replace(r"\*", ".*")
+        return re.compile(body + ("$" if anchored else ""))
+
+    def allows(self, url: str) -> bool:
+        parts = urlsplit(url)
+        target = (parts.path or "/") + (f"?{parts.query}" if parts.query else "")
+        best: tuple[int, bool] | None = None
+        for allow, path in self._rules:
+            if self._pattern(path).match(target):
+                rank = (len(path), allow)
+                if best is None or rank > best:
+                    best = rank
+        return True if best is None else best[1]
+
+
+async def load_robots(client: httpx.AsyncClient, board: SourceBoard, origin: str) -> Robots:
+    """The origin's robots.txt, per RFC 9309 section 2.3.1: a 4xx answer (other
+    than 429) means no rules apply; a 429, 5xx, or network failure fails the
+    board rather than guessing."""
+    response = await fetch_page(client, board, f"{origin}/robots.txt")
+    status = response.status_code
+    if status == 200:
+        # Some sites answer 200 with an HTML page; that holds no rules either.
+        html_page = "<html" in response.text[:500].lower()
+        return Robots("" if html_page else response.text)
+    if 400 <= status < 500 and status != 429:
+        return Robots("")
+    raise BoardFetchError(f"{board.token}: robots.txt HTTP {status}")
+
+
+def sitemap_urls(xml: str, where: str) -> list[str]:
+    """Every ``<loc>`` in a sitemap urlset, in order and de-duplicated."""
+    if "<urlset" not in xml:
+        raise BoardFetchError(f"{where}: sitemap is not a urlset")
+    return list(dict.fromkeys(_LOC.findall(xml)))
+
+
+def json_ld_job_posting(page: str) -> dict[str, Any] | None:
+    """The schema.org ``JobPosting`` embedded in a page, if any."""
+    for block in _JSON_LD.findall(page):
+        try:
+            data = json.loads(block)
+        except ValueError:
+            continue
+        for item in data if isinstance(data, list) else [data]:
+            if isinstance(item, dict) and item.get("@type") == "JobPosting":
+                return item
+    return None
+
+
+@dataclass(frozen=True)
+class ListedPages:
+    """Pages read for one listing of job URLs, before mapping."""
+
+    pages: Mapping[str, tuple[str, dict[str, Any]]]  # external id -> (URL, posting)
+    retained: frozenset[str]
+    skipped_outside_market: int
+
+
+async def read_listed_pages(
+    client: httpx.AsyncClient,
+    board: SourceBoard,
+    robots: Robots,
+    listed: Mapping[str, str],
+    known: Mapping[str, str],
+    *,
+    complete: bool,
+    extract: Callable[[str], dict[str, Any] | None],
+    worth_fetching: Callable[[str], bool],
+    pause: float,
+    max_new_pages: int,
+    max_rechecks: int,
+) -> ListedPages:
+    """Read the job pages a listing (usually a sitemap) points to, incrementally.
+
+    ``listed`` and ``known`` map external ids to URLs; ``known`` holds postings
+    already open in the catalog, which are not re-fetched. When the listing is
+    ``complete``, a known posting missing from it is simply not retained (so
+    the caller closes it). Otherwise absence proves nothing: a bounded number
+    of missing postings are re-checked and only those whose page is gone
+    (404/410, or no posting) are dropped; the rest stay open.
+    """
+    pages: dict[str, tuple[str, dict[str, Any]]] = {}
+    retained = set(listed).intersection(known)
+    outside = 0
+    for external_id, url in listed.items():
+        if external_id in known:
+            continue
+        if not worth_fetching(url):
+            outside += 1
+            continue
+        if len(pages) >= max_new_pages or not robots.allows(url):
+            continue
+        await asyncio.sleep(pause)
+        page = await fetch_page_retrying(client, board, url, pause)
+        posting = extract(page.text) if page is not None and page.status_code == 200 else None
+        if posting is not None:
+            pages[external_id] = (url, posting)
+
+    if not complete:
+        unlisted = [external_id for external_id in known if external_id not in listed]
+        for index, external_id in enumerate(unlisted):
+            if index >= max_rechecks:
+                retained.update(unlisted[index:])
+                break
+            await asyncio.sleep(pause)
+            page = await fetch_page_retrying(client, board, known[external_id], pause)
+            if page is None or page.status_code not in (200, 404, 410):
+                retained.add(external_id)  # a network or server error proves nothing
+            elif page.status_code == 200 and extract(page.text) is not None:
+                retained.add(external_id)
+    return ListedPages(pages, frozenset(retained), outside)
+
+
+async def recheck_missing(
+    client: httpx.AsyncClient,
+    board: SourceBoard,
+    missing: Mapping[str, str],
+    *,
+    still_open: Callable[[httpx.Response], bool],
+    pause: float,
+    limit: int,
+) -> set[str]:
+    """Which known postings absent from an incomplete listing should stay open.
+
+    At most ``limit`` pages are re-checked; a posting is dropped only when its
+    page answers 404/410 or a 200 that ``still_open`` rejects. Network errors,
+    other statuses, and postings beyond the limit stay open.
+    """
+    keep: set[str] = set()
+    for index, (external_id, url) in enumerate(missing.items()):
+        if index >= limit:
+            keep.update(list(missing)[index:])
+            break
+        await asyncio.sleep(pause)
+        page = await fetch_page_retrying(client, board, url, pause)
+        if page is None or page.status_code not in (200, 404, 410):
+            keep.add(external_id)
+        elif page.status_code == 200 and still_open(page):
+            keep.add(external_id)
+    return keep

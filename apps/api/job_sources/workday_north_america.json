@@ -1,0 +1,1236 @@
+{
+  "source_key": "workday",
+  "description": "North America: Workday career sites found in public new-grad/internship lists on 2026-10-09, each verified to allow its sitemap and job pages in robots.txt and to list postings whose URLs place them in the US or Canada. Read via the advertised siteMap.xml and each job page's schema.org JobPosting JSON-LD only; only postings located in the US or Canada are kept.",
+  "boards": [
+    {
+      "token": "3m.search",
+      "company": "3M",
+      "site_url": "https://3m.wd1.myworkdayjobs.com/Search"
+    },
+    {
+      "token": "adobe.external_experienced",
+      "company": "Adobe",
+      "site_url": "https://adobe.wd5.myworkdayjobs.com/external_experienced"
+    },
+    {
+      "token": "aes.aes_us",
+      "company": "AES",
+      "site_url": "https://aes.wd1.myworkdayjobs.com/AES_US"
+    },
+    {
+      "token": "ag.airbus",
+      "company": "Airbus",
+      "site_url": "https://ag.wd3.myworkdayjobs.com/Airbus"
+    },
+    {
+      "token": "aig.aig",
+      "company": "AIG",
+      "site_url": "https://aig.wd1.myworkdayjobs.com/aig"
+    },
+    {
+      "token": "aig.early_careers",
+      "company": "AIG",
+      "site_url": "https://aig.wd1.myworkdayjobs.com/early_careers"
+    },
+    {
+      "token": "aksteel.careers",
+      "company": "Cleveland-Cliffs",
+      "site_url": "https://aksteel.wd1.myworkdayjobs.com/careers"
+    },
+    {
+      "token": "alation.externalsite",
+      "company": "Alation",
+      "site_url": "https://alation.wd503.myworkdayjobs.com/ExternalSite"
+    },
+    {
+      "token": "alliance.nissanjobs",
+      "company": "Nissan Global",
+      "site_url": "https://alliance.wd3.myworkdayjobs.com/nissanjobs"
+    },
+    {
+      "token": "americancentury.americancenturyinvestments",
+      "company": "American Century Investments",
+      "site_url": "https://americancentury.wd5.myworkdayjobs.com/AmericanCenturyInvestments"
+    },
+    {
+      "token": "aoins.autoowners",
+      "company": "Auto-Owners Insurance",
+      "site_url": "https://aoins.wd5.myworkdayjobs.com/AutoOwners"
+    },
+    {
+      "token": "applebank.applebankcareers",
+      "company": "Apple Bank",
+      "site_url": "https://applebank.wd5.myworkdayjobs.com/applebankcareers"
+    },
+    {
+      "token": "assurant.assurant_careers",
+      "company": "Assurant",
+      "site_url": "https://assurant.wd1.myworkdayjobs.com/Assurant_Careers"
+    },
+    {
+      "token": "atcllc.atcllc",
+      "company": "ATC",
+      "site_url": "https://atcllc.wd5.myworkdayjobs.com/atcllc"
+    },
+    {
+      "token": "autodesk.ext",
+      "company": "Autodesk",
+      "site_url": "https://autodesk.wd1.myworkdayjobs.com/Ext"
+    },
+    {
+      "token": "autodesk.uni",
+      "company": "Autodesk",
+      "site_url": "https://autodesk.wd1.myworkdayjobs.com/uni"
+    },
+    {
+      "token": "badgermeter.us_careersite",
+      "company": "Badger Meter",
+      "site_url": "https://badgermeter.wd5.myworkdayjobs.com/US_CareerSite"
+    },
+    {
+      "token": "barclays.external_career_site_barclays",
+      "company": "Barclays",
+      "site_url": "https://barclays.wd3.myworkdayjobs.com/External_Career_Site_Barclays"
+    },
+    {
+      "token": "belron.safelite_careers",
+      "company": "Safelite",
+      "site_url": "https://belron.wd3.myworkdayjobs.com/Safelite_Careers"
+    },
+    {
+      "token": "blackrock.blackrock_professional",
+      "company": "BlackRock",
+      "site_url": "https://blackrock.wd1.myworkdayjobs.com/BlackRock_Professional"
+    },
+    {
+      "token": "boeing.external_careers",
+      "company": "Boeing",
+      "site_url": "https://boeing.wd1.myworkdayjobs.com/EXTERNAL_CAREERS"
+    },
+    {
+      "token": "brunswick.search",
+      "company": "Brunswick",
+      "site_url": "https://brunswick.wd1.myworkdayjobs.com/search"
+    },
+    {
+      "token": "burlington.burlingtoncareers",
+      "company": "Burlington Stores",
+      "site_url": "https://burlington.wd5.myworkdayjobs.com/BurlingtonCareers"
+    },
+    {
+      "token": "cadence.external_careers",
+      "company": "Cadence Design Systems",
+      "site_url": "https://cadence.wd1.myworkdayjobs.com/External_Careers"
+    },
+    {
+      "token": "cadence.univ_careers",
+      "company": "Cadence Design Systems",
+      "site_url": "https://cadence.wd1.myworkdayjobs.com/Univ_Careers"
+    },
+    {
+      "token": "cadence.university_talent",
+      "company": "Cadence Design Systems",
+      "site_url": "https://cadence.wd1.myworkdayjobs.com/University_Talent"
+    },
+    {
+      "token": "capgroup.capitalgroupcareers",
+      "company": "Capital Group",
+      "site_url": "https://capgroup.wd1.myworkdayjobs.com/capitalgroupcareers"
+    },
+    {
+      "token": "capitalhealth.capitalhealthcareers",
+      "company": "Capital Health",
+      "site_url": "https://capitalhealth.wd1.myworkdayjobs.com/CapitalHealthCareers"
+    },
+    {
+      "token": "capitalone.capital_one",
+      "company": "Capital One",
+      "site_url": "https://capitalone.wd12.myworkdayjobs.com/Capital_One"
+    },
+    {
+      "token": "cardinalhealth.ext",
+      "company": "Cardinal Health",
+      "site_url": "https://cardinalhealth.wd1.myworkdayjobs.com/EXT"
+    },
+    {
+      "token": "centene.centene_external",
+      "company": "Centene",
+      "site_url": "https://centene.wd5.myworkdayjobs.com/Centene_External"
+    },
+    {
+      "token": "centricsoftware.centric",
+      "company": "Centric Software",
+      "site_url": "https://centricsoftware.wd501.myworkdayjobs.com/Centric"
+    },
+    {
+      "token": "ceritypartners.ceritypartnerscareers",
+      "company": "Cerity Partners",
+      "site_url": "https://ceritypartners.wd12.myworkdayjobs.com/ceritypartnerscareers"
+    },
+    {
+      "token": "chartermfg.charter_careers",
+      "company": "Charter Manufacturing",
+      "site_url": "https://chartermfg.wd5.myworkdayjobs.com/Charter_Careers"
+    },
+    {
+      "token": "chrobinson.chrobinson",
+      "company": "C.H. Robinson",
+      "site_url": "https://chrobinson.wd5.myworkdayjobs.com/CHRobinson"
+    },
+    {
+      "token": "churchdwight.chdcareers",
+      "company": "Church & Dwight",
+      "site_url": "https://churchdwight.wd1.myworkdayjobs.com/chdcareers"
+    },
+    {
+      "token": "cibc.campus",
+      "company": "CIBC",
+      "site_url": "https://cibc.wd3.myworkdayjobs.com/campus"
+    },
+    {
+      "token": "cibc.search",
+      "company": "CIBC",
+      "site_url": "https://cibc.wd3.myworkdayjobs.com/search"
+    },
+    {
+      "token": "ciena.careers",
+      "company": "Ciena",
+      "site_url": "https://ciena.wd5.myworkdayjobs.com/Careers"
+    },
+    {
+      "token": "cigna.cignacareers",
+      "company": "Cigna Group",
+      "site_url": "https://cigna.wd5.myworkdayjobs.com/cignacareers"
+    },
+    {
+      "token": "clarios.clarioscareers",
+      "company": "Clarios",
+      "site_url": "https://clarios.wd5.myworkdayjobs.com/clarioscareers"
+    },
+    {
+      "token": "clearwateranalytics.clearwater_analytics_careers",
+      "company": "Clearwater Analytics",
+      "site_url": "https://clearwateranalytics.wd1.myworkdayjobs.com/Clearwater_Analytics_Careers"
+    },
+    {
+      "token": "clr.clr_careers",
+      "company": "Continental Resources",
+      "site_url": "https://clr.wd5.myworkdayjobs.com/CLR_Careers"
+    },
+    {
+      "token": "cmegroup.cme_careers",
+      "company": "CME Group",
+      "site_url": "https://cmegroup.wd1.myworkdayjobs.com/cme_careers"
+    },
+    {
+      "token": "commercebank.commercejobs",
+      "company": "Commerce Bank",
+      "site_url": "https://commercebank.wd1.myworkdayjobs.com/CommerceJobs"
+    },
+    {
+      "token": "costar.costar_campus",
+      "company": "CoStar Group",
+      "site_url": "https://costar.wd1.myworkdayjobs.com/Costar_Campus"
+    },
+    {
+      "token": "countryfinancial.countrycorporateinternships",
+      "company": "COUNTRY Financial",
+      "site_url": "https://countryfinancial.wd5.myworkdayjobs.com/COUNTRYCorporateInternships"
+    },
+    {
+      "token": "covestro.cov_external",
+      "company": "Covestro",
+      "site_url": "https://covestro.wd3.myworkdayjobs.com/cov_external"
+    },
+    {
+      "token": "cox.cox_external_career_site_1",
+      "company": "Cox",
+      "site_url": "https://cox.wd1.myworkdayjobs.com/Cox_External_Career_Site_1"
+    },
+    {
+      "token": "dexcom.dexcom",
+      "company": "Dexcom",
+      "site_url": "https://dexcom.wd1.myworkdayjobs.com/Dexcom"
+    },
+    {
+      "token": "dickssportinggoods.dsg",
+      "company": "Dick's Sporting Goods",
+      "site_url": "https://dickssportinggoods.wd1.myworkdayjobs.com/DSG"
+    },
+    {
+      "token": "dowjones.dow_jones_career",
+      "company": "Dow Jones",
+      "site_url": "https://dowjones.wd1.myworkdayjobs.com/Dow_Jones_Career"
+    },
+    {
+      "token": "draper.draper_careers",
+      "company": "Draper",
+      "site_url": "https://draper.wd5.myworkdayjobs.com/Draper_Careers"
+    },
+    {
+      "token": "drivetime.drivetime",
+      "company": "DriveTime",
+      "site_url": "https://drivetime.wd1.myworkdayjobs.com/DriveTime"
+    },
+    {
+      "token": "ebi.ebadcareers",
+      "company": "Ensign-Bickford Aerospace & Defense Company",
+      "site_url": "https://ebi.wd5.myworkdayjobs.com/ebadcareers"
+    },
+    {
+      "token": "ebi.ebicareers",
+      "company": "Ensign-Bickford Industries",
+      "site_url": "https://ebi.wd5.myworkdayjobs.com/ebicareers"
+    },
+    {
+      "token": "elkay.elkay_external",
+      "company": "Zurn Elkay Water Solutions",
+      "site_url": "https://elkay.wd1.myworkdayjobs.com/Elkay_External"
+    },
+    {
+      "token": "emcins.emc_careers",
+      "company": "EMC Insurance",
+      "site_url": "https://emcins.wd5.myworkdayjobs.com/EMC_Careers"
+    },
+    {
+      "token": "emcins.emc_internships",
+      "company": "EMC Insurance",
+      "site_url": "https://emcins.wd5.myworkdayjobs.com/EMC_Internships"
+    },
+    {
+      "token": "fanniemae.fanniemaecareers",
+      "company": "Fannie Mae",
+      "site_url": "https://fanniemae.wd1.myworkdayjobs.com/FannieMaeCareers"
+    },
+    {
+      "token": "ffive.f5jobs",
+      "company": "F5",
+      "site_url": "https://ffive.wd5.myworkdayjobs.com/f5jobs"
+    },
+    {
+      "token": "firstnational.fnbocareers",
+      "company": "FNBO",
+      "site_url": "https://firstnational.wd12.myworkdayjobs.com/fnbocareers"
+    },
+    {
+      "token": "flextronics.careers",
+      "company": "Flex",
+      "site_url": "https://flextronics.wd1.myworkdayjobs.com/Careers"
+    },
+    {
+      "token": "flir.flircareers",
+      "company": "Teledyne",
+      "site_url": "https://flir.wd1.myworkdayjobs.com/flircareers"
+    },
+    {
+      "token": "fnbcorp.fnbcorp",
+      "company": "First National Bank",
+      "site_url": "https://fnbcorp.wd501.myworkdayjobs.com/FNBCORP"
+    },
+    {
+      "token": "gaig.gaig_external",
+      "company": "Great American Insurance Company",
+      "site_url": "https://gaig.wd1.myworkdayjobs.com/GAIG_External"
+    },
+    {
+      "token": "gartner.ext",
+      "company": "Gartner",
+      "site_url": "https://gartner.wd5.myworkdayjobs.com/EXT"
+    },
+    {
+      "token": "gehc.gehc_externalsite",
+      "company": "GE Healthcare",
+      "site_url": "https://gehc.wd5.myworkdayjobs.com/GEHC_ExternalSite"
+    },
+    {
+      "token": "generalmotors.careers_gm",
+      "company": "General Motors",
+      "site_url": "https://generalmotors.wd5.myworkdayjobs.com/Careers_GM"
+    },
+    {
+      "token": "gfs.usjobs-gen-gfs",
+      "company": "Gordon Food Service",
+      "site_url": "https://gfs.wd5.myworkdayjobs.com/usjobs-gen-gfs"
+    },
+    {
+      "token": "globalfoundries.external",
+      "company": "GlobalFoundries",
+      "site_url": "https://globalfoundries.wd1.myworkdayjobs.com/External"
+    },
+    {
+      "token": "hcmportal.search",
+      "company": "United Parcel Service",
+      "site_url": "https://hcmportal.wd5.myworkdayjobs.com/Search"
+    },
+    {
+      "token": "hcsc.hcsc_external",
+      "company": "HCSC",
+      "site_url": "https://hcsc.wd1.myworkdayjobs.com/HCSC_External"
+    },
+    {
+      "token": "highmarkhealth.highmark",
+      "company": "Highmark Health",
+      "site_url": "https://highmarkhealth.wd1.myworkdayjobs.com/highmark"
+    },
+    {
+      "token": "hitachi.hitachi",
+      "company": "Hitachi Energy",
+      "site_url": "https://hitachi.wd1.myworkdayjobs.com/hitachi"
+    },
+    {
+      "token": "hl.campus",
+      "company": "Houlihan Lokey",
+      "site_url": "https://hl.wd1.myworkdayjobs.com/Campus"
+    },
+    {
+      "token": "hq.securian_external",
+      "company": "Securian Financial Group",
+      "site_url": "https://hq.wd12.myworkdayjobs.com/Securian_External"
+    },
+    {
+      "token": "hyperiongrp.hyperion_external",
+      "company": "Howden",
+      "site_url": "https://hyperiongrp.wd3.myworkdayjobs.com/Hyperion_External"
+    },
+    {
+      "token": "hyvee.hyveecareers",
+      "company": "Hy-Vee",
+      "site_url": "https://hyvee.wd1.myworkdayjobs.com/HyVeeCareers"
+    },
+    {
+      "token": "iatinsurancegroup.iat",
+      "company": "IAT Insurance Group",
+      "site_url": "https://iatinsurancegroup.wd1.myworkdayjobs.com/iat"
+    },
+    {
+      "token": "ingredion.ingredioncareers",
+      "company": "Ingredion",
+      "site_url": "https://ingredion.wd1.myworkdayjobs.com/IngredionCareers"
+    },
+    {
+      "token": "intactfc.intactfc",
+      "company": "Intact",
+      "site_url": "https://intactfc.wd3.myworkdayjobs.com/intactfc"
+    },
+    {
+      "token": "invesco.ivz",
+      "company": "Invesco",
+      "site_url": "https://invesco.wd1.myworkdayjobs.com/IVZ"
+    },
+    {
+      "token": "invesco.ivzearlycareers",
+      "company": "Invesco",
+      "site_url": "https://invesco.wd1.myworkdayjobs.com/IVZearlycareers"
+    },
+    {
+      "token": "itron.early_careers",
+      "company": "Itron",
+      "site_url": "https://itron.wd5.myworkdayjobs.com/Early_Careers"
+    },
+    {
+      "token": "itron.itron",
+      "company": "Itron",
+      "site_url": "https://itron.wd5.myworkdayjobs.com/Itron"
+    },
+    {
+      "token": "jabil.jabil_careers",
+      "company": "Jabil",
+      "site_url": "https://jabil.wd5.myworkdayjobs.com/Jabil_Careers"
+    },
+    {
+      "token": "jj.jj",
+      "company": "Johnson & Johnson",
+      "site_url": "https://jj.wd5.myworkdayjobs.com/JJ"
+    },
+    {
+      "token": "jll.jllcareers",
+      "company": "Jones Lang LaSalle",
+      "site_url": "https://jll.wd1.myworkdayjobs.com/jllcareers"
+    },
+    {
+      "token": "jm.external",
+      "company": "Johns Manville",
+      "site_url": "https://jm.wd103.myworkdayjobs.com/External"
+    },
+    {
+      "token": "kbr.kbr_careers",
+      "company": "KBR",
+      "site_url": "https://kbr.wd5.myworkdayjobs.com/KBR_Careers"
+    },
+    {
+      "token": "keybank.external_career_site",
+      "company": "KeyBank",
+      "site_url": "https://keybank.wd5.myworkdayjobs.com/External_Career_Site"
+    },
+    {
+      "token": "kyndryl.kyndrylearlycareers",
+      "company": "Kyndryl",
+      "site_url": "https://kyndryl.wd5.myworkdayjobs.com/KyndrylEarlyCareers"
+    },
+    {
+      "token": "leidos.external",
+      "company": "Leidos",
+      "site_url": "https://leidos.wd5.myworkdayjobs.com/External"
+    },
+    {
+      "token": "lifefitness.searchlfn",
+      "company": "Life Fitness",
+      "site_url": "https://lifefitness.wd1.myworkdayjobs.com/searchLFN"
+    },
+    {
+      "token": "lseg.careers",
+      "company": "LSEG",
+      "site_url": "https://lseg.wd3.myworkdayjobs.com/Careers"
+    },
+    {
+      "token": "lseg.graduate_careers",
+      "company": "LSEG",
+      "site_url": "https://lseg.wd3.myworkdayjobs.com/Graduate_Careers"
+    },
+    {
+      "token": "manulife.mfcjh_jobs",
+      "company": "Manulife Financial",
+      "site_url": "https://manulife.wd3.myworkdayjobs.com/MFCJH_Jobs"
+    },
+    {
+      "token": "marvell.marvellcareers",
+      "company": "Marvell",
+      "site_url": "https://marvell.wd1.myworkdayjobs.com/MarvellCareers"
+    },
+    {
+      "token": "mastercard.campus",
+      "company": "Mastercard",
+      "site_url": "https://mastercard.wd1.myworkdayjobs.com/Campus"
+    },
+    {
+      "token": "mastercard.corporatecareers",
+      "company": "Mastercard",
+      "site_url": "https://mastercard.wd1.myworkdayjobs.com/CorporateCareers"
+    },
+    {
+      "token": "mckesson.external_careers",
+      "company": "McKesson",
+      "site_url": "https://mckesson.wd3.myworkdayjobs.com/External_Careers"
+    },
+    {
+      "token": "medline.medline",
+      "company": "Medline",
+      "site_url": "https://medline.wd5.myworkdayjobs.com/Medline"
+    },
+    {
+      "token": "meijer.meijer",
+      "company": "Meijer",
+      "site_url": "https://meijer.wd5.myworkdayjobs.com/Meijer"
+    },
+    {
+      "token": "mfs.mfs-careers",
+      "company": "MFS",
+      "site_url": "https://mfs.wd1.myworkdayjobs.com/MFS-Careers"
+    },
+    {
+      "token": "michelinhr.michelin",
+      "company": "Michelin",
+      "site_url": "https://michelinhr.wd3.myworkdayjobs.com/Michelin"
+    },
+    {
+      "token": "micron.external",
+      "company": "Micron Technology",
+      "site_url": "https://micron.wd1.myworkdayjobs.com/External"
+    },
+    {
+      "token": "midlandsb.msbcareers",
+      "company": "Midland States Bank",
+      "site_url": "https://midlandsb.wd1.myworkdayjobs.com/msbcareers"
+    },
+    {
+      "token": "mimecast.mimecast-careers",
+      "company": "Mimecast",
+      "site_url": "https://mimecast.wd5.myworkdayjobs.com/Mimecast-Careers"
+    },
+    {
+      "token": "modernatx.m_tx",
+      "company": "Moderna",
+      "site_url": "https://modernatx.wd1.myworkdayjobs.com/M_tx"
+    },
+    {
+      "token": "modmed.modmed12",
+      "company": "Modernizing Medicine",
+      "site_url": "https://modmed.wd501.myworkdayjobs.com/ModMed12"
+    },
+    {
+      "token": "momentive.mc",
+      "company": "Momentive",
+      "site_url": "https://momentive.wd1.myworkdayjobs.com/MC"
+    },
+    {
+      "token": "motorolasolutions.careers",
+      "company": "Motorola",
+      "site_url": "https://motorolasolutions.wd5.myworkdayjobs.com/Careers"
+    },
+    {
+      "token": "myhrabc.global",
+      "company": "Cencora",
+      "site_url": "https://myhrabc.wd5.myworkdayjobs.com/Global"
+    },
+    {
+      "token": "nationwide.nationwide_career",
+      "company": "Nationwide",
+      "site_url": "https://nationwide.wd1.myworkdayjobs.com/Nationwide_Career"
+    },
+    {
+      "token": "nb.nbcareers",
+      "company": "Neuberger Berman",
+      "site_url": "https://nb.wd1.myworkdayjobs.com/NBCareers"
+    },
+    {
+      "token": "ncr.ext_us",
+      "company": "NCR Voyix",
+      "site_url": "https://ncr.wd1.myworkdayjobs.com/ext_us"
+    },
+    {
+      "token": "nebraskablue.bcbsne",
+      "company": "BlueCross BlueShield of Nebraska",
+      "site_url": "https://nebraskablue.wd1.myworkdayjobs.com/BCBSNE"
+    },
+    {
+      "token": "nelnet.mynelnet",
+      "company": "Nelnet",
+      "site_url": "https://nelnet.wd1.myworkdayjobs.com/MyNelnet"
+    },
+    {
+      "token": "newrez.nrz",
+      "company": "Newrez",
+      "site_url": "https://newrez.wd1.myworkdayjobs.com/NRZ"
+    },
+    {
+      "token": "ngc.northrop_grumman_external_site",
+      "company": "Northrop Grumman",
+      "site_url": "https://ngc.wd1.myworkdayjobs.com/Northrop_Grumman_External_Site"
+    },
+    {
+      "token": "njm.njm",
+      "company": "NJM Insurance Group",
+      "site_url": "https://njm.wd1.myworkdayjobs.com/njm"
+    },
+    {
+      "token": "oshkoshcorporation.oshkosh",
+      "company": "Oshkosh",
+      "site_url": "https://oshkoshcorporation.wd5.myworkdayjobs.com/Oshkosh"
+    },
+    {
+      "token": "osv-amerisure.amerisure",
+      "company": "Amerisure",
+      "site_url": "https://osv-amerisure.wd5.myworkdayjobs.com/Amerisure"
+    },
+    {
+      "token": "osv-rubicon.magnitecareers",
+      "company": "Magnite",
+      "site_url": "https://osv-rubicon.wd5.myworkdayjobs.com/MagniteCareers"
+    },
+    {
+      "token": "pacificlife.pacificlifecareers",
+      "company": "Pacific Life",
+      "site_url": "https://pacificlife.wd1.myworkdayjobs.com/PacificLifeCareers"
+    },
+    {
+      "token": "pg.1000",
+      "company": "Procter & Gamble",
+      "site_url": "https://pg.wd5.myworkdayjobs.com/1000"
+    },
+    {
+      "token": "philips.jobs-and-careers",
+      "company": "Philips",
+      "site_url": "https://philips.wd3.myworkdayjobs.com/jobs-and-careers"
+    },
+    {
+      "token": "poet.poet",
+      "company": "POET",
+      "site_url": "https://poet.wd1.myworkdayjobs.com/POET"
+    },
+    {
+      "token": "polaris.polarisjobs",
+      "company": "Polaris",
+      "site_url": "https://polaris.wd5.myworkdayjobs.com/PolarisJobs"
+    },
+    {
+      "token": "primient.external_careers",
+      "company": "Primient",
+      "site_url": "https://primient.wd1.myworkdayjobs.com/External_Careers"
+    },
+    {
+      "token": "q2ebanking.q2",
+      "company": "Q2",
+      "site_url": "https://q2ebanking.wd5.myworkdayjobs.com/Q2"
+    },
+    {
+      "token": "radiancetech.radiance_external",
+      "company": "Radiance Technologies",
+      "site_url": "https://radiancetech.wd12.myworkdayjobs.com/Radiance_External"
+    },
+    {
+      "token": "rb.frs",
+      "company": "The Federal Reserve System",
+      "site_url": "https://rb.wd5.myworkdayjobs.com/FRS"
+    },
+    {
+      "token": "rbc.rbcearlytalent1",
+      "company": "Royal Bank of Canada",
+      "site_url": "https://rbc.wd3.myworkdayjobs.com/RBCEARLYTALENT1"
+    },
+    {
+      "token": "regeneron.careers",
+      "company": "Regeneron Pharmaceuticals",
+      "site_url": "https://regeneron.wd1.myworkdayjobs.com/Careers"
+    },
+    {
+      "token": "relx.risksolutions",
+      "company": "LexisNexis Risk Solutions",
+      "site_url": "https://relx.wd3.myworkdayjobs.com/RiskSolutions"
+    },
+    {
+      "token": "relx.relx",
+      "company": "RELX",
+      "site_url": "https://relx.wd3.myworkdayjobs.com/relx"
+    },
+    {
+      "token": "repsol.repsol",
+      "company": "Repsol",
+      "site_url": "https://repsol.wd3.myworkdayjobs.com/Repsol"
+    },
+    {
+      "token": "rjet.external_career_site",
+      "company": "Republic Airways",
+      "site_url": "https://rjet.wd108.myworkdayjobs.com/External_Career_Site"
+    },
+    {
+      "token": "roche.roche-ext",
+      "company": "Roche",
+      "site_url": "https://roche.wd3.myworkdayjobs.com/roche-ext"
+    },
+    {
+      "token": "rockwellautomation.external-rockwell-automation-early-careers",
+      "company": "Rockwell Automation",
+      "site_url": "https://rockwellautomation.wd1.myworkdayjobs.com/External-Rockwell-Automation-Early-Careers"
+    },
+    {
+      "token": "rockwellautomation.external_rockwell_automation",
+      "company": "Rockwell Automation",
+      "site_url": "https://rockwellautomation.wd1.myworkdayjobs.com/External_Rockwell_Automation"
+    },
+    {
+      "token": "ryancompanies.ryancompanies",
+      "company": "Ryan Companies",
+      "site_url": "https://ryancompanies.wd5.myworkdayjobs.com/ryancompanies"
+    },
+    {
+      "token": "sailpoint.sailpoint",
+      "company": "SailPoint",
+      "site_url": "https://sailpoint.wd1.myworkdayjobs.com/SailPoint"
+    },
+    {
+      "token": "salesforce.external_career_site",
+      "company": "Salesforce",
+      "site_url": "https://salesforce.wd12.myworkdayjobs.com/External_Career_Site"
+    },
+    {
+      "token": "salesforce.futureforce_internships",
+      "company": "Salesforce",
+      "site_url": "https://salesforce.wd12.myworkdayjobs.com/Futureforce_Internships"
+    },
+    {
+      "token": "salesforce.futureforce_newgradroles",
+      "company": "Salesforce",
+      "site_url": "https://salesforce.wd12.myworkdayjobs.com/Futureforce_NewGradRoles"
+    },
+    {
+      "token": "sallie-mae.careers",
+      "company": "Sallie Mae",
+      "site_url": "https://sallie-mae.wd5.myworkdayjobs.com/Careers"
+    },
+    {
+      "token": "sbdinc.stanley_black_decker_career_site",
+      "company": "Stanley Black & Decker",
+      "site_url": "https://sbdinc.wd1.myworkdayjobs.com/Stanley_Black_Decker_Career_Site"
+    },
+    {
+      "token": "semtech.semtechcareers",
+      "company": "Semtech",
+      "site_url": "https://semtech.wd1.myworkdayjobs.com/SemtechCareers"
+    },
+    {
+      "token": "sierraspace.sierra_space_external_career_site",
+      "company": "Sierra Space",
+      "site_url": "https://sierraspace.wd1.myworkdayjobs.com/Sierra_Space_External_Career_Site"
+    },
+    {
+      "token": "smucker.us_external_careers",
+      "company": "J.M. Smucker",
+      "site_url": "https://smucker.wd5.myworkdayjobs.com/US_External_Careers"
+    },
+    {
+      "token": "spgi.kensho_careers",
+      "company": "Kensho",
+      "site_url": "https://spgi.wd5.myworkdayjobs.com/Kensho_Careers"
+    },
+    {
+      "token": "spgi.spgi_careers",
+      "company": "S&P Global",
+      "site_url": "https://spgi.wd5.myworkdayjobs.com/SPGI_Careers"
+    },
+    {
+      "token": "sralab.sralabcareers",
+      "company": "Shirley Ryan AbilityLab",
+      "site_url": "https://sralab.wd1.myworkdayjobs.com/SRAlabCareers"
+    },
+    {
+      "token": "standoutforgood.standoutforgood",
+      "company": "Altar'd State",
+      "site_url": "https://standoutforgood.wd12.myworkdayjobs.com/StandOutForGood"
+    },
+    {
+      "token": "statestreet.global",
+      "company": "State Street",
+      "site_url": "https://statestreet.wd1.myworkdayjobs.com/Global"
+    },
+    {
+      "token": "sterlingmets.mets",
+      "company": "New York Mets",
+      "site_url": "https://sterlingmets.wd5.myworkdayjobs.com/Mets"
+    },
+    {
+      "token": "stryker.strykercareers",
+      "company": "Stryker",
+      "site_url": "https://stryker.wd1.myworkdayjobs.com/StrykerCareers"
+    },
+    {
+      "token": "sunlife.campus",
+      "company": "Sun Life",
+      "site_url": "https://sunlife.wd3.myworkdayjobs.com/Campus"
+    },
+    {
+      "token": "talentmanagementsolution.perseus-careers",
+      "company": "Perseus Group",
+      "site_url": "https://talentmanagementsolution.wd3.myworkdayjobs.com/perseus-careers"
+    },
+    {
+      "token": "tcenergy.career_site_tc",
+      "company": "TC Energy",
+      "site_url": "https://tcenergy.wd3.myworkdayjobs.com/CAREER_SITE_TC"
+    },
+    {
+      "token": "td.td_bank_careers",
+      "company": "TD Bank",
+      "site_url": "https://td.wd3.myworkdayjobs.com/TD_Bank_Careers"
+    },
+    {
+      "token": "thehartford.careers_external",
+      "company": "The Hartford",
+      "site_url": "https://thehartford.wd5.myworkdayjobs.com/Careers_External"
+    },
+    {
+      "token": "theocc.careers",
+      "company": "OCC",
+      "site_url": "https://theocc.wd5.myworkdayjobs.com/careers"
+    },
+    {
+      "token": "trimble.trimblecareers",
+      "company": "Trimble",
+      "site_url": "https://trimble.wd1.myworkdayjobs.com/TrimbleCareers"
+    },
+    {
+      "token": "trwd.trwdcareers",
+      "company": "Tarrant Regional Water District",
+      "site_url": "https://trwd.wd1.myworkdayjobs.com/TRWDCareers"
+    },
+    {
+      "token": "tsc.tsc-careers",
+      "company": "TSC",
+      "site_url": "https://tsc.wd12.myworkdayjobs.com/TSC-Careers"
+    },
+    {
+      "token": "ttc.toro_external_careers",
+      "company": "The Toro Company",
+      "site_url": "https://ttc.wd1.myworkdayjobs.com/Toro_External_Careers"
+    },
+    {
+      "token": "usaa.usaajobswd",
+      "company": "USAA",
+      "site_url": "https://usaa.wd1.myworkdayjobs.com/USAAJOBSWD"
+    },
+    {
+      "token": "vanguard.contractors_restricted",
+      "company": "Vanguard",
+      "site_url": "https://vanguard.wd5.myworkdayjobs.com/contractors_restricted"
+    },
+    {
+      "token": "vanguard.vanguard_external",
+      "company": "Vanguard",
+      "site_url": "https://vanguard.wd5.myworkdayjobs.com/vanguard_external"
+    },
+    {
+      "token": "vermeer.externalcareersite",
+      "company": "Vermeer",
+      "site_url": "https://vermeer.wd5.myworkdayjobs.com/externalcareersite"
+    },
+    {
+      "token": "walmart.walmartexternal",
+      "company": "Walmart",
+      "site_url": "https://walmart.wd504.myworkdayjobs.com/WalmartExternal"
+    },
+    {
+      "token": "wattswater.intern-external",
+      "company": "Watts Water",
+      "site_url": "https://wattswater.wd5.myworkdayjobs.com/Intern-External"
+    },
+    {
+      "token": "wexinc.wexinc",
+      "company": "Wex",
+      "site_url": "https://wexinc.wd5.myworkdayjobs.com/WEXInc"
+    },
+    {
+      "token": "wsfsbank.wsfscareers",
+      "company": "WSFS Bank",
+      "site_url": "https://wsfsbank.wd1.myworkdayjobs.com/wsfscareers"
+    },
+    {
+      "token": "xcelenergy.external",
+      "company": "Xcel Energy",
+      "site_url": "https://xcelenergy.wd1.myworkdayjobs.com/External"
+    },
+    {
+      "token": "zekelman.careers",
+      "company": "Zekelman Industries",
+      "site_url": "https://zekelman.wd12.myworkdayjobs.com/Careers"
+    },
+    {
+      "token": "intel.external",
+      "company": "Intel",
+      "site_url": "https://intel.wd1.myworkdayjobs.com/External"
+    },
+    {
+      "token": "cisco.cisco_careers",
+      "company": "Cisco",
+      "site_url": "https://cisco.wd5.myworkdayjobs.com/Cisco_Careers"
+    },
+    {
+      "token": "broadcom.external_career",
+      "company": "Broadcom",
+      "site_url": "https://broadcom.wd1.myworkdayjobs.com/External_Career"
+    },
+    {
+      "token": "workday.workday",
+      "company": "Workday",
+      "site_url": "https://workday.wd5.myworkdayjobs.com/Workday"
+    },
+    {
+      "token": "workday.workday_early_career",
+      "company": "Workday",
+      "site_url": "https://workday.wd5.myworkdayjobs.com/Workday_Early_Career"
+    },
+    {
+      "token": "workday.workday_jobs",
+      "company": "Workday",
+      "site_url": "https://workday.wd5.myworkdayjobs.com/Workday_Jobs"
+    },
+    {
+      "token": "bloomberg.bloombergindustrygroup_external_career_site",
+      "company": "Bloomberg Industry Group",
+      "site_url": "https://bloomberg.wd1.myworkdayjobs.com/Bloombergindustrygroup_External_Career_Site"
+    },
+    {
+      "token": "target.targetcareers",
+      "company": "Target",
+      "site_url": "https://target.wd5.myworkdayjobs.com/targetcareers"
+    },
+    {
+      "token": "globalhr.rec_rtx_ext_gateway",
+      "company": "RTX",
+      "site_url": "https://globalhr.wd5.myworkdayjobs.com/REC_RTX_Ext_Gateway"
+    },
+    {
+      "token": "accenture.accenturecareers",
+      "company": "Accenture",
+      "site_url": "https://accenture.wd103.myworkdayjobs.com/AccentureCareers"
+    },
+    {
+      "token": "accenture.avanadecareers",
+      "company": "Avanade",
+      "site_url": "https://accenture.wd103.myworkdayjobs.com/AvanadeCareers"
+    },
+    {
+      "token": "visa.visa",
+      "company": "Visa",
+      "site_url": "https://visa.wd5.myworkdayjobs.com/Visa"
+    },
+    {
+      "token": "visa.visa_early_careers",
+      "company": "Visa",
+      "site_url": "https://visa.wd5.myworkdayjobs.com/Visa_Early_Careers"
+    },
+    {
+      "token": "wf.wellsfargojobs",
+      "company": "Wells Fargo",
+      "site_url": "https://wd1.myworkdaysite.com/recruiting/wf/WellsFargoJobs"
+    },
+    {
+      "token": "ghr.lateral-us",
+      "company": "Bank of America",
+      "site_url": "https://ghr.wd1.myworkdayjobs.com/Lateral-US"
+    },
+    {
+      "token": "ghr.lateral-canada",
+      "company": "Bank of America",
+      "site_url": "https://ghr.wd1.myworkdayjobs.com/lateral-canada"
+    },
+    {
+      "token": "ghr.scoutt",
+      "company": "Bank of America",
+      "site_url": "https://ghr.wd1.myworkdayjobs.com/Scoutt"
+    },
+    {
+      "token": "pfizer.pfizercareers",
+      "company": "Pfizer",
+      "site_url": "https://pfizer.wd1.myworkdayjobs.com/PfizerCareers"
+    },
+    {
+      "token": "pfizer.canada_only_external",
+      "company": "Pfizer",
+      "site_url": "https://pfizer.wd1.myworkdayjobs.com/Canada_Only_External"
+    },
+    {
+      "token": "disney.disneycareer",
+      "company": "Disney",
+      "site_url": "https://disney.wd5.myworkdayjobs.com/disneycareer"
+    },
+    {
+      "token": "att.attgeneral",
+      "company": "AT&T",
+      "site_url": "https://att.wd1.myworkdayjobs.com/ATTGeneral"
+    },
+    {
+      "token": "att.attcollege",
+      "company": "AT&T",
+      "site_url": "https://att.wd1.myworkdayjobs.com/ATTCollege"
+    },
+    {
+      "token": "blueorigin.blueorigin",
+      "company": "Blue Origin",
+      "site_url": "https://blueorigin.wd5.myworkdayjobs.com/BlueOrigin"
+    },
+    {
+      "token": "salesforce.mulesoft_careersite",
+      "company": "MuleSoft",
+      "site_url": "https://salesforce.wd12.myworkdayjobs.com/Mulesoft_Careersite"
+    },
+    {
+      "token": "salesforce.slack",
+      "company": "Slack",
+      "site_url": "https://salesforce.wd12.myworkdayjobs.com/Slack"
+    },
+    {
+      "token": "google.gocjobs",
+      "company": "Google Operations Center",
+      "site_url": "https://google.wd501.myworkdayjobs.com/GOCJobs"
+    },
+    {
+      "token": "gdit.external_career_site",
+      "company": "GDIT",
+      "site_url": "https://gdit.wd5.myworkdayjobs.com/External_Career_Site"
+    },
+    {
+      "token": "pwc.us_experienced_careers",
+      "company": "PwC",
+      "site_url": "https://pwc.wd3.myworkdayjobs.com/US_Experienced_Careers"
+    },
+    {
+      "token": "pwc.us_entry_level_careers",
+      "company": "PwC",
+      "site_url": "https://pwc.wd3.myworkdayjobs.com/US_Entry_Level_Careers"
+    },
+    {
+      "token": "cvshealth.cvs_health_careers",
+      "company": "CVS Health",
+      "site_url": "https://cvshealth.wd1.myworkdayjobs.com/CVS_Health_Careers"
+    },
+    {
+      "token": "snapchat.snap",
+      "company": "Snap",
+      "site_url": "https://wd1.myworkdaysite.com/recruiting/snapchat/snap"
+    },
+    {
+      "token": "crowdstrike.crowdstrikecareers",
+      "company": "CrowdStrike",
+      "site_url": "https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers"
+    },
+    {
+      "token": "zendesk.zendesk",
+      "company": "Zendesk",
+      "site_url": "https://zendesk.wd1.myworkdayjobs.com/zendesk"
+    },
+    {
+      "token": "redhat.jobs",
+      "company": "Red Hat",
+      "site_url": "https://redhat.wd5.myworkdayjobs.com/Jobs"
+    },
+    {
+      "token": "analogdevices.external",
+      "company": "Analog Devices",
+      "site_url": "https://analogdevices.wd1.myworkdayjobs.com/External"
+    },
+    {
+      "token": "kla.search",
+      "company": "KLA",
+      "site_url": "https://kla.wd1.myworkdayjobs.com/Search"
+    },
+    {
+      "token": "geaerospace.ge_externalsite",
+      "company": "GE Aerospace",
+      "site_url": "https://geaerospace.wd5.myworkdayjobs.com/GE_ExternalSite"
+    },
+    {
+      "token": "boeing.external_subsidiary",
+      "company": "Boeing",
+      "site_url": "https://boeing.wd1.myworkdayjobs.com/external_subsidiary"
+    },
+    {
+      "token": "boeing.intern",
+      "company": "Boeing",
+      "site_url": "https://boeing.wd1.myworkdayjobs.com/INTERN"
+    },
+    {
+      "token": "coke.coca-cola-careers",
+      "company": "Coca-Cola",
+      "site_url": "https://coke.wd1.myworkdayjobs.com/coca-cola-careers"
+    },
+    {
+      "token": "msd.searchjobs",
+      "company": "Merck",
+      "site_url": "https://msd.wd5.myworkdayjobs.com/SearchJobs"
+    },
+    {
+      "token": "amgen.careers",
+      "company": "Amgen",
+      "site_url": "https://amgen.wd1.myworkdayjobs.com/Careers"
+    },
+    {
+      "token": "gilead.gileadcareers",
+      "company": "Gilead",
+      "site_url": "https://gilead.wd1.myworkdayjobs.com/gileadcareers"
+    },
+    {
+      "token": "gilead.kitepharmacareers",
+      "company": "Kite Pharma",
+      "site_url": "https://gilead.wd1.myworkdayjobs.com/kitepharmacareers"
+    },
+    {
+      "token": "abbott.abbottcareers",
+      "company": "Abbott",
+      "site_url": "https://abbott.wd5.myworkdayjobs.com/abbottcareers"
+    },
+    {
+      "token": "medtronic.medtroniccareers",
+      "company": "Medtronic",
+      "site_url": "https://medtronic.wd1.myworkdayjobs.com/MedtronicCareers"
+    },
+    {
+      "token": "elevancehealth.ant",
+      "company": "Elevance Health",
+      "site_url": "https://elevancehealth.wd1.myworkdayjobs.com/ANT"
+    },
+    {
+      "token": "humana.humana_external_career_site",
+      "company": "Humana",
+      "site_url": "https://humana.wd5.myworkdayjobs.com/Humana_External_Career_Site"
+    },
+    {
+      "token": "humana.centerwell_external_career_site",
+      "company": "CenterWell",
+      "site_url": "https://humana.wd5.myworkdayjobs.com/CenterWell_External_Career_Site"
+    },
+    {
+      "token": "fmr.fidelitycareers",
+      "company": "Fidelity",
+      "site_url": "https://wd1.myworkdaysite.com/recruiting/fmr/FidelityCareers"
+    },
+    {
+      "token": "statestreet.equest",
+      "company": "State Street",
+      "site_url": "https://statestreet.wd1.myworkdayjobs.com/eQuest"
+    },
+    {
+      "token": "nasdaq.global_external_site",
+      "company": "Nasdaq",
+      "site_url": "https://nasdaq.wd1.myworkdayjobs.com/Global_External_Site"
+    },
+    {
+      "token": "bmo.external",
+      "company": "BMO",
+      "site_url": "https://bmo.wd3.myworkdayjobs.com/External"
+    },
+    {
+      "token": "bmo.campus",
+      "company": "BMO",
+      "site_url": "https://bmo.wd3.myworkdayjobs.com/Campus"
+    },
+    {
+      "token": "sunlife.experienced",
+      "company": "Sun Life",
+      "site_url": "https://sunlife.wd3.myworkdayjobs.com/Experienced"
+    },
+    {
+      "token": "bah.bah_jobs",
+      "company": "Booz Allen Hamilton",
+      "site_url": "https://bah.wd1.myworkdayjobs.com/BAH_Jobs"
+    },
+    {
+      "token": "fox.domestic",
+      "company": "Fox",
+      "site_url": "https://fox.wd1.myworkdayjobs.com/Domestic"
+    },
+    {
+      "token": "fox.foxtvst_east",
+      "company": "Fox",
+      "site_url": "https://fox.wd1.myworkdayjobs.com/FOXTVST_EAST"
+    },
+    {
+      "token": "fox.foxtvst_central",
+      "company": "Fox",
+      "site_url": "https://fox.wd1.myworkdayjobs.com/FOXTVST_Central"
+    },
+    {
+      "token": "fox.foxtvst_west",
+      "company": "Fox",
+      "site_url": "https://fox.wd1.myworkdayjobs.com/FOXTVST_WEST"
+    },
+    {
+      "token": "fedex.ftn_can_external",
+      "company": "FedEx",
+      "site_url": "https://fedex.wd1.myworkdayjobs.com/FTN_CAN_External"
+    },
+    {
+      "token": "fedex.fxe-canada_external_career_site",
+      "company": "FedEx",
+      "site_url": "https://fedex.wd1.myworkdayjobs.com/FXE-Canada_External_Career_Site"
+    },
+    {
+      "token": "chevron.jobs",
+      "company": "Chevron",
+      "site_url": "https://chevron.wd5.myworkdayjobs.com/jobs"
+    },
+    {
+      "token": "chevron.university",
+      "company": "Chevron",
+      "site_url": "https://chevron.wd5.myworkdayjobs.com/University"
+    },
+    {
+      "token": "zillow.zillow_group_external",
+      "company": "Zillow",
+      "site_url": "https://zillow.wd5.myworkdayjobs.com/Zillow_Group_External"
+    },
+    {
+      "token": "etsy.etsy_careers",
+      "company": "Etsy",
+      "site_url": "https://etsy.wd5.myworkdayjobs.com/Etsy_Careers"
+    }
+  ]
+}

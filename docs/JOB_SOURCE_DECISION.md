@@ -88,6 +88,23 @@ Jobs come from three places: the user's own manual entries and extension clips
 catalog (Phase T) is jobs with no owner, visible to every user; saves,
 analyses, and applications stay per user. See `docs/DATA_MODEL.md` section 11.
 
+**Board expansion (2026-10-09).** The three approved sources' seed files grew
+from 163 to 686 employer boards (Greenhouse 234, Lever 55, Ashby 397). New
+boards came from YC's public company directory (active, hiring, North America)
+and the employer links in public new-grad/internship lists. Each candidate was
+probed once through the source's public board API with the same fetch-and-map
+code as the sync, and kept only if it listed US/Canada postings. Tokens guessed
+from a company name were kept only when the board's own name (Greenhouse) or
+its posting text (Lever/Ashby) matched that company. A full local sync then
+held 33,007 available postings from 684 employers (US 31,212, CA 1,237), up
+from 10,128 postings from 86 employers. Common Crawl's index was tried first
+for discovery but timed out.
+
+Coverage is still bounded by which ATS an employer uses. Among 717 employers
+with apply links in those public lists, about 35% use Workday, 25% a custom
+or other site, and only about 31% Greenhouse/Ashby/Lever; iCIMS (6%), Oracle
+(5%), SmartRecruiters (4%), and Workable (2%) follow.
+
 ## Source record: Greenhouse public Job Board API — North America pilot
 
 **Status: implemented and run locally; production use awaits owner sign-off
@@ -169,10 +186,50 @@ launch shares the terms sign-off noted for Greenhouse.**
 The three sources use separate `source_key`s, so closing postings for one
 source's board never touches another source's jobs.
 
-## Source record (proposed): Workday career sites — North America pilot
+## Source record: Workday career sites — North America
 
-**Status: proposed on 2026-10-02 — not implemented. Needs owner and legal
-approval before any code is written or any sync is run.**
+**Status: route A implemented 2026-10-09 on the owner's decision; legal/terms
+review still outstanding.** The owner approved building it before that review
+and accepts the risk; `robots.txt` permission is not a license, and the review
+below still applies before any public launch. Route B (the internal JSON
+endpoints described first below) is **not** implemented.
+
+What was built (`careeros_api/job_source_workday.py`, source key `workday`,
+seed `apps/api/job_sources/workday_north_america.json` with a `site_url` per
+employer):
+
+- reads only `robots.txt`, the advertised `siteMap.xml`, and job pages'
+  schema.org `JobPosting` JSON-LD, and fails the board (closing nothing) when
+  `robots.txt` disallows them or returns a server error;
+- incremental: postings already open in the catalog are not re-fetched; pages
+  whose URL places them outside North America are skipped unfetched; at most
+  1,500 new pages per site per run (150 until 2026-10-10, raised because some
+  sites, e.g. RTX's, list thousands), 1 s apart, generic CareerOS User-Agent;
+- site URLs may be `{tenant}.wdN.myworkdayjobs.com/{site}` or
+  `wdN.myworkdaysite.com/recruiting/{tenant}/{site}` (Wells Fargo, PayPal);
+- large employers were added on 2026-10-10 by reading each guessed tenant's
+  `robots.txt`, which lists its sites' sitemaps (an unknown tenant answers
+  422): Intel, Cisco, Broadcom, Workday, Target, RTX, Visa, Wells Fargo, Bank
+  of America, Pfizer, Disney, AT&T, Blue Origin, Accenture/Avanade, Bloomberg
+  Industry Group, MuleSoft, Slack. A guessed `american` tenant was rejected as
+  probably not American Express;
+- closing: a sitemap under 100 postings is treated as complete and absence
+  closes a posting; a full-size sitemap may be truncated, so absent postings
+  are re-checked one page at a time (at most 25 per site per run) and closed
+  only on 404/410 or a page without `JobPosting`; server errors and unchecked
+  postings stay open;
+- a page that fails at the network level is retried once and then skipped,
+  so one bad page never discards the rest of the site; a re-check that cannot
+  connect keeps the posting open;
+- first full sync (2026-10-10): 181 sites, 0 failures, 10,004 postings created;
+  168 employers had at least one US/Canada posting. Some sitemaps list more
+  than 150 postings, so those employers reach the per-run page limit and fill
+  in over later runs;
+- known gaps: large employers' sitemaps list only ~100 postings, so their
+  coverage is partial; URLs naming only a city with no state or country (e.g.
+  "Plano") are skipped as not provably North American.
+
+Original proposal (2026-10-02), kept for the review:
 
 - **What**: Workday-hosted employer career sites
   (`https://{tenant}.wd{N}.myworkdayjobs.com/{site}`) load postings from two
@@ -215,8 +272,141 @@ approval before any code is written or any sync is run.**
 - **Proposed pilot**: 10–20 technology employers on Workday, each verified by
   hand, for at most four weeks, then review volume, error rate, and any
   complaints before expanding.
+- **Route-A pilot (2026-10-09, owner-approved, measurement only — no code in
+  the product, no database writes).** An alternative to the internal JSON
+  endpoints above: each Workday career site's `robots.txt` explicitly allows
+  the public site path and advertises a `siteMap.xml`, and each job page embeds
+  schema.org `JobPosting` JSON-LD (title, location, `datePosted`,
+  `employmentType`, description, hiring organization) for search engines.
+  Ten sites sampled at random from 276 found in public lists (requests 1.5 s
+  apart, generic User-Agent):
+  - `robots.txt` allowed the sitemap and job pages on all 10;
+  - JSON-LD parsed on 100 of 100 sampled job pages;
+  - 8 of 10 sitemaps listed exactly 100 jobs with no paging (one listed 924),
+    so this route is complete only for employers with fewer than ~100
+    openings and partial for large ones;
+  - the share of US/Canada postings ranged from 0 to 10 of 10 sampled; global
+    employers' sitemaps can be mostly non-North-American.
+  Cost: one request per job page; a full first pass over 276 sites is up to
+  ~27,600 requests (~11.5 h at 1.5 s), after which only new sitemap URLs need
+  fetching. Still needs the legal/terms review above before any production
+  adapter or sync; `robots.txt` permission is not a license.
 - **Not to be confused with** the extension's Workday *form-filling* adapter
   (Phase R), which runs only on pages the user opens and only on request.
+
+## Source record: Workable public job widget — North America
+
+**Status: implemented 2026-10-10 on the owner's decision; legal/terms review
+outstanding.** `careeros_api/job_source_workable.py`, source key `workable`.
+
+- Reads `https://apply.workable.com/api/v1/widget/accounts/{account}?details=true`,
+  the endpoint Workable provides for embedding an employer's jobs on its own
+  site. `apply.workable.com/robots.txt` disallows nothing and signals
+  `search=yes, ai-train=no`; CareerOS displays jobs for search and does not
+  train on them.
+- Locations carry ISO country codes, which decide placement.
+- Only 13 employers with US/Canada postings were found among YC's directory
+  and public lists (543 postings), so this source adds little volume.
+- Workable rate-limits bursts (HTTP 429 after ~1,600 discovery requests);
+  the daily sync makes one request per employer.
+
+## Source considered and rejected: SmartRecruiters
+
+`api.smartrecruiters.com/robots.txt` allows only `LinkedInBot` and disallows
+every other user agent, and the public `jobs.smartrecruiters.com` company
+pages load their listings from that API. Reading it would ignore an explicit
+signal, so SmartRecruiters is not a source (decided 2026-10-10).
+
+## Source record: large employers' career sites — North America
+
+**Status: implemented 2026-10-10 on the owner's decision; legal/terms review
+outstanding.** `careeros_api/job_source_careersite.py`, source key
+`careersite`, seed `careersite_north_america.json`. Each reader checks the
+site's `robots.txt` (RFC 9309, see below) before reading, and fails the
+board, closing nothing, if a needed path is disallowed.
+
+| Employer | What is read | Completeness and closing |
+|---|---|---|
+| Amazon | `www.amazon.jobs/en/search.json` (the site's own search JSON; not disallowed) for US and Canada | One query caps at 10,000 hits; a country above that is read one job category at a time (largest US category ~2,400). A complete read closes absent postings; otherwise absent ones are re-checked (closed on 404). First read: 13,785 postings. |
+| Eightfold sites: Microsoft, NVIDIA, Qualcomm, PayPal, Morgan Stanley, Citi, HP, Netflix | `/api/pcsx/search` + `/api/pcsx/position_details`, or (Netflix) the older `/api/apply/v2/jobs` — these sites' `robots.txt` disallows everything but explicitly allows `/careers`, `/api/pcsx`, and `/api/apply` | Search is paged to its reported count, so absence closes. Details are fetched only for new postings. NVIDIA moved here from Workday (its Workday sitemap listed 100 postings; Eightfold lists ~1,400 US). |
+| Meta | `www.metacareers.com/jobsearch/sitemap.xml` (advertised in `robots.txt`) + each job page's schema.org `JobPosting` | Full sitemap; absence closes. Pages are fetched only for new postings. |
+| Apple | `jobs.apple.com/sitemap/sitemap-jobs-en-us.xml` + the posting data embedded in each job page (no `robots.txt` exists) | Full US sitemap; absence closes. Apple publishes no `JobPosting`, so this reader breaks if Apple changes its page. |
+| Google | — | **Not read.** `robots.txt` disallows `/about/careers/applications/jobs/results`, which covers job pages. |
+
+Amazon's and Microsoft's endpoints are the JSON their own sites use, not
+documented third-party APIs; they are read only because `robots.txt` permits
+them, which is not a license. Requests are 1 s apart per employer with the
+generic CareerOS User-Agent.
+
+At most 1,000 new pages are read per employer per run, so each run commits
+its progress: an employer's postings are written only after its run finishes,
+and Apple's ~4,400 US pages at ~2.8 s each would otherwise take one run of
+over three hours, all lost if interrupted. Apple therefore fills in over
+several runs.
+
+**robots.txt evaluation.** HTML/career-page sources use
+`job_source_boards.Robots`, which follows RFC 9309: the group naming our
+product token, else `*`; longest matching rule wins, `Allow` wins ties; `*`
+and `$` are supported. Python's `urllib.robotparser` takes the first matching
+line instead and would read Microsoft's `Disallow: /` before `Allow:
+/api/pcsx` as a refusal.
+
+## Source record: iCIMS career portals — North America
+
+**Status: implemented 2026-10-10 on the owner's decision; legal/terms review
+outstanding.** `careeros_api/job_source_icims.py`, source key `icims`.
+
+- Each portal (`https://careers-{company}.icims.com`) advertises
+  `sitemap.xml` in `robots.txt`, listing open jobs as `/jobs/{id}/{slug}/job`.
+  The job page frames its content; the framed view (`?in_iframe=1`) carries a
+  schema.org `JobPosting` with `validThrough`. Only robots-allowed paths are
+  read; the sitemap is treated as complete.
+- **Placeholder dates:** when a portal hides the real date, iCIMS reports
+  `datePosted` as exactly two years before the request. Such dates (±2 days)
+  are treated as unknown; otherwise the over-a-year rule below would drop
+  real, currently open postings (seen on Southern Star and D'Addario, whose
+  `validThrough` fell days ahead).
+- 40 portals found from public lists and guessed hostnames, each verified by
+  the posting's `hiringOrganization` name; guesses that resolved to a
+  different employer (e.g. Aurora Staffing, Vanguard Medical Group) were
+  dropped.
+
+## Source record: Oracle Recruiting Cloud — North America
+
+**Status: implemented 2026-10-10 on the owner's decision; legal/terms review
+outstanding.** `careeros_api/job_source_oracle.py`, source key `oracle`.
+
+- Reads `/hcmRestApi/resources/latest/recruitingCEJobRequisitions` (paged,
+  200 per page, to `TotalJobsCount`) and, for new postings only,
+  `recruitingCEJobRequisitionDetails` — the public resources the career
+  site's own pages call. `robots.txt` on these hosts is missing or answers
+  4xx, which RFC 9309 treats as no rules.
+- 34 employers from public lists, including JPMorgan Chase, American
+  Express, Dell, Honeywell, Oracle, BNY, Macy's, AutoZone, Cummins, Emerson,
+  SAIC, Nokia, and CSX (~45,000 postings worldwide before the US/Canada
+  filter).
+- `ExternalPostedEndDate` in the past marks a posting closed.
+
+## Source considered and set aside: SAP SuccessFactors
+
+Career sites differ per employer, and the one checked (jobs.sap.com) lists
+only marketing pages in its sitemap, so there is no single reader to build.
+
+## Freshness rules applied to every source
+
+- A posting whose source says it has closed — schema.org `validThrough`
+  (Workday, Meta, iCIMS) or Oracle's `ExternalPostedEndDate` in the past — is
+  not kept.
+- A posting first published more than 365 days ago is treated as an
+  always-open listing, not kept, and closed if already in the catalog
+  (`job_source_boards.without_stale`, `job_sources.mark_stale_catalog_jobs_unavailable`).
+  Applying it on 2026-10-10 closed 2,656 postings (Lever 1,104, Greenhouse
+  913, Ashby 482, career sites 116, Workday 34, Workable 7).
+- Titles marking an always-open pool ("general application", "talent
+  community", "evergreen", …) are not openings.
+- Apple's `PIPE` requisition type was briefly treated as a pool and then
+  reverted: it covers ordinary specific roles (58 were wrongly closed and
+  restored).
 
 ## China-market sources
 

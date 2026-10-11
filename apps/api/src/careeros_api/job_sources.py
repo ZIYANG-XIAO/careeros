@@ -8,7 +8,7 @@ from typing import Protocol
 from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator, model_validator
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import ColumnElement
@@ -302,5 +302,76 @@ async def mark_unseen_catalog_jobs_unavailable(
             job.availability_status = JobAvailabilityStatus.UNAVAILABLE.value
             job.freshness_status = JobFreshnessStatus.STALE.value
             closed += 1
+    await session.flush()
+    return closed
+
+
+async def open_catalog_postings(
+    session: AsyncSession, *, source_key: str, external_id_prefix: str
+) -> dict[str, str]:
+    """Open catalog postings from one feed, as external id -> posting URL.
+
+    Lets a source skip re-fetching postings it already holds.
+    """
+    rows = await session.execute(
+        select(Job.external_job_id, Job.source_url).where(
+            Job.user_id.is_(None),
+            Job.source_key == source_key,
+            Job.external_job_id.startswith(external_id_prefix, autoescape=True),
+            Job.availability_status != JobAvailabilityStatus.UNAVAILABLE.value,
+        )
+    )
+    return {
+        external_id: url for external_id, url in rows.tuples() if external_id is not None and url
+    }
+
+
+async def mark_catalog_jobs_observed(
+    session: AsyncSession,
+    *,
+    source_key: str,
+    external_ids: frozenset[str],
+    observed_at: datetime,
+) -> None:
+    """Record that still-listed postings a source did not re-fetch were seen now."""
+    if not external_ids:
+        return
+    await session.execute(
+        update(Job)
+        .where(
+            Job.user_id.is_(None),
+            Job.source_key == source_key,
+            Job.external_job_id.in_(external_ids),
+        )
+        .values(last_observed_at=observed_at)
+    )
+
+
+async def mark_stale_catalog_jobs_unavailable(
+    session: AsyncSession,
+    *,
+    source_key: str,
+    external_id_prefix: str,
+    published_before: datetime,
+) -> int:
+    """Close open catalog postings from one feed first published before a cutoff.
+
+    Covers postings a source kept without re-fetching (incremental sources),
+    which never pass through the per-run stale filter again.
+    """
+    rows = await session.scalars(
+        select(Job).where(
+            Job.user_id.is_(None),
+            Job.source_key == source_key,
+            Job.external_job_id.startswith(external_id_prefix, autoescape=True),
+            Job.availability_status != JobAvailabilityStatus.UNAVAILABLE.value,
+            Job.posted_at < published_before,
+        )
+    )
+    closed = 0
+    for job in rows:
+        job.availability_status = JobAvailabilityStatus.UNAVAILABLE.value
+        job.freshness_status = JobFreshnessStatus.STALE.value
+        closed += 1
     await session.flush()
     return closed

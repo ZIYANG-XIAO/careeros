@@ -1,0 +1,58 @@
+{
+  "source_key": "workable",
+  "description": "North America: employers whose public Workable job widget was verified on 2026-10-10 to list US/Canada postings. Only postings located in the US or Canada are kept.",
+  "boards": [
+    {
+      "token": "saalex",
+      "company": "Saalex"
+    },
+    {
+      "token": "perryhomes",
+      "company": "Perry Homes"
+    },
+    {
+      "token": "tp-link-usa-corp",
+      "company": "TP-Link Systems Inc."
+    },
+    {
+      "token": "scout-clean-energy",
+      "company": "Scout Clean Energy"
+    },
+    {
+      "token": "raveaerospace",
+      "company": "RAVE Aerospace LLC"
+    },
+    {
+      "token": "twgai",
+      "company": "TWG Global AI"
+    },
+    {
+      "token": "twocircles",
+      "company": "Two Circles"
+    },
+    {
+      "token": "sorting-robotics",
+      "company": "Sorting Robotics"
+    },
+    {
+      "token": "leena-ai",
+      "company": "Leena AI"
+    },
+    {
+      "token": "wallstreetquants",
+      "company": "WallStreetQuants"
+    },
+    {
+      "token": "mindex",
+      "company": "Mindex"
+    },
+    {
+      "token": "enfos-inc",
+      "company": "ENFOS, Inc."
+    },
+    {
+      "token": "arondite",
+      "company": "Arondite"
+    }
+  ]
+}

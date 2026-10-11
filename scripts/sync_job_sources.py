@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """Sync approved public job sources into the shared CareerOS job catalog.
 
-Sources: the public job-board APIs of Greenhouse, Lever, and Ashby (North
-America). For each employer board in a source's seed file it fetches all
+Sources: the public job-board APIs of Greenhouse, Lever, Ashby, and Workable, and
+Workday and iCIMS career sites' robots.txt-allowed sitemaps and JSON-LD job
+pages, Oracle Recruiting Cloud sites' public listing API, and
+the career sites of Amazon, Microsoft, Meta, and Apple (North America). For each employer board in a source's seed file it fetches all
 postings, keeps those located in the US or Canada, upserts them as catalog jobs
 (no owner, visible to every user), and marks catalog postings that vanished
-from a successfully fetched board as UNAVAILABLE. Requirement extraction is deferred to first use, so a sync makes
-no AI calls.
+from a successfully fetched board as UNAVAILABLE. Workday is incremental: it
+fetches only pages it does not already hold and closes a posting by absence
+only when the site's sitemap is complete (see job_source_workday.py).
+Requirement extraction is deferred to first use, so a sync makes no AI calls.
 
 Each board commits separately; a failed board is reported and skipped without
 touching its existing postings. Exit status is 1 if any board failed.
@@ -35,23 +39,38 @@ import sys
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import httpx
-from careeros_api import job_source_ashby, job_source_greenhouse, job_source_lever
+from careeros_api import (
+    job_source_ashby,
+    job_source_careersite,
+    job_source_greenhouse,
+    job_source_icims,
+    job_source_lever,
+    job_source_oracle,
+    job_source_workable,
+    job_source_workday,
+)
 from careeros_api.config import get_settings
 from careeros_api.db import get_session_factory
 from careeros_api.job_source_boards import (
+    STALE_AFTER,
     BoardAdapter,
     BoardFetchError,
     BoardMapping,
     SourceBoard,
+    without_stale,
 )
 from careeros_api.job_sources import (
     JobSourceIngestionError,
     ingest_job_source,
+    mark_catalog_jobs_observed,
+    mark_stale_catalog_jobs_unavailable,
     mark_unseen_catalog_jobs_unavailable,
+    open_catalog_postings,
 )
 
 SEED_DIR = Path(__file__).resolve().parent.parent / "apps" / "api" / "job_sources"
@@ -60,8 +79,11 @@ SEED_DIR = Path(__file__).resolve().parent.parent / "apps" / "api" / "job_source
 @dataclass(frozen=True)
 class SourceSpec:
     key: str
-    fetch: Callable[[httpx.AsyncClient, SourceBoard], Awaitable[Any]]
+    fetch: Callable[..., Awaitable[Any]]
     map: Callable[[Any, SourceBoard], BoardMapping]
+    # Incremental sources also receive the board's open catalog postings
+    # (external id -> URL) so they can skip re-fetching them.
+    incremental: bool = False
 
     @property
     def seed(self) -> Path:
@@ -85,6 +107,35 @@ SOURCES = {
             job_source_ashby.ASHBY_SOURCE_KEY,
             job_source_ashby.fetch_job_board,
             job_source_ashby.map_job_board,
+        ),
+        SourceSpec(
+            job_source_workable.WORKABLE_SOURCE_KEY,
+            job_source_workable.fetch_account,
+            job_source_workable.map_account,
+        ),
+        SourceSpec(
+            job_source_workday.WORKDAY_SOURCE_KEY,
+            job_source_workday.fetch_site,
+            job_source_workday.map_site,
+            incremental=True,
+        ),
+        SourceSpec(
+            job_source_icims.ICIMS_SOURCE_KEY,
+            job_source_icims.fetch_site,
+            job_source_icims.map_portal,
+            incremental=True,
+        ),
+        SourceSpec(
+            job_source_oracle.ORACLE_SOURCE_KEY,
+            job_source_oracle.fetch_site,
+            job_source_oracle.map_oracle_site,
+            incremental=True,
+        ),
+        SourceSpec(
+            job_source_careersite.CAREERSITE_SOURCE_KEY,
+            job_source_careersite.fetch_site,
+            job_source_careersite.map_site,
+            incremental=True,
         ),
     )
 }
@@ -119,7 +170,8 @@ def load_boards(
     if document.get("source_key") != source_key:
         raise SystemExit(f"{seed} is not a {source_key} seed file")
     boards = [
-        SourceBoard(item["token"], item["company"]) for item in document["boards"]
+        SourceBoard(item["token"], item["company"], item.get("site_url"))
+        for item in document["boards"]
     ]
     if only:
         boards = [board for board in boards if board.token in set(only)]
@@ -134,9 +186,22 @@ async def sync_board(
     dry_run: bool,
 ) -> BoardReport:
     report = BoardReport(spec.key, board.token)
+    factory = get_session_factory(get_settings().database_url)
     try:
-        payload = await spec.fetch(client, board)
-        mapping = spec.map(payload, board)
+        if spec.incremental:
+            known: dict[str, str] = {}
+            if not dry_run:
+                async with factory() as session:
+                    known = await open_catalog_postings(
+                        session,
+                        source_key=spec.key,
+                        external_id_prefix=board.external_id_prefix,
+                    )
+            payload = await spec.fetch(client, board, known)
+        else:
+            payload = await spec.fetch(client, board)
+        observed_at = datetime.now(UTC)
+        mapping = without_stale(spec.map(payload, board), observed_at)
     except BoardFetchError as error:
         report.error = str(error)
         return report
@@ -145,7 +210,6 @@ async def sync_board(
     if dry_run:
         return report
 
-    factory = get_session_factory(get_settings().database_url)
     async with factory() as session:
         try:
             result = await ingest_job_source(
@@ -160,6 +224,18 @@ async def sync_board(
                 source_key=spec.key,
                 external_id_prefix=board.external_id_prefix,
                 seen_external_ids=set(mapping.seen_external_ids),
+            )
+            await mark_catalog_jobs_observed(
+                session,
+                source_key=spec.key,
+                external_ids=mapping.retained_external_ids,
+                observed_at=observed_at,
+            )
+            report.closed += await mark_stale_catalog_jobs_unavailable(
+                session,
+                source_key=spec.key,
+                external_id_prefix=board.external_id_prefix,
+                published_before=observed_at - STALE_AFTER,
             )
             await session.commit()
         except (JobSourceIngestionError, ValueError) as error:
@@ -194,7 +270,16 @@ async def main(argv: list[str] | None = None) -> int:
         help="Keep running and sync again every N hours (for a container or service "
         "without cron). Omit to sync once and exit.",
     )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=1,
+        help="Sync this many boards at once (default 1). Each board still paces "
+        "its own requests; boards are different employers.",
+    )
     args = parser.parse_args(argv)
+    if not 1 <= args.concurrency <= 8:
+        raise SystemExit("--concurrency must be between 1 and 8")
     if args.every_hours is not None and args.every_hours < 1:
         raise SystemExit("--every-hours must be at least 1")
     if args.every_hours is None:
@@ -223,13 +308,23 @@ async def run_once(args: argparse.Namespace) -> int:
     if args.board and not plan:
         raise SystemExit(f"Not in any seed file: {', '.join(args.board)}")
     reports: list[BoardReport] = []
-    async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
-        for index, (spec, board) in enumerate(plan):
-            if index:
+    queue: asyncio.Queue[tuple[SourceSpec, SourceBoard]] = asyncio.Queue()
+    for item in plan:
+        queue.put_nowait(item)
+
+    async def worker(client: httpx.AsyncClient) -> None:
+        first = True
+        while not queue.empty():
+            spec, board = queue.get_nowait()
+            if not first:
                 await asyncio.sleep(PAUSE_BETWEEN_BOARDS_SECONDS)
+            first = False
             report = await sync_board(client, spec, board, dry_run=args.dry_run)
             reports.append(report)
             print(report.line(), flush=True)
+
+    async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
+        await asyncio.gather(*(worker(client) for _ in range(args.concurrency)))
 
     failed = [report for report in reports if report.error]
     print(

@@ -1,0 +1,70 @@
+{
+  "source_key": "careersite",
+  "description": "North America: large employers' own career sites, each read only where its robots.txt allows (see job_source_careersite.py). Only postings located in the US or Canada are kept.",
+  "boards": [
+    {
+      "token": "amazon",
+      "company": "Amazon"
+    },
+    {
+      "token": "microsoft",
+      "company": "Microsoft"
+    },
+    {
+      "token": "meta",
+      "company": "Meta"
+    },
+    {
+      "token": "apple",
+      "company": "Apple"
+    },
+    {
+      "token": "paypal",
+      "company": "PayPal"
+    },
+    {
+      "token": "netflix",
+      "company": "Netflix"
+    },
+    {
+      "token": "nvidia",
+      "company": "NVIDIA"
+    },
+    {
+      "token": "qualcomm",
+      "company": "Qualcomm"
+    },
+    {
+      "token": "morganstanley",
+      "company": "Morgan Stanley"
+    },
+    {
+      "token": "citi",
+      "company": "Citi"
+    },
+    {
+      "token": "hp",
+      "company": "HP"
+    },
+    {
+      "token": "ford",
+      "company": "Ford"
+    },
+    {
+      "token": "starbucks",
+      "company": "Starbucks"
+    },
+    {
+      "token": "caci",
+      "company": "CACI"
+    },
+    {
+      "token": "lamresearch",
+      "company": "Lam Research"
+    },
+    {
+      "token": "bms",
+      "company": "Bristol Myers Squibb"
+    }
+  ]
+}

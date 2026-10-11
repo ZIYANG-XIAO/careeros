@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  Local (macOS) schedule for the shared job catalog sync, every 6 hours.
+  Local (macOS) schedule for the shared job catalog sync, daily at 06:15.
+  launchd runs a missed run when the Mac next wakes; caffeinate keeps it
+  from idle-sleeping mid-sync.
   Install with scripts/launchd/install-job-sync.sh; production uses its own
   scheduler (docs/JOB_SOURCE_DECISION.md). __REPO__ is the repository root.
 -->
@@ -11,15 +13,24 @@
   <string>com.careeros.job-sync</string>
   <key>ProgramArguments</key>
   <array>
+    <string>/usr/bin/caffeinate</string>
+    <string>-i</string>
     <string>__REPO__/.venv/bin/python</string>
     <string>__REPO__/scripts/sync_job_sources.py</string>
     <string>--source</string>
     <string>all</string>
+    <string>--concurrency</string>
+    <string>4</string>
   </array>
   <key>WorkingDirectory</key>
   <string>__REPO__</string>
-  <key>StartInterval</key>
-  <integer>21600</integer>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>6</integer>
+    <key>Minute</key>
+    <integer>15</integer>
+  </dict>
   <key>RunAtLoad</key>
   <false/>
   <key>LowPriorityIO</key>

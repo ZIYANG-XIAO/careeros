@@ -1,6 +1,6 @@
 {
   "source_key": "lever",
-  "description": "North America: employers whose public Lever job boards were verified to exist on 2026-09-28. Only postings located in the US or Canada are kept.",
+  "description": "North America: employers whose public Lever job boards were verified to exist on 2026-09-28, expanded on 2026-10-09 with boards discovered from YC's company directory and public internship/new-grad lists and verified to list US/Canada postings. Only postings located in the US or Canada are kept.",
   "boards": [
     {
       "token": "palantir",
@@ -49,6 +49,178 @@
     {
       "token": "olo",
       "company": "Olo"
+    },
+    {
+      "token": "wyetechllc",
+      "company": "Wyetech"
+    },
+    {
+      "token": "standtogether",
+      "company": "Stand Together"
+    },
+    {
+      "token": "hermeus",
+      "company": "Hermeus"
+    },
+    {
+      "token": "hive",
+      "company": "Hive"
+    },
+    {
+      "token": "anavationllc",
+      "company": "AnaVation"
+    },
+    {
+      "token": "xcimer",
+      "company": "Xcimer Energy"
+    },
+    {
+      "token": "evr",
+      "company": "Elk Valley Resources"
+    },
+    {
+      "token": "protective",
+      "company": "Protective Life"
+    },
+    {
+      "token": "steerbridge",
+      "company": "SteerBridge"
+    },
+    {
+      "token": "porter",
+      "company": "Porter"
+    },
+    {
+      "token": "hatchit",
+      "company": "Hatch IT"
+    },
+    {
+      "token": "canarytechnologies",
+      "company": "Canary Technologies"
+    },
+    {
+      "token": "captivateiq",
+      "company": "CaptivateIQ"
+    },
+    {
+      "token": "skyways",
+      "company": "Skyways"
+    },
+    {
+      "token": "gridware",
+      "company": "Gridware"
+    },
+    {
+      "token": "runlaminar",
+      "company": "Laminar"
+    },
+    {
+      "token": "datalabusa",
+      "company": "Datalab USA"
+    },
+    {
+      "token": "prosper",
+      "company": "Prosper"
+    },
+    {
+      "token": "neighbor",
+      "company": "Neighbor"
+    },
+    {
+      "token": "netomi",
+      "company": "Netomi"
+    },
+    {
+      "token": "finch",
+      "company": "Finch"
+    },
+    {
+      "token": "immuta",
+      "company": "Immuta"
+    },
+    {
+      "token": "bloom",
+      "company": "Bloom"
+    },
+    {
+      "token": "mashgin",
+      "company": "Mashgin"
+    },
+    {
+      "token": "tovala",
+      "company": "Tovala"
+    },
+    {
+      "token": "unusual",
+      "company": "Unusual"
+    },
+    {
+      "token": "weride",
+      "company": "WeRide"
+    },
+    {
+      "token": "sep",
+      "company": "SEP"
+    },
+    {
+      "token": "multiplylabs",
+      "company": "Multiply Labs"
+    },
+    {
+      "token": "handoff",
+      "company": "Handoff"
+    },
+    {
+      "token": "people-ai",
+      "company": "Backstory"
+    },
+    {
+      "token": "epsilon3",
+      "company": "Epsilon3"
+    },
+    {
+      "token": "bolster",
+      "company": "Bolster"
+    },
+    {
+      "token": "twodots",
+      "company": "Two Dots"
+    },
+    {
+      "token": "viget",
+      "company": "Viget"
+    },
+    {
+      "token": "newton",
+      "company": "Newton"
+    },
+    {
+      "token": "snappr",
+      "company": "Snappr"
+    },
+    {
+      "token": "thunkable",
+      "company": "Thunkable"
+    },
+    {
+      "token": "culdesac",
+      "company": "Culdesac"
+    },
+    {
+      "token": "postera",
+      "company": "PostEra"
+    },
+    {
+      "token": "doola",
+      "company": "doola"
+    },
+    {
+      "token": "vergesense",
+      "company": "VergeSense"
+    },
+    {
+      "token": "livingcarbon",
+      "company": "Living Carbon"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "source_key": "greenhouse",
-  "description": "North America pilot: employers whose public Greenhouse job boards were verified to exist on 2026-09-28. Only postings located in the US or Canada are kept.",
+  "description": "North America pilot: employers whose public Greenhouse job boards were verified to exist on 2026-09-28, expanded on 2026-10-09 with boards discovered from YC's company directory and public internship/new-grad lists and verified to list US/Canada postings. Only postings located in the US or Canada are kept.",
   "boards": [
     {
       "token": "stripe",
@@ -405,6 +405,550 @@
     {
       "token": "offerup",
       "company": "OfferUp"
+    },
+    {
+      "token": "rocketlab",
+      "company": "Rocket Lab USA"
+    },
+    {
+      "token": "xai",
+      "company": "xAI"
+    },
+    {
+      "token": "k2spacecorporation",
+      "company": "K2 Space"
+    },
+    {
+      "token": "cssmerge",
+      "company": "Atoms"
+    },
+    {
+      "token": "trueanomalyinc",
+      "company": "True Anomaly"
+    },
+    {
+      "token": "astranis",
+      "company": "Astranis"
+    },
+    {
+      "token": "purestorage",
+      "company": "Pure Storage"
+    },
+    {
+      "token": "machindustries",
+      "company": "Mach Industries"
+    },
+    {
+      "token": "generalmatter",
+      "company": "General Matter"
+    },
+    {
+      "token": "freedomconsulting",
+      "company": "Freedom Technology Solutions Group"
+    },
+    {
+      "token": "vardaspace",
+      "company": "Varda Space"
+    },
+    {
+      "token": "muonspace",
+      "company": "Muon Space"
+    },
+    {
+      "token": "gleanwork",
+      "company": "Glean"
+    },
+    {
+      "token": "nationallifeinsurancecompany",
+      "company": "National Life"
+    },
+    {
+      "token": "billiontoone",
+      "company": "BillionToOne"
+    },
+    {
+      "token": "freeformfuturecorp",
+      "company": "Freeform"
+    },
+    {
+      "token": "asteraearlycareer2027",
+      "company": "Astera Labs"
+    },
+    {
+      "token": "humaninterest",
+      "company": "Human Interest"
+    },
+    {
+      "token": "captivation",
+      "company": "Captivation"
+    },
+    {
+      "token": "sigmacomputing",
+      "company": "Sigma Computing"
+    },
+    {
+      "token": "lightmatter",
+      "company": "Lightmatter"
+    },
+    {
+      "token": "darkwolfsolutions",
+      "company": "Dark Wolf Solutions"
+    },
+    {
+      "token": "alarmcom",
+      "company": "Alarm.com"
+    },
+    {
+      "token": "togetherai",
+      "company": "Together AI"
+    },
+    {
+      "token": "intersystems",
+      "company": "InterSystems"
+    },
+    {
+      "token": "newsbreak",
+      "company": "NewsBreak"
+    },
+    {
+      "token": "thenuclearcompany",
+      "company": "The Nuclear Company"
+    },
+    {
+      "token": "arcboatcompany",
+      "company": "Arc"
+    },
+    {
+      "token": "thebrattlegroup",
+      "company": "The Brattle Group"
+    },
+    {
+      "token": "kikoff",
+      "company": "Kikoff"
+    },
+    {
+      "token": "ziprecruiter",
+      "company": "ZipRecruiter"
+    },
+    {
+      "token": "simplisafe",
+      "company": "SimpliSafe"
+    },
+    {
+      "token": "wonderschool",
+      "company": "Wonderschool"
+    },
+    {
+      "token": "katalyst",
+      "company": "Katalyst Space Technologies"
+    },
+    {
+      "token": "maymobility",
+      "company": "May Mobility"
+    },
+    {
+      "token": "amca",
+      "company": "AMCA"
+    },
+    {
+      "token": "testnisc",
+      "company": "National Information Solutions Cooperative"
+    },
+    {
+      "token": "hpiq",
+      "company": "HP IQ"
+    },
+    {
+      "token": "dvtrading",
+      "company": "DV Trading"
+    },
+    {
+      "token": "schonfeld",
+      "company": "Schonfeld"
+    },
+    {
+      "token": "enova",
+      "company": "Enova"
+    },
+    {
+      "token": "doordashcanada",
+      "company": "DoorDash"
+    },
+    {
+      "token": "relaypro",
+      "company": "Relay"
+    },
+    {
+      "token": "apolloio",
+      "company": "Apollo.io"
+    },
+    {
+      "token": "whitewatermidstream",
+      "company": "WhiteWater Midstream"
+    },
+    {
+      "token": "axle",
+      "company": "Axle"
+    },
+    {
+      "token": "taxreliefadvocates",
+      "company": "Tax Relief Advocates"
+    },
+    {
+      "token": "mill",
+      "company": "Mill"
+    },
+    {
+      "token": "pacificfusion",
+      "company": "Pacific Fusion"
+    },
+    {
+      "token": "gigs",
+      "company": "Gigs"
+    },
+    {
+      "token": "perpay",
+      "company": "Perpay"
+    },
+    {
+      "token": "rfsmart",
+      "company": "RF-SMART"
+    },
+    {
+      "token": "instawork",
+      "company": "Instawork"
+    },
+    {
+      "token": "instalilyai",
+      "company": "InstaLILY"
+    },
+    {
+      "token": "ginkgobioworks",
+      "company": "Ginkgo Bioworks Inc."
+    },
+    {
+      "token": "alpaca",
+      "company": "Alpaca"
+    },
+    {
+      "token": "momentic",
+      "company": "Momentic Studios"
+    },
+    {
+      "token": "themjcos",
+      "company": "The MJ Companies"
+    },
+    {
+      "token": "nabis",
+      "company": "NABIS"
+    },
+    {
+      "token": "coast",
+      "company": "Coast"
+    },
+    {
+      "token": "transmarketgroup",
+      "company": "TransMarket Group"
+    },
+    {
+      "token": "odeko",
+      "company": "Odeko"
+    },
+    {
+      "token": "courierhealth",
+      "company": "Courier Health"
+    },
+    {
+      "token": "swayable",
+      "company": "Swayable"
+    },
+    {
+      "token": "solutions",
+      "company": "Cadence Solutions"
+    },
+    {
+      "token": "qventus",
+      "company": "Qventus"
+    },
+    {
+      "token": "ophelia",
+      "company": "Ophelia"
+    },
+    {
+      "token": "openwork",
+      "company": "Openwork"
+    },
+    {
+      "token": "eulerity",
+      "company": "Eulerity"
+    },
+    {
+      "token": "devtechnology",
+      "company": "Dev Technology Group"
+    },
+    {
+      "token": "datacor",
+      "company": "Datacor"
+    },
+    {
+      "token": "authenticinsurance",
+      "company": "Authentic"
+    },
+    {
+      "token": "teletrackingtechnologiesinc",
+      "company": "TeleTracking"
+    },
+    {
+      "token": "axiom",
+      "company": "Axiom"
+    },
+    {
+      "token": "mavensecuritiesholdingltd",
+      "company": "Maven Securities"
+    },
+    {
+      "token": "fiveringsllc",
+      "company": "Five Rings Capital"
+    },
+    {
+      "token": "goatgroup",
+      "company": "GOAT Group"
+    },
+    {
+      "token": "givecampus",
+      "company": "GiveCampus"
+    },
+    {
+      "token": "pairteam",
+      "company": "Pair Team"
+    },
+    {
+      "token": "attain",
+      "company": "Attain"
+    },
+    {
+      "token": "gardacp",
+      "company": "Garda Capital Partners"
+    },
+    {
+      "token": "gallup",
+      "company": "Gallup"
+    },
+    {
+      "token": "pdtpartners",
+      "company": "PDT Partners"
+    },
+    {
+      "token": "genevatrading",
+      "company": "Geneva Trading"
+    },
+    {
+      "token": "mesh",
+      "company": "Mesh"
+    },
+    {
+      "token": "pelago",
+      "company": "Pelago"
+    },
+    {
+      "token": "viamrobotics",
+      "company": "Viam"
+    },
+    {
+      "token": "xantium",
+      "company": "Xantium"
+    },
+    {
+      "token": "hackerrank",
+      "company": "HackerRank Careers"
+    },
+    {
+      "token": "bitmovin",
+      "company": "Bitmovin"
+    },
+    {
+      "token": "modernhealth",
+      "company": "Modern Health"
+    },
+    {
+      "token": "generalproximity",
+      "company": "General Proximity"
+    },
+    {
+      "token": "tripadvisor",
+      "company": "TripAdvisor"
+    },
+    {
+      "token": "headlandstechnologiesllc",
+      "company": "Headlands Tech Holdings"
+    },
+    {
+      "token": "idmeuniversityrecruiting",
+      "company": "ID.me"
+    },
+    {
+      "token": "signifyd95",
+      "company": "Signifyd"
+    },
+    {
+      "token": "khanacademy",
+      "company": "Khan Academy"
+    },
+    {
+      "token": "aperaaiinc",
+      "company": "Apera AI"
+    },
+    {
+      "token": "vikingglobalinvestors",
+      "company": "Viking Global"
+    },
+    {
+      "token": "assemblyai",
+      "company": "AssemblyAI"
+    },
+    {
+      "token": "walleyecapital-external-students",
+      "company": "Walleye Capital"
+    },
+    {
+      "token": "gassouth",
+      "company": "Gas South"
+    },
+    {
+      "token": "covar",
+      "company": "CoVar"
+    },
+    {
+      "token": "capstoneinvestmentadvisors",
+      "company": "Capstone Investment Advisors"
+    },
+    {
+      "token": "novacredit",
+      "company": "Nova Credit"
+    },
+    {
+      "token": "albedo",
+      "company": "Albedo"
+    },
+    {
+      "token": "uareai",
+      "company": "Uare.ai"
+    },
+    {
+      "token": "workshop",
+      "company": "Workshop"
+    },
+    {
+      "token": "sage49",
+      "company": "Sage"
+    },
+    {
+      "token": "axq",
+      "company": "AXQ Capital"
+    },
+    {
+      "token": "tempo",
+      "company": "Tempo"
+    },
+    {
+      "token": "recidiviz",
+      "company": "Recidiviz"
+    },
+    {
+      "token": "porter",
+      "company": "Porter Works"
+    },
+    {
+      "token": "beam",
+      "company": "Bridge to Enter Advanced Mathematics (BEAM)"
+    },
+    {
+      "token": "orbitaloperations",
+      "company": "Orbital Operations"
+    },
+    {
+      "token": "blenheimchalcot",
+      "company": "Blenheim Chalcot"
+    },
+    {
+      "token": "ruggedrobotics",
+      "company": "Rugged Robotics"
+    },
+    {
+      "token": "haven",
+      "company": "Haven Interactive Studios"
+    },
+    {
+      "token": "pulse",
+      "company": "Pulse Healthcare"
+    },
+    {
+      "token": "limrun",
+      "company": "Limrun"
+    },
+    {
+      "token": "sendbird",
+      "company": "Sendbird"
+    },
+    {
+      "token": "legalist",
+      "company": "Legalist"
+    },
+    {
+      "token": "reflex",
+      "company": "Reflex"
+    },
+    {
+      "token": "superset",
+      "company": "super{set} Hive Community"
+    },
+    {
+      "token": "compeerfinancial",
+      "company": "Compeer Financial"
+    },
+    {
+      "token": "algolia",
+      "company": "Algolia"
+    },
+    {
+      "token": "aon3d",
+      "company": "AON3D Careers"
+    },
+    {
+      "token": "navierai",
+      "company": "Navier AI"
+    },
+    {
+      "token": "rothesaygraduates",
+      "company": "Rothesay"
+    },
+    {
+      "token": "mwinternshipprogram",
+      "company": "Marshall Wace"
+    },
+    {
+      "token": "prodigal",
+      "company": "Prodigal"
+    },
+    {
+      "token": "dots",
+      "company": "Dots"
+    },
+    {
+      "token": "osmosis",
+      "company": "Osmosis"
+    },
+    {
+      "token": "janestreet",
+      "company": "Jane Street"
+    },
+    {
+      "token": "jumptrading",
+      "company": "Jump Trading"
+    },
+    {
+      "token": "carvana",
+      "company": "Carvana"
     }
   ]
 }

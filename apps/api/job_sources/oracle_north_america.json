@@ -1,0 +1,176 @@
+{
+  "source_key": "oracle",
+  "description": "North America: Oracle Recruiting Cloud career sites, read through the public recruitingCEJobRequisitions resource their pages use. Only postings located in the US or Canada are kept.",
+  "boards": [
+    {
+      "token": "jpmc.cx_1001",
+      "company": "JPMorgan Chase",
+      "site_url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001"
+    },
+    {
+      "token": "fa-exvu-saasfaprod1.cx_1",
+      "company": "GM Financial",
+      "site_url": "https://fa-exvu-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+    },
+    {
+      "token": "ibqbjb.honeywell",
+      "company": "Honeywell",
+      "site_url": "https://ibqbjb.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/Honeywell"
+    },
+    {
+      "token": "egug.cx_1",
+      "company": "American Express",
+      "site_url": "https://egug.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+    },
+    {
+      "token": "iawmqy.careers",
+      "company": "Dell Technologies",
+      "site_url": "https://iawmqy.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/careers"
+    },
+    {
+      "token": "fa-espx-saasfaprod1.cx_1",
+      "company": "Cummins",
+      "site_url": "https://fa-espx-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+    },
+    {
+      "token": "fa-ewjt-saasfaprod1.cx_2",
+      "company": "EXL",
+      "site_url": "https://fa-ewjt-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_2"
+    },
+    {
+      "token": "egay.cx_4001",
+      "company": "NOV",
+      "site_url": "https://egay.fa.us6.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_4001"
+    },
+    {
+      "token": "eedu.cx_1003",
+      "company": "WTW",
+      "site_url": "https://eedu.fa.em3.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1003"
+    },
+    {
+      "token": "hdjq.cx_1",
+      "company": "Emerson Electric",
+      "site_url": "https://hdjq.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+    },
+    {
+      "token": "eihu.cx",
+      "company": "SAIC",
+      "site_url": "https://eihu.fa.us8.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX"
+    },
+    {
+      "token": "eeho.cx_45001",
+      "company": "Oracle",
+      "site_url": "https://eeho.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_45001"
+    },
+    {
+      "token": "icbpjb.lazardprofessionalcareers",
+      "company": "Lazard",
+      "site_url": "https://icbpjb.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/LazardProfessionalCareers"
+    },
+    {
+      "token": "hdnn.cx",
+      "company": "Arconic",
+      "site_url": "https://hdnn.fa.us6.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX"
+    },
+    {
+      "token": "ibwujb.cx_1001",
+      "company": "Ralliant",
+      "site_url": "https://ibwujb.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001"
+    },
+    {
+      "token": "egud.cx_1",
+      "company": "AutoZone",
+      "site_url": "https://egud.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+    },
+    {
+      "token": "hcgn.cx_1",
+      "company": "Citizens Financial Group",
+      "site_url": "https://hcgn.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+    },
+    {
+      "token": "egup.cx",
+      "company": "Vertiv",
+      "site_url": "https://egup.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX"
+    },
+    {
+      "token": "ecnf.cx",
+      "company": "Tradeweb",
+      "site_url": "https://ecnf.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX"
+    },
+    {
+      "token": "fa-etbx-saasfaprod1.nfcu",
+      "company": "Navy Federal",
+      "site_url": "https://fa-etbx-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/nfcu"
+    },
+    {
+      "token": "fa-evmr-saasfaprod1.cx_1",
+      "company": "Nokia",
+      "site_url": "https://fa-evmr-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+    },
+    {
+      "token": "ebgj.cx_1",
+      "company": "Pella",
+      "site_url": "https://ebgj.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+    },
+    {
+      "token": "ebxr.cx_1",
+      "company": "DTCC",
+      "site_url": "https://ebxr.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+    },
+    {
+      "token": "eofe.cx_1001",
+      "company": "BNY",
+      "site_url": "https://eofe.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001"
+    },
+    {
+      "token": "fa-eups-saasfaprod1.ulsolutionscareers",
+      "company": "UL Solutions",
+      "site_url": "https://fa-eups-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/ULSolutionsCareers"
+    },
+    {
+      "token": "ekkh.cx_2002",
+      "company": "Hormel Foods",
+      "site_url": "https://ekkh.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_2002"
+    },
+    {
+      "token": "ejko.cx_3",
+      "company": "Blue Cross Blue Shield of Michigan",
+      "site_url": "https://ejko.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_3"
+    },
+    {
+      "token": "ebwh.cx_1001",
+      "company": "Macy's",
+      "site_url": "https://ebwh.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001"
+    },
+    {
+      "token": "hctz.cx_1001",
+      "company": "onsemi",
+      "site_url": "https://hctz.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001"
+    },
+    {
+      "token": "fa-eqcd-saasfaprod1.cx_1",
+      "company": "Hunt Oil Company",
+      "site_url": "https://fa-eqcd-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+    },
+    {
+      "token": "fa-eowa-saasfaprod1.csxcareers",
+      "company": "CSX",
+      "site_url": "https://fa-eowa-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CSXCareers"
+    },
+    {
+      "token": "fa-esgu-saasfaprod1.cx_1",
+      "company": "Montenson",
+      "site_url": "https://fa-esgu-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+    },
+    {
+      "token": "ejia.cx_1001",
+      "company": "S&C Electric Company",
+      "site_url": "https://ejia.fa.us6.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001"
+    },
+    {
+      "token": "iadugs.cx_1001",
+      "company": "Legrand",
+      "site_url": "https://iadugs.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001"
+    }
+  ]
+}

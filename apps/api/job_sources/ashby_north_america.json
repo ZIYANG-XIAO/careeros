@@ -1,6 +1,6 @@
 {
   "source_key": "ashby",
-  "description": "North America: employers whose public Ashby job boards were verified to exist on 2026-09-28. Only postings located in the US or Canada are kept.",
+  "description": "North America: employers whose public Ashby job boards were verified to exist on 2026-09-28, expanded on 2026-10-09 with boards discovered from YC's company directory and public internship/new-grad lists and verified to list US/Canada postings. Only postings located in the US or Canada are kept.",
   "boards": [
     {
       "token": "openai",
@@ -201,6 +201,1394 @@
     {
       "token": "poshmark",
       "company": "Poshmark"
+    },
+    {
+      "token": "crusoe",
+      "company": "Crusoe"
+    },
+    {
+      "token": "saronic",
+      "company": "Saronic"
+    },
+    {
+      "token": "legionhealth",
+      "company": "Legion Health"
+    },
+    {
+      "token": "whoop",
+      "company": "Whoop"
+    },
+    {
+      "token": "hadrian-automation",
+      "company": "Hadrian"
+    },
+    {
+      "token": "apex-technology-inc",
+      "company": "Apex"
+    },
+    {
+      "token": "decagon",
+      "company": "Decagon"
+    },
+    {
+      "token": "cerebras",
+      "company": "Cerebras"
+    },
+    {
+      "token": "barnes",
+      "company": "Barnes & Thornburg"
+    },
+    {
+      "token": "radiant-industries",
+      "company": "Radiant"
+    },
+    {
+      "token": "etched",
+      "company": "Etched"
+    },
+    {
+      "token": "zip",
+      "company": "Zip"
+    },
+    {
+      "token": "trm-labs",
+      "company": "TRM Labs"
+    },
+    {
+      "token": "antares",
+      "company": "Antares Nuclear"
+    },
+    {
+      "token": "deepgram",
+      "company": "Deepgram"
+    },
+    {
+      "token": "northwoodspace",
+      "company": "Northwood Space"
+    },
+    {
+      "token": "helion",
+      "company": "Helion Energy"
+    },
+    {
+      "token": "nooks",
+      "company": "Nooks"
+    },
+    {
+      "token": "opengov",
+      "company": "OpenGov"
+    },
+    {
+      "token": "ibotta",
+      "company": "Ibotta"
+    },
+    {
+      "token": "telus-digital",
+      "company": "TELUS Digital"
+    },
+    {
+      "token": "voleon",
+      "company": "The Voleon Group"
+    },
+    {
+      "token": "kalshi",
+      "company": "Kalshi"
+    },
+    {
+      "token": "campfire",
+      "company": "Campfire"
+    },
+    {
+      "token": "bedrock-robotics",
+      "company": "Bedrock Robotics"
+    },
+    {
+      "token": "dandy",
+      "company": "Dandy"
+    },
+    {
+      "token": "oneapp",
+      "company": "OnePay"
+    },
+    {
+      "token": "allen-control-systems",
+      "company": "Allen Control Systems"
+    },
+    {
+      "token": "reducto",
+      "company": "Reducto"
+    },
+    {
+      "token": "fieldguide",
+      "company": "Fieldguide"
+    },
+    {
+      "token": "permitflow",
+      "company": "PermitFlow"
+    },
+    {
+      "token": "afterquery",
+      "company": "AfterQuery"
+    },
+    {
+      "token": "stepful",
+      "company": "Stepful"
+    },
+    {
+      "token": "candidhealth",
+      "company": "Candid Health"
+    },
+    {
+      "token": "roboflow",
+      "company": "Roboflow"
+    },
+    {
+      "token": "confido",
+      "company": "Confido"
+    },
+    {
+      "token": "siftstack",
+      "company": "SIFT"
+    },
+    {
+      "token": "firecrawl",
+      "company": "Firecrawl"
+    },
+    {
+      "token": "amplitude",
+      "company": "Amplitude"
+    },
+    {
+      "token": "versemedical",
+      "company": "Verse Medical"
+    },
+    {
+      "token": "grow-therapy",
+      "company": "Grow Therapy"
+    },
+    {
+      "token": "eightsleep",
+      "company": "Eight Sleep"
+    },
+    {
+      "token": "netic",
+      "company": "Netic"
+    },
+    {
+      "token": "composio",
+      "company": "Composio"
+    },
+    {
+      "token": "uncountable",
+      "company": "Uncountable"
+    },
+    {
+      "token": "persona.ai",
+      "company": "Persona AI"
+    },
+    {
+      "token": "vetcove",
+      "company": "Vetcove"
+    },
+    {
+      "token": "revel",
+      "company": "Revel"
+    },
+    {
+      "token": "rivet",
+      "company": "Rivet Industries"
+    },
+    {
+      "token": "tennr",
+      "company": "Tennr"
+    },
+    {
+      "token": "pariveda",
+      "company": "Pariveda Solutions"
+    },
+    {
+      "token": "primer",
+      "company": "Primer"
+    },
+    {
+      "token": "vapi",
+      "company": "Vapi"
+    },
+    {
+      "token": "valon",
+      "company": "Valon"
+    },
+    {
+      "token": "latent",
+      "company": "Latent"
+    },
+    {
+      "token": "numeral",
+      "company": "Numeral"
+    },
+    {
+      "token": "astro-mechanica",
+      "company": "Astro Mechanica"
+    },
+    {
+      "token": "withpace",
+      "company": "Pace"
+    },
+    {
+      "token": "avoca",
+      "company": "Avoca"
+    },
+    {
+      "token": "retell-ai",
+      "company": "Retell AI"
+    },
+    {
+      "token": "outset",
+      "company": "Outset"
+    },
+    {
+      "token": "curri",
+      "company": "Curri"
+    },
+    {
+      "token": "shepherd",
+      "company": "Shepherd"
+    },
+    {
+      "token": "juicebox",
+      "company": "Juicebox"
+    },
+    {
+      "token": "gecko-robotics",
+      "company": "Gecko Robotics"
+    },
+    {
+      "token": "chariot",
+      "company": "Chariot"
+    },
+    {
+      "token": "qumulo",
+      "company": "Qumulo"
+    },
+    {
+      "token": "lightfield",
+      "company": "Lightfield"
+    },
+    {
+      "token": "weave",
+      "company": "Weave"
+    },
+    {
+      "token": "speak",
+      "company": "Speak"
+    },
+    {
+      "token": "color-health",
+      "company": "Color"
+    },
+    {
+      "token": "pylon",
+      "company": "Pylon"
+    },
+    {
+      "token": "niantic-spatial",
+      "company": "Niantic Spatial"
+    },
+    {
+      "token": "incident",
+      "company": "incident.io"
+    },
+    {
+      "token": "radar",
+      "company": "RADAR"
+    },
+    {
+      "token": "clipboard",
+      "company": "Clipboard"
+    },
+    {
+      "token": "quindar",
+      "company": "Quindar"
+    },
+    {
+      "token": "metriport",
+      "company": "Metriport"
+    },
+    {
+      "token": "tavus",
+      "company": "Tavus"
+    },
+    {
+      "token": "nash",
+      "company": "Nash"
+    },
+    {
+      "token": "salient",
+      "company": "Salient"
+    },
+    {
+      "token": "clark",
+      "company": "Clark"
+    },
+    {
+      "token": "pangramlabs",
+      "company": "Pangram Labs"
+    },
+    {
+      "token": "cyvl",
+      "company": "Cyvl"
+    },
+    {
+      "token": "revenuecat",
+      "company": "RevenueCat"
+    },
+    {
+      "token": "shortstory",
+      "company": "Short Story"
+    },
+    {
+      "token": "luminai",
+      "company": "Luminai"
+    },
+    {
+      "token": "mach9",
+      "company": "Mach9"
+    },
+    {
+      "token": "pointone",
+      "company": "PointOne"
+    },
+    {
+      "token": "david-ai",
+      "company": "David AI"
+    },
+    {
+      "token": "cylake-inc",
+      "company": "Cylake"
+    },
+    {
+      "token": "middesk",
+      "company": "Middesk"
+    },
+    {
+      "token": "camber",
+      "company": "Camber"
+    },
+    {
+      "token": "novig",
+      "company": "Novig"
+    },
+    {
+      "token": "vitalize",
+      "company": "Vitalize"
+    },
+    {
+      "token": "hedge",
+      "company": "Hedge"
+    },
+    {
+      "token": "persona",
+      "company": "Persona"
+    },
+    {
+      "token": "phoenix",
+      "company": "Phoenix"
+    },
+    {
+      "token": "sphere",
+      "company": "Sphere"
+    },
+    {
+      "token": "charge-robotics",
+      "company": "Charge Robotics"
+    },
+    {
+      "token": "posh",
+      "company": "Posh"
+    },
+    {
+      "token": "sieve",
+      "company": "Sieve"
+    },
+    {
+      "token": "codes-health",
+      "company": "Codes Health"
+    },
+    {
+      "token": "uplane",
+      "company": "Uplane"
+    },
+    {
+      "token": "chalk",
+      "company": "Chalk"
+    },
+    {
+      "token": "megazone",
+      "company": "MegazoneCloud"
+    },
+    {
+      "token": "odys-aviation",
+      "company": "Odys Aviation"
+    },
+    {
+      "token": "bree",
+      "company": "Bree"
+    },
+    {
+      "token": "aleph",
+      "company": "Aleph"
+    },
+    {
+      "token": "mintlify",
+      "company": "Mintlify"
+    },
+    {
+      "token": "kastle",
+      "company": "Kastle"
+    },
+    {
+      "token": "faros-ai",
+      "company": "Faros AI"
+    },
+    {
+      "token": "ellipsislabs",
+      "company": "Ellipsis Labs"
+    },
+    {
+      "token": "aescape",
+      "company": "Aescape"
+    },
+    {
+      "token": "rescale",
+      "company": "Rescale"
+    },
+    {
+      "token": "titan",
+      "company": "Titan"
+    },
+    {
+      "token": "topline-pro",
+      "company": "Topline Pro"
+    },
+    {
+      "token": "spade",
+      "company": "Spade"
+    },
+    {
+      "token": "garage",
+      "company": "Garage"
+    },
+    {
+      "token": "clarion",
+      "company": "Clarion"
+    },
+    {
+      "token": "sygaldry-technologies",
+      "company": "Sygaldry Technologies"
+    },
+    {
+      "token": "flai",
+      "company": "Flai"
+    },
+    {
+      "token": "aiprise",
+      "company": "AiPrise"
+    },
+    {
+      "token": "realmalliance",
+      "company": "Realm"
+    },
+    {
+      "token": "blissway",
+      "company": "Blissway"
+    },
+    {
+      "token": "semgrep",
+      "company": "Semgrep"
+    },
+    {
+      "token": "classdojo",
+      "company": "ClassDojo"
+    },
+    {
+      "token": "promise",
+      "company": "Promise"
+    },
+    {
+      "token": "overview",
+      "company": "Overview"
+    },
+    {
+      "token": "vori",
+      "company": "Vori"
+    },
+    {
+      "token": "atomic",
+      "company": "Atomic"
+    },
+    {
+      "token": "vooma",
+      "company": "Vooma"
+    },
+    {
+      "token": "circleback",
+      "company": "Circleback"
+    },
+    {
+      "token": "eloquentai",
+      "company": "Eloquent AI"
+    },
+    {
+      "token": "auctor",
+      "company": "Auctor"
+    },
+    {
+      "token": "nox-metals",
+      "company": "Nox Metals"
+    },
+    {
+      "token": "arch.co",
+      "company": "Arch"
+    },
+    {
+      "token": "talos-trading",
+      "company": "Talos"
+    },
+    {
+      "token": "spellbrush",
+      "company": "Spellbrush"
+    },
+    {
+      "token": "ditto",
+      "company": "Ditto"
+    },
+    {
+      "token": "agave",
+      "company": "Agave"
+    },
+    {
+      "token": "furtherai",
+      "company": "FurtherAI"
+    },
+    {
+      "token": "pulse",
+      "company": "Pulse"
+    },
+    {
+      "token": "halluminate",
+      "company": "Halluminate"
+    },
+    {
+      "token": "koahlabs",
+      "company": "Koah"
+    },
+    {
+      "token": "n1",
+      "company": "N1"
+    },
+    {
+      "token": "padlet",
+      "company": "Padlet"
+    },
+    {
+      "token": "moderntreasury",
+      "company": "Modern Treasury"
+    },
+    {
+      "token": "mutiny",
+      "company": "Mutiny"
+    },
+    {
+      "token": "aios",
+      "company": "AIOS"
+    },
+    {
+      "token": "atob",
+      "company": "AtoB"
+    },
+    {
+      "token": "triomics",
+      "company": "Triomics"
+    },
+    {
+      "token": "infisical",
+      "company": "Infisical"
+    },
+    {
+      "token": "nango",
+      "company": "Nango"
+    },
+    {
+      "token": "litellm",
+      "company": "LiteLLM"
+    },
+    {
+      "token": "safetykit",
+      "company": "SafetyKit"
+    },
+    {
+      "token": "raindrop",
+      "company": "Raindrop"
+    },
+    {
+      "token": "simple-ai",
+      "company": "Simple AI"
+    },
+    {
+      "token": "lapel",
+      "company": "Lapel"
+    },
+    {
+      "token": "claim-health",
+      "company": "Claim Health"
+    },
+    {
+      "token": "aurelian",
+      "company": "Aurelian"
+    },
+    {
+      "token": "maximor",
+      "company": "Hyphenate"
+    },
+    {
+      "token": "hipp",
+      "company": "Hipp Health"
+    },
+    {
+      "token": "people-culture-talent",
+      "company": "People Culture Talent"
+    },
+    {
+      "token": "flint",
+      "company": "Flint"
+    },
+    {
+      "token": "the-exploration-company",
+      "company": "The Exploration Company"
+    },
+    {
+      "token": "hyperbound",
+      "company": "Hyperbound"
+    },
+    {
+      "token": "terminal",
+      "company": "Terminal"
+    },
+    {
+      "token": "anthrogen",
+      "company": "Anthrogen"
+    },
+    {
+      "token": "verahealth",
+      "company": "Vera Health"
+    },
+    {
+      "token": "dedalus-labs",
+      "company": "Dedalus Labs"
+    },
+    {
+      "token": "relling",
+      "company": "Relling"
+    },
+    {
+      "token": "reacher",
+      "company": "Reacher"
+    },
+    {
+      "token": "diligencesquared",
+      "company": "DiligenceSquared"
+    },
+    {
+      "token": "humanarchive",
+      "company": "Human Archive"
+    },
+    {
+      "token": "dispatch",
+      "company": "Dispatch"
+    },
+    {
+      "token": "automat",
+      "company": "Automat"
+    },
+    {
+      "token": "snapmagic",
+      "company": "SnapMagic"
+    },
+    {
+      "token": "prelim",
+      "company": "Prelim"
+    },
+    {
+      "token": "stable",
+      "company": "Stable"
+    },
+    {
+      "token": "cinder",
+      "company": "Cinder"
+    },
+    {
+      "token": "cambio",
+      "company": "Cambio"
+    },
+    {
+      "token": "magicpatterns",
+      "company": "Magic Patterns"
+    },
+    {
+      "token": "concourse",
+      "company": "Concourse"
+    },
+    {
+      "token": "fleetworks",
+      "company": "FleetWorks"
+    },
+    {
+      "token": "tamarindbio",
+      "company": "Tamarind Bio"
+    },
+    {
+      "token": "substrate",
+      "company": "Substrate"
+    },
+    {
+      "token": "abundant",
+      "company": "Abundant"
+    },
+    {
+      "token": "agentmail",
+      "company": "AgentMail"
+    },
+    {
+      "token": "sf-tensor",
+      "company": "SF Tensor"
+    },
+    {
+      "token": "parameter",
+      "company": "Parameter"
+    },
+    {
+      "token": "9-mothers",
+      "company": "9 Mothers"
+    },
+    {
+      "token": "stradahq",
+      "company": "Strada"
+    },
+    {
+      "token": "icon",
+      "company": "Icon"
+    },
+    {
+      "token": "probablygenetic",
+      "company": "Probably Genetic"
+    },
+    {
+      "token": "golinks",
+      "company": "GoLinks"
+    },
+    {
+      "token": "bunkerhillhealth",
+      "company": "Bunkerhill Health"
+    },
+    {
+      "token": "atlas",
+      "company": "Atlas"
+    },
+    {
+      "token": "ready",
+      "company": "Ready"
+    },
+    {
+      "token": "glimpse",
+      "company": "Glimpse"
+    },
+    {
+      "token": "parallel-bio",
+      "company": "Parallel Bio"
+    },
+    {
+      "token": "stream",
+      "company": "Stream"
+    },
+    {
+      "token": "thera",
+      "company": "Thera"
+    },
+    {
+      "token": "relace",
+      "company": "Relace"
+    },
+    {
+      "token": "casca",
+      "company": "Casca"
+    },
+    {
+      "token": "brettonai",
+      "company": "Bretton AI"
+    },
+    {
+      "token": "pivotrobotics",
+      "company": "Pivot Robotics"
+    },
+    {
+      "token": "greenboard",
+      "company": "Greenboard"
+    },
+    {
+      "token": "usul",
+      "company": "Usul"
+    },
+    {
+      "token": "idler",
+      "company": "Idler"
+    },
+    {
+      "token": "asimov",
+      "company": "Asimov"
+    },
+    {
+      "token": "lance",
+      "company": "Lance"
+    },
+    {
+      "token": "beyondreachlabs",
+      "company": "Beyond Reach Labs"
+    },
+    {
+      "token": "spruceid",
+      "company": "SpruceID"
+    },
+    {
+      "token": "meow",
+      "company": "Meow"
+    },
+    {
+      "token": "preference-model",
+      "company": "Preference Model"
+    },
+    {
+      "token": "perchwell",
+      "company": "Perchwell"
+    },
+    {
+      "token": "mednet",
+      "company": "Mednet"
+    },
+    {
+      "token": "accord",
+      "company": "Accord"
+    },
+    {
+      "token": "abacum",
+      "company": "Abacum"
+    },
+    {
+      "token": "authzed",
+      "company": "AuthZed"
+    },
+    {
+      "token": "arketa",
+      "company": "Arketa"
+    },
+    {
+      "token": "popl",
+      "company": "Popl"
+    },
+    {
+      "token": "kodex",
+      "company": "Kodex"
+    },
+    {
+      "token": "zensors",
+      "company": "Zensors"
+    },
+    {
+      "token": "complete",
+      "company": "Complete"
+    },
+    {
+      "token": "blee",
+      "company": "Blee"
+    },
+    {
+      "token": "knowtex",
+      "company": "Knowtex"
+    },
+    {
+      "token": "artie",
+      "company": "Artie"
+    },
+    {
+      "token": "electricair",
+      "company": "Electric Air"
+    },
+    {
+      "token": "sweep",
+      "company": "Sweep"
+    },
+    {
+      "token": "pure",
+      "company": "Pure"
+    },
+    {
+      "token": "brainbaselabs",
+      "company": "Brainbase Labs"
+    },
+    {
+      "token": "offdeal",
+      "company": "OffDeal"
+    },
+    {
+      "token": "mosaic",
+      "company": "Mosaic"
+    },
+    {
+      "token": "solidroad",
+      "company": "Solidroad"
+    },
+    {
+      "token": "firetiger",
+      "company": "Firetiger"
+    },
+    {
+      "token": "julius",
+      "company": "Julius AI"
+    },
+    {
+      "token": "reach",
+      "company": "Reach"
+    },
+    {
+      "token": "assembly",
+      "company": "Assembly"
+    },
+    {
+      "token": "freshpaint",
+      "company": "Freshpaint"
+    },
+    {
+      "token": "ello",
+      "company": "Ello"
+    },
+    {
+      "token": "liveflow",
+      "company": "LiveFlow"
+    },
+    {
+      "token": "axle-health",
+      "company": "Axle Health"
+    },
+    {
+      "token": "invert",
+      "company": "Invert"
+    },
+    {
+      "token": "eventual",
+      "company": "Eventual"
+    },
+    {
+      "token": "ekho",
+      "company": "Ekho"
+    },
+    {
+      "token": "kivo-health",
+      "company": "Kivo Health"
+    },
+    {
+      "token": "fortuna-health",
+      "company": "Fortuna Health"
+    },
+    {
+      "token": "sola",
+      "company": "Sola"
+    },
+    {
+      "token": "momentic",
+      "company": "Momentic"
+    },
+    {
+      "token": "artisan",
+      "company": "Artisan"
+    },
+    {
+      "token": "paradigm",
+      "company": "Paradigm"
+    },
+    {
+      "token": "bild-ai",
+      "company": "Bild AI"
+    },
+    {
+      "token": "salespatriot",
+      "company": "SalesPatriot"
+    },
+    {
+      "token": "interfere",
+      "company": "Interfere"
+    },
+    {
+      "token": "fernstone",
+      "company": "Fernstone"
+    },
+    {
+      "token": "veritus",
+      "company": "Veritus"
+    },
+    {
+      "token": "polymath",
+      "company": "Polymath"
+    },
+    {
+      "token": "bridger",
+      "company": "Bridger"
+    },
+    {
+      "token": "backbone",
+      "company": "Backbone Systems"
+    },
+    {
+      "token": "lendable",
+      "company": "Lendable"
+    },
+    {
+      "token": "influxdata",
+      "company": "InfluxData"
+    },
+    {
+      "token": "upcodes",
+      "company": "UpCodes"
+    },
+    {
+      "token": "deepnote",
+      "company": "Deepnote"
+    },
+    {
+      "token": "datafold",
+      "company": "Datafold"
+    },
+    {
+      "token": "notabene",
+      "company": "Notabene"
+    },
+    {
+      "token": "kingdom",
+      "company": "Kingdom"
+    },
+    {
+      "token": "hotplate",
+      "company": "Hotplate"
+    },
+    {
+      "token": "realitydefender",
+      "company": "Reality Defender"
+    },
+    {
+      "token": "coperniq",
+      "company": "Coperniq"
+    },
+    {
+      "token": "inkeep",
+      "company": "Inkeep"
+    },
+    {
+      "token": "andromedasurgical",
+      "company": "Andromeda Surgical"
+    },
+    {
+      "token": "nowadays",
+      "company": "Nowadays"
+    },
+    {
+      "token": "centralize",
+      "company": "Centralize"
+    },
+    {
+      "token": "spur",
+      "company": "Spur"
+    },
+    {
+      "token": "ultra",
+      "company": "Ultra"
+    },
+    {
+      "token": "thundercompute",
+      "company": "Thunder Compute"
+    },
+    {
+      "token": "conductor",
+      "company": "Conductor"
+    },
+    {
+      "token": "ctgt",
+      "company": "CTGT"
+    },
+    {
+      "token": "apolink",
+      "company": "Apolink"
+    },
+    {
+      "token": "chestnut",
+      "company": "Chestnut"
+    },
+    {
+      "token": "ambral",
+      "company": "Ambral"
+    },
+    {
+      "token": "fleetline",
+      "company": "Fleetline"
+    },
+    {
+      "token": "onerobot",
+      "company": "One Robot"
+    },
+    {
+      "token": "rollout",
+      "company": "Rollout"
+    },
+    {
+      "token": "castle",
+      "company": "Castle"
+    },
+    {
+      "token": "greatquestion",
+      "company": "Great Question"
+    },
+    {
+      "token": "quicknode",
+      "company": "Quicknode"
+    },
+    {
+      "token": "svix",
+      "company": "Svix"
+    },
+    {
+      "token": "slope",
+      "company": "Slope"
+    },
+    {
+      "token": "replo",
+      "company": "Replo"
+    },
+    {
+      "token": "serifhealth",
+      "company": "Serif Health"
+    },
+    {
+      "token": "double",
+      "company": "Double"
+    },
+    {
+      "token": "oneschema",
+      "company": "OneSchema"
+    },
+    {
+      "token": "govdash",
+      "company": "GovDash"
+    },
+    {
+      "token": "provision",
+      "company": "Provision"
+    },
+    {
+      "token": "tank-payments",
+      "company": "Tank Payments"
+    },
+    {
+      "token": "rollstack",
+      "company": "Rollstack"
+    },
+    {
+      "token": "goveagle",
+      "company": "GovEagle"
+    },
+    {
+      "token": "pirros",
+      "company": "Pirros"
+    },
+    {
+      "token": "airgoods",
+      "company": "Airgoods"
+    },
+    {
+      "token": "proofofhuman",
+      "company": "Proof of Human"
+    },
+    {
+      "token": "decodahealth",
+      "company": "Decoda Health"
+    },
+    {
+      "token": "arini",
+      "company": "Arini"
+    },
+    {
+      "token": "reform",
+      "company": "Reform"
+    },
+    {
+      "token": "dataleap",
+      "company": "Dataleap"
+    },
+    {
+      "token": "clearly-ai",
+      "company": "Clearly AI"
+    },
+    {
+      "token": "innate",
+      "company": "Innate"
+    },
+    {
+      "token": "capy",
+      "company": "Capy"
+    },
+    {
+      "token": "reviserobotics",
+      "company": "Revise Robotics"
+    },
+    {
+      "token": "infinite",
+      "company": "Infinite"
+    },
+    {
+      "token": "mangodesk",
+      "company": "MangoDesk"
+    },
+    {
+      "token": "answerthis",
+      "company": "AnswerThis"
+    },
+    {
+      "token": "hypercubic",
+      "company": "Hypercubic"
+    },
+    {
+      "token": "pax-historia",
+      "company": "Pax Historia"
+    },
+    {
+      "token": "klarify",
+      "company": "Klarify"
+    },
+    {
+      "token": "morse-micro",
+      "company": "Morse Micro"
+    },
+    {
+      "token": "cambly",
+      "company": "Cambly"
+    },
+    {
+      "token": "new-story",
+      "company": "New Story"
+    },
+    {
+      "token": "onechronos",
+      "company": "OneChronos"
+    },
+    {
+      "token": "rutter",
+      "company": "Rutter"
+    },
+    {
+      "token": "vorticity",
+      "company": "Vorticity"
+    },
+    {
+      "token": "paragon",
+      "company": "Paragon"
+    },
+    {
+      "token": "signoz",
+      "company": "SigNoz"
+    },
+    {
+      "token": "fathom",
+      "company": "Fathom"
+    },
+    {
+      "token": "flutterflow",
+      "company": "FlutterFlow"
+    },
+    {
+      "token": "turion-space",
+      "company": "Turion Space"
+    },
+    {
+      "token": "rallyuxr",
+      "company": "Rally"
+    },
+    {
+      "token": "conduit",
+      "company": "Conduit"
+    },
+    {
+      "token": "metal",
+      "company": "Metal"
+    },
+    {
+      "token": "hockeystack",
+      "company": "HockeyStack"
+    },
+    {
+      "token": "tuesday-labs",
+      "company": "Tuesday Labs"
+    },
+    {
+      "token": "event-horizon-labs",
+      "company": "Event Horizon Labs"
+    },
+    {
+      "token": "mem0",
+      "company": "Mem0"
+    },
+    {
+      "token": "firstwork",
+      "company": "FirstWork"
+    },
+    {
+      "token": "offstream",
+      "company": "Offstream"
+    },
+    {
+      "token": "ryvn",
+      "company": "Ryvn"
+    },
+    {
+      "token": "flowtel",
+      "company": "Flowtel"
+    },
+    {
+      "token": "jeevyfabrication",
+      "company": "Jeevy Fabrication"
+    },
+    {
+      "token": "solva",
+      "company": "Solva"
+    },
+    {
+      "token": "bootloop",
+      "company": "BootLoop"
+    },
+    {
+      "token": "misolabs",
+      "company": "Miso Labs"
+    },
+    {
+      "token": "hyperspell",
+      "company": "Hyperspell"
+    },
+    {
+      "token": "darwin",
+      "company": "Darwin"
+    },
+    {
+      "token": "tsenta",
+      "company": "Tsenta"
+    },
+    {
+      "token": "character",
+      "company": "Character.AI"
     }
   ]
 }

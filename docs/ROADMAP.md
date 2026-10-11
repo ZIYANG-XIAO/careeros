@@ -1079,7 +1079,8 @@ outbound email), and pinning the exact Job Snapshot on each Application.
 ### Phase Z3 — Freshness, coverage, and the in-page review checklist — implementation complete
 
 - **Freshness**: a local launchd job (`scripts/launchd/`) runs
-  `sync_job_sources.py` every 6 hours on the development Mac; production still
+  `sync_job_sources.py` on the development Mac (daily at 06:15 since Phase Z8,
+  under `caffeinate`, 4 boards at a time); production still
   needs its own scheduler. Catalog jobs show "confirmed open N hours ago" in
   the job panel and a "may have closed" warning in lists once a sync has not
   seen them for 72 hours (`lib/freshness.ts`). Amplitude was removed from the
@@ -1167,6 +1168,107 @@ if it doesn't hold up).
 Not done: dedicated adapters for iCIMS/Taleo/SmartRecruiters/etc. (needs a
 real posting from each inspected before writing selectors — not guessed), and
 cross-origin iframe support (needs a host-permission and scope decision first).
+
+### Phase Z6 — Extension connection status — implementation complete
+
+Audit P0 item "in-product extension install/connection status".
+
+- `PUT /me/extension-presence` (extension, best effort each time the popup
+  confirms a signed-in session) and `GET /me/extension-presence` (Web).
+  Stores only the build version and a server-assigned timestamp
+  (`0027_extension_presence`); the user is derived from the session.
+- `/setup` shows "connected" with the last report time and build, or "not
+  detected yet" with instructions, plus a recheck action.
+- No new extension permissions and still no `externally_connectable` page
+  bridge; the M10 build validation is unchanged.
+
+Remaining limitations: status reflects the last popup open, not live
+installation, so an uninstalled extension still shows its last report; the
+in-page assistant (keyboard shortcut) does not report.
+
+### Phase Z7 — North America catalog expansion and Workday source — implementation complete
+
+Owner request on 2026-10-09: make North America job coverage as complete as
+possible. Details and measurements in `docs/JOB_SOURCE_DECISION.md`.
+
+- Greenhouse/Lever/Ashby seeds grew from 163 to 686 verified employer boards;
+  a local sync held 33,007 open US/Canada postings from 684 employers (from
+  10,128 from 86).
+- New `workday` source over robots.txt-allowed sitemaps and JSON-LD job pages,
+  incremental and conservative about closing postings. Built on the owner's
+  decision before the legal/terms review, which is still required before
+  public launch.
+- After a full Workday sync (181 sites, 0 failures) the local catalog held
+  43,203 open US/Canada postings from 851 employers, 10,196 of them from 168
+  Workday employers. `scripts/sync_job_sources.py --concurrency N` syncs N
+  employers at once; run long syncs under `caffeinate -i` on a laptop, since
+  idle sleep suspended the first attempt.
+
+Remaining gaps: Workday sitemaps cap large employers at ~100 postings; iCIMS,
+Oracle, SmartRecruiters, Workable, and custom career sites are not covered.
+
+### Phase Z8 — Daily sync, Workable, and large employers' career sites — implementation complete
+
+Owner request on 2026-10-10 ("1, 2, 4 together"): a daily schedule, the
+next public ATS sources, and the largest employers' own sites. Details in
+`docs/JOB_SOURCE_DECISION.md`.
+
+- Daily local sync: the launchd job now runs at 06:15 (a missed run catches
+  up on wake), under `caffeinate -i`, with `--concurrency 4`.
+- `workable` source over Workable's public job widget (13 employers found;
+  few US employers use Workable).
+- SmartRecruiters **not** added: its API's `robots.txt` admits only
+  LinkedInBot, and its public career pages load from that API.
+- `careersite` source for Amazon (search JSON, read per job category to stay
+  under the 10,000-hit cap), Microsoft (the `/api/pcsx` endpoints its
+  `robots.txt` explicitly allows), Meta (job sitemap + JSON-LD), and Apple
+  (US job sitemap + embedded posting data). Google is **not** read: its
+  `robots.txt` disallows job pages.
+- robots.txt is now evaluated per RFC 9309 (longest match, `*`, `$`) by a
+  shared parser; `urllib.robotparser` took the first matching line and would
+  have misread Microsoft's `Disallow: /` + `Allow: /api/pcsx`.
+
+Remaining gaps: Apple's reader depends on page-embedded data and breaks if
+Apple changes its page; iCIMS, Oracle, SuccessFactors, and other custom
+career sites are still not covered; the legal/terms review covers these new
+sources too.
+
+### Phase Z9 — More large employers — implementation complete
+
+Owner request on 2026-10-10 to keep extending big-employer coverage.
+
+- The career-site Microsoft reader became a general Eightfold reader (both
+  the `/api/pcsx` and older `/api/apply/v2` APIs): Microsoft, NVIDIA,
+  Qualcomm, PayPal, Morgan Stanley, Citi, HP, Netflix.
+- 25 Workday sites for large employers (Intel, Cisco, Broadcom, RTX, Bank of
+  America, Wells Fargo, Disney, Target, Visa, Pfizer, AT&T, and others), found
+  through each tenant's `robots.txt`; Workday now also accepts
+  `myworkdaysite.com` URLs and reads up to 1,500 new pages per site per run.
+
+Still missing (custom sites, Oracle Recruiting Cloud, or blocked): Google,
+Tesla, Oracle, IBM, Goldman Sachs, JPMorgan, Citadel, Jane Street, Two Sigma,
+Lockheed Martin, Deloitte, McKinsey, TikTok, UnitedHealth, Comcast, Verizon,
+T-Mobile, Dell, Atlassian, Zoom, EA, Activision, Rivian, and others.
+
+### Phase Z10 — Popular employers, iCIMS, Oracle Recruiting Cloud, freshness — implementation complete
+
+Owner requests on 2026-10-10: filter expired postings and keep filling in
+popular North American employers.
+
+- Freshness: closed (`validThrough` / end date) and over-a-year-old postings
+  are dropped by every source; see `docs/JOB_SOURCE_DECISION.md`.
+- New `icims` (40 portals) and `oracle` (34 employers, incl. JPMorgan Chase,
+  American Express, Dell, Honeywell, Oracle) sources.
+- A probe of ~230 popular employers across all readers added Jane Street,
+  Jump Trading, Carvana, Character.AI, Ford, Starbucks, CACI, Lam Research,
+  BMS, and 41 Workday sites (CVS Health, PwC US, Merck, GE Aerospace,
+  Fidelity, Elevance, Humana, BMO, Chevron, …). Internal, referral, agency,
+  and confidential sites were left out.
+
+Still missing: Google (robots), Tesla, IBM, Goldman Sachs, Citadel, Two Sigma,
+Lockheed Martin, Deloitte, McKinsey, TikTok, UnitedHealth, Comcast, Verizon,
+T-Mobile, EA, Activision, Rivian, Walmart and other retailers on custom
+sites, and SuccessFactors-hosted employers.
 
 ### Product-direction backlog from the 2026-09 review (not yet scheduled)
 
