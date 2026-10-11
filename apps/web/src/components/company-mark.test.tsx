@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import {
@@ -8,6 +8,59 @@ import {
   companyIconKey,
   companyMonogram,
 } from "@/components/company-mark";
+
+// Employers whose website icon could not be fetched (bot protection, no
+// published icon) or whose website could not be identified reliably. They
+// render the monogram fallback.
+const EMPLOYERS_WITHOUT_PUBLIC_ICON = new Set([
+  "9mothers",
+  "altardstate",
+  "aluminumdynamics",
+  "amca",
+  "antaresnuclear",
+  "aperaai",
+  "attain",
+  "autoownersinsurance",
+  "axiom",
+  "backbonesystems",
+  "bitmovin",
+  "blackhawknetwork",
+  "bunkerhillhealth",
+  "captivation",
+  "chestnut",
+  "churchdwight",
+  "federatedinsurance",
+  "flint",
+  "generaldynamicselectricboat",
+  "glimpse",
+  "hatchit",
+  "highmarkhealth",
+  "hipphealth",
+  "hive",
+  "hpiq",
+  "humana",
+  "humanarchive",
+  "jmsmucker",
+  "koah",
+  "meijer",
+  "momenticstudios",
+  "montenson",
+  "mosaic",
+  "nationalinformationsolutionscooperative",
+  "newyorkmets",
+  "onerobot",
+  "pacificlife",
+  "pella",
+  "perseusgroup",
+  "primer",
+  "pulsehealthcare",
+  "radiancetechnologies",
+  "raveaerospace",
+  "revel",
+  "tarrantregionalwaterdistrict",
+  "taxreliefadvocates",
+  "xcimerenergy",
+]);
 
 describe("CompanyMark", () => {
   it("builds a local monogram without requesting a third-party image", () => {
@@ -63,11 +116,11 @@ describe("CompanyMark", () => {
         "utf8",
       ),
     ) as Record<string, string>;
-    const sourceFiles = [
-      "greenhouse_north_america.json",
-      "lever_north_america.json",
-      "ashby_north_america.json",
-    ];
+    const sourceDir = path.resolve(process.cwd(), "../../apps/api/job_sources");
+    const sourceFiles = readdirSync(sourceDir).filter((file) =>
+      file.endsWith("_north_america.json"),
+    );
+    expect(sourceFiles.length).toBeGreaterThanOrEqual(8);
 
     for (const sourceFile of sourceFiles) {
       const source = JSON.parse(
@@ -79,6 +132,12 @@ describe("CompanyMark", () => {
 
       for (const board of source.boards) {
         const key = companyIconKey(board.company);
+        if (EMPLOYERS_WITHOUT_PUBLIC_ICON.has(key)) {
+          expect(catalog, `${board.company} now has a logo`).not.toHaveProperty(
+            key,
+          );
+          continue;
+        }
         expect(
           catalog,
           `${board.company} is missing from the logo catalog`,

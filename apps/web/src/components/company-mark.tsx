@@ -52,15 +52,21 @@ const LOCAL_COMPANY_ICONS: Record<string, string> = {
   zapier: "#FF4F00",
 };
 
-// Every employer in the current Greenhouse, Lever, and Ashby catalogs has a
-// bundled website icon (public/company-logos, listed in catalog.json). Keeping
-// these same-origin avoids leaking the user's job browsing to a logo service
-// at render time.
+// Employers in the job source catalogs have a bundled website icon
+// (public/company-logos, listed in catalog.json) unless none is published.
+// Keeping these same-origin avoids leaking the user's job browsing to a logo
+// service at render time.
 const LOCAL_COMPANY_LOGOS: ReadonlySet<string> = new Set(
   Object.keys(logoCatalog),
 );
 
-const DARK_LOGO_TILES = new Set(["chime", "samsara"]);
+const DARK_LOGO_TILES = new Set([
+  "chime",
+  "flowtel",
+  "samsara",
+  "steerbridge",
+  "vetcove",
+]);
 
 function companyMonogram(company: string): string {
   return company.trim().charAt(0).toUpperCase() || "?";
