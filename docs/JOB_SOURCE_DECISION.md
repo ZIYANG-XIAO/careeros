@@ -1,7 +1,7 @@
 # CareerOS — Job Source Decision Note
 
 > Status: Approved decision process
-> Last Updated: 2026-09-26
+> Last Updated: 2026-10-12
 
 ## Purpose
 
@@ -410,10 +410,100 @@ only marketing pages in its sitemap, so there is no single reader to build.
 
 ## China-market sources
 
-On hold by owner decision (2026-09-28): China-market sources will be adapted
-later. `scripts/ingest_jobs.py --catalog [--close-missing]` can already load a
-file-export source into the shared catalog without parser cost when one is
-approved.
+The 2026-09-28 hold was lifted by the owner on 2026-10-12 ("the goal is to
+have job data; decide how"). China sources follow the North American rule:
+employers' own career sites, read only where `robots.txt` allows, with legal
+and terms review still outstanding before public launch. Job aggregators
+(BOSS直聘, 智联招聘, 猎聘, 前程无忧) are **not** read: their terms forbid
+automated collection, Chinese courts have treated scraping recruitment
+platforms as unfair competition, and their pages carry recruiters' personal
+information. `scripts/ingest_jobs.py --catalog [--close-missing]` remains
+available for a file-export source with written authorization.
+
+## Source record: large employers' career sites — China
+
+**Status: implemented 2026-10-12 on the owner's decision; legal/terms review
+outstanding.** `careeros_api/job_source_china.py`, source key
+`careersite-cn`, seed `careersite-cn_china.json`. Each reader checks the
+site's `robots.txt` (RFC 9309) first and fails the board, closing nothing, if
+a needed path is disallowed. Requests are 1 s apart per employer with the
+generic CareerOS User-Agent. The endpoints are the JSON the sites' own pages
+call, not documented APIs; `robots.txt` permitting them is not a license.
+
+Only postings with at least one mainland-China city are kept
+(`market=CHINA`, `country_code=CN`). Hong Kong, Macau, Taiwan, and overseas
+postings are skipped. City names are matched against
+`careeros_api/china_places.py` (31 provinces and ~380 prefecture-level
+cities, from ByteDance's public location tree); an unlisted name counts as
+outside the market rather than guessed.
+
+| Employer | What is read | Completeness and closing |
+|---|---|---|
+| Tencent | `careers.tencent.com/tencentcareer/api/post/Query?area=cn` + `ByPostId` per new posting (the listing has duties only, not requirements); no `robots.txt` (redirects to a 404 page) | Listing paged to its count, so absence closes. ~2,260 listed, ~2,000 mainland. |
+| Feishu-hosted portals: ByteDance and Feishu Recruiting tenants | One shared API at `{origin}/api/v1` for the portal path in the seed's `site_url` (`jobs.bytedance.com/society`, `{tenant}.jobs.feishu.cn/{path}`; only those hosts are accepted): a CSRF token, then `search/job/posts`. ByteDance's `robots.txt` disallows only `/referral`; tenants have none (404) | A portal under the 10,000-result cap is read in one pass. ByteDance is over it, so it is read one mainland city at a time from `config/job/filters/2` and the 中国大陆 subtree of `config/location/nodes/` (largest, Beijing, ~5,600); a capped city keeps absent known postings open. ByteDance ~10,900 listed. |
+| Meituan | `zhaopin.meituan.com/api/official/job/getJobList`; no `robots.txt` (SPA page) | Paged to `totalPage`; absence closes. ~3,090 listed, ~2,870 mainland (Saudi Arabia, Gulf, Brazil, Hong Kong skipped). |
+| NetEase | `hr.163.com/api/hr163/position/queryPage`; no `robots.txt` (SPA page) | Paged to `pages`; absence closes. ~2,690 mainland. |
+| Baidu | — | **Not read.** The listing API answers `no-auth / illegal-visit` to anonymous requests. |
+| Kuaishou | — | **Not read.** `robots.txt` disallows everything. |
+| Pinduoduo | — | **Not read.** The site answers 403. |
+
+Feishu tenants read on 2026-10-13 (portal path, postings kept): NIO (`index`,
+925), XPeng (`index`, 948), Poizon/得物 (`index`, 307), Kuro Games (`index`,
+251), Momenta (`talent`, 114), CHAGEE (`index`, 107), Shengshu (`index`,
+105), ModelBest (`career`, 92), SenseTime (`exp`, 83), 01.AI (`index`, 44),
+Infinigence (`infinigence`, 39), QCraft (`index`, 17). Tenants found with an
+empty portal (no filters, no postings) are not seeded: Kimi/Moonshot, Keep,
+Luckin, Meicai, Huya, RoboSense, Roborock, Hisense, Mafengwo, Xueqiu. About
+half of NIO's, XPeng's, Poizon's, and Momenta's listed postings were first
+published over a year ago and are dropped; Feishu postings whose description
+is empty or a placeholder ("1", "SFL") are dropped by the short-description
+rule (the detail endpoint is empty for them too). A single network error is
+retried once.
+
+Employment type is set only from an explicit signal: Feishu's 社招 + 正式
+(regular) or 全职 (full-time), experienced hire → `FULL_TIME` (consistent with the owner's
+2026-09-28 confirmation that 社招/校招 are full-time); ByteDance 实习,
+Meituan `jobType` 2 (its internship channel), and NetEase `workType` 1 →
+`INTERNSHIP`; otherwise a title containing 实习 → `INTERNSHIP`, else
+`UNKNOWN`. No workplace-type signal is read.
+
+Freshness (owner rule, 2026-10-12: keep only postings that are current and
+still recruiting): absence from a complete listing closes a posting, as for
+every source. Only ByteDance gives a first-publish time, so the shared
+over-a-year rule applies to it directly (about 5,000 of ~10,900 listed
+ByteDance postings were first published more than a year ago, some in 2018,
+and are dropped). Tencent (`LastUpdateTime`, Beijing date), Meituan
+(`refreshTime`), and NetEase (`updateTime`) give only update times; those are
+not stored as `posted_at`, but a posting not updated for over a year is
+treated as abandoned and dropped (on 2026-10-12: 23, 99, and 52 postings).
+
+Quality rules on top of the shared freshness rules: placeholder postings
+(talent pools, résumé drop boxes, referral-only "内推专用" roles — 人才库,
+人才池, 人才储备, 人才交流, 内推专用, 简历投递, 岗位专项, …) are not openings and
+are dropped like English standing-interest postings, as is any posting whose
+whole description is under 50 characters (NetEase's "核心人才交流岗位" reads
+only "核心人才交流"). A known posting is checked against these rules before it
+is retained unread, so one that goes stale is closed. Descriptions are plain
+text with HTML entities decoded, and each section gets a 职责/要求 heading
+unless its text already opens with one. Agency-staffed roles marked in the title
+as 派遣 or 外包 (e.g. "（派遣）", "【网易外包】") are kept but typed `CONTRACT`,
+since the listed employer is not the direct employer. Management-trainee
+"储备" roles are real openings and are kept. Identical postings repeated per
+team are not merged at ingestion; Discover's company+title collapse shows
+them as one row.
+
+Audit on 2026-10-13 after the final sync: 14,353 open postings from 16
+employers (ByteDance 5,908, Meituan 2,772, NetEase 2,638, Tencent 2,003, and
+the Feishu tenants above); all `CHINA`/`CN`; none older than a year; no
+placeholder titles, HTML, or entities left; a live check of 25 random open
+postings per employer against its own API found all 392 still listed.
+
+Not yet probed or not yet working: Alibaba (CSRF-gated search), JD and Huawei
+(endpoints not found), Xiaomi, Li Auto and other employers whose Feishu
+tenant slug was not guessed, Moka-hosted employers (no live tenant page found
+yet; `app.mokahr.com/robots.txt` disallows only two tenants), and the public
+iguopin.com API (`robots.txt` allows everything, but listings cap at 20 pages
+per query and rows carry a `contact_user` field that must not be stored).
 
 ## Earlier candidate: guopin (国聘)
 

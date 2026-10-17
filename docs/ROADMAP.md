@@ -1270,6 +1270,32 @@ Lockheed Martin, Deloitte, McKinsey, TikTok, UnitedHealth, Comcast, Verizon,
 T-Mobile, EA, Activision, Rivian, Walmart and other retailers on custom
 sites, and SuccessFactors-hosted employers.
 
+### Phase Z11 — China catalog from employers' career sites — implementation complete
+
+Owner decision on 2026-10-12: lift the 2026-09-28 hold on China-market
+sources ("the goal is to have job data").
+
+- New `careersite-cn` source (`job_source_china.py`, seed
+  `careersite-cn_china.json`) reading Tencent, ByteDance, Meituan, and NetEase
+  career-site JSON where `robots.txt` allows; mainland-China postings only
+  (`china_places.py`), Hong Kong/Macau/Taiwan and overseas skipped.
+- Chinese placeholder postings (人才库, 内推专用, 简历投递, …) are dropped;
+  派遣/外包 roles are typed `CONTRACT`.
+- Freshness: over-a-year-old ByteDance postings and Tencent/Meituan/NetEase
+  postings not updated for over a year are dropped.
+- The ByteDance reader is a generic Feishu Recruiting reader: a tenant is a
+  seed entry with `site_url` (`{tenant}.jobs.feishu.cn/{path}`). Twelve
+  tenants added (NIO, XPeng, Poizon, Kuro Games, Momenta, CHAGEE, Shengshu,
+  ModelBest, SenseTime, 01.AI, Infinigence, QCraft).
+- Local catalog after this phase: 14,353 open mainland-China postings from 16
+  employers; a live sample of 392 found all still listed.
+- `sync_job_sources.py --source careersite-cn`; seeds are now named
+  `{source}_{market}.json`.
+- Job aggregators are deliberately not read; see
+  `docs/JOB_SOURCE_DECISION.md` for the reasons and for employers still
+  missing (Alibaba, Baidu, JD, Huawei, Kuaishou, Pinduoduo, Feishu/Moka-hosted
+  employers, iguopin).
+
 ### Product-direction backlog from the 2026-09 review (not yet scheduled)
 
 Not approved work. Preserve these candidates for a later scoping and policy

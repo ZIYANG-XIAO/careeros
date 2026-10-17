@@ -4,8 +4,10 @@
 Sources: the public job-board APIs of Greenhouse, Lever, Ashby, and Workable, and
 Workday and iCIMS career sites' robots.txt-allowed sitemaps and JSON-LD job
 pages, Oracle Recruiting Cloud sites' public listing API, and
-the career sites of Amazon, Microsoft, Meta, and Apple (North America). For each employer board in a source's seed file it fetches all
-postings, keeps those located in the US or Canada, upserts them as catalog jobs
+the career sites of Amazon, Microsoft, Meta, and Apple (North America); and the
+career sites of Tencent, ByteDance, Meituan, and NetEase (China). For each
+employer board in a source's seed file it fetches all postings, keeps those
+located in the source's market (the US or Canada; mainland China), upserts them as catalog jobs
 (no owner, visible to every user), and marks catalog postings that vanished
 from a successfully fetched board as UNAVAILABLE. Workday is incremental: it
 fetches only pages it does not already hold and closes a posting by absence
@@ -47,6 +49,7 @@ import httpx
 from careeros_api import (
     job_source_ashby,
     job_source_careersite,
+    job_source_china,
     job_source_greenhouse,
     job_source_icims,
     job_source_lever,
@@ -84,10 +87,11 @@ class SourceSpec:
     # Incremental sources also receive the board's open catalog postings
     # (external id -> URL) so they can skip re-fetching them.
     incremental: bool = False
+    market: str = "north_america"
 
     @property
     def seed(self) -> Path:
-        return SEED_DIR / f"{self.key}_north_america.json"
+        return SEED_DIR / f"{self.key}_{self.market}.json"
 
 
 SOURCES = {
@@ -136,6 +140,13 @@ SOURCES = {
             job_source_careersite.fetch_site,
             job_source_careersite.map_site,
             incremental=True,
+        ),
+        SourceSpec(
+            job_source_china.CHINA_SITE_SOURCE_KEY,
+            job_source_china.fetch_site,
+            job_source_china.map_china_site,
+            incremental=True,
+            market="china",
         ),
     )
 }

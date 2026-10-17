@@ -1,0 +1,83 @@
+{
+  "source_key": "careersite-cn",
+  "description": "China: large employers' own career sites and Feishu Recruiting (jobs.feishu.cn) portals, each read only where its robots.txt allows (see job_source_china.py). Only postings located in mainland China are kept.",
+  "boards": [
+    {
+      "token": "tencent",
+      "company": "腾讯"
+    },
+    {
+      "token": "meituan",
+      "company": "美团"
+    },
+    {
+      "token": "netease",
+      "company": "网易"
+    },
+    {
+      "token": "bytedance",
+      "company": "字节跳动",
+      "site_url": "https://jobs.bytedance.com/society"
+    },
+    {
+      "token": "nio",
+      "company": "蔚来",
+      "site_url": "https://nio.jobs.feishu.cn/index"
+    },
+    {
+      "token": "xpeng",
+      "company": "小鹏汽车",
+      "site_url": "https://xiaopeng.jobs.feishu.cn/index"
+    },
+    {
+      "token": "poizon",
+      "company": "得物",
+      "site_url": "https://poizon.jobs.feishu.cn/index"
+    },
+    {
+      "token": "kurogame",
+      "company": "库洛游戏",
+      "site_url": "https://kurogame.jobs.feishu.cn/index"
+    },
+    {
+      "token": "momenta",
+      "company": "Momenta",
+      "site_url": "https://momenta.jobs.feishu.cn/talent"
+    },
+    {
+      "token": "chagee",
+      "company": "霸王茶姬",
+      "site_url": "https://chagee.jobs.feishu.cn/index"
+    },
+    {
+      "token": "shengshu",
+      "company": "生数科技",
+      "site_url": "https://shengshu.jobs.feishu.cn/index"
+    },
+    {
+      "token": "modelbest",
+      "company": "面壁智能",
+      "site_url": "https://modelbest.jobs.feishu.cn/career"
+    },
+    {
+      "token": "sensetime",
+      "company": "商汤科技",
+      "site_url": "https://sensetime.jobs.feishu.cn/exp"
+    },
+    {
+      "token": "01ai",
+      "company": "零一万物",
+      "site_url": "https://01ai.jobs.feishu.cn/index"
+    },
+    {
+      "token": "infinigence",
+      "company": "无问芯穹",
+      "site_url": "https://infinigence.jobs.feishu.cn/infinigence"
+    },
+    {
+      "token": "qcraft",
+      "company": "轻舟智航",
+      "site_url": "https://qcraft.jobs.feishu.cn/index"
+    }
+  ]
+}
