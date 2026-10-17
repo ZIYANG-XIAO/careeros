@@ -276,17 +276,42 @@ async def ingest_job_source(
     )
 
 
+# A feed that drops most of a board's open postings at once is more likely a
+# broken or truncated response than a real hiring change.
+SHRINK_GUARD_MIN_OPEN = 20
+SHRINK_GUARD_MAX_CLOSED_FRACTION = 0.5
+
+
+class FeedShrankError(Exception):
+    """Closing a feed's unseen postings would close too many of its open ones."""
+
+    def __init__(self, closing: int, open_count: int) -> None:
+        super().__init__(f"feed shrank: would close {closing} of {open_count} open postings")
+        self.closing = closing
+        self.open_count = open_count
+
+
+def closes_too_many(closing: int, open_count: int) -> bool:
+    return (
+        open_count >= SHRINK_GUARD_MIN_OPEN
+        and closing > open_count * SHRINK_GUARD_MAX_CLOSED_FRACTION
+    )
+
+
 async def mark_unseen_catalog_jobs_unavailable(
     session: AsyncSession,
     *,
     source_key: str,
     external_id_prefix: str,
     seen_external_ids: set[str],
+    guard_shrink: bool = False,
 ) -> int:
     """Mark catalog postings from one fully fetched feed that are gone as UNAVAILABLE.
 
     Call only after the feed was fetched and parsed successfully; a failed or
     partial fetch must never close postings. Returns how many were closed.
+    With ``guard_shrink``, raises FeedShrankError and closes nothing when the
+    feed would close more than half of the board's open postings.
     """
     rows = await session.scalars(
         select(Job).where(
@@ -296,14 +321,15 @@ async def mark_unseen_catalog_jobs_unavailable(
             Job.availability_status != JobAvailabilityStatus.UNAVAILABLE.value,
         )
     )
-    closed = 0
-    for job in rows:
-        if job.external_job_id not in seen_external_ids:
-            job.availability_status = JobAvailabilityStatus.UNAVAILABLE.value
-            job.freshness_status = JobFreshnessStatus.STALE.value
-            closed += 1
+    open_jobs = list(rows)
+    unseen = [job for job in open_jobs if job.external_job_id not in seen_external_ids]
+    if guard_shrink and closes_too_many(len(unseen), len(open_jobs)):
+        raise FeedShrankError(len(unseen), len(open_jobs))
+    for job in unseen:
+        job.availability_status = JobAvailabilityStatus.UNAVAILABLE.value
+        job.freshness_status = JobFreshnessStatus.STALE.value
     await session.flush()
-    return closed
+    return len(unseen)
 
 
 async def open_catalog_postings(

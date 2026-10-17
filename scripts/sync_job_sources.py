@@ -15,7 +15,11 @@ only when the site's sitemap is complete (see job_source_workday.py).
 Requirement extraction is deferred to first use, so a sync makes no AI calls.
 
 Each board commits separately; a failed board is reported and skipped without
-touching its existing postings. Exit status is 1 if any board failed.
+touching its existing postings. A board whose feed would close more than half
+of its open postings at once is treated as a suspect partial response: its
+postings are upserted but none are closed, and the board is reported as HELD
+(pass --allow-shrink after checking the site to accept the drop). Exit status
+is 1 if any board failed or was held.
 
 Run daily, either from cron:
 
@@ -68,6 +72,7 @@ from careeros_api.job_source_boards import (
     without_stale,
 )
 from careeros_api.job_sources import (
+    FeedShrankError,
     JobSourceIngestionError,
     ingest_job_source,
     mark_catalog_jobs_observed,
@@ -163,11 +168,14 @@ class BoardReport:
     updated: int = 0
     closed: int = 0
     error: str | None = None
+    held: str | None = None
 
     def line(self) -> str:
         label = f"{self.source}/{self.token}"
         if self.error:
             return f"{label:<26} FAILED  {self.error}"
+        if self.held:
+            return f"{label:<26} HELD    {self.held}; closed none (check, then --allow-shrink)"
         return (
             f"{label:<26} fetched={self.fetched:<4} kept={self.kept:<4} "
             f"created={self.created:<4} updated={self.updated:<4} closed={self.closed}"
@@ -195,6 +203,7 @@ async def sync_board(
     board: SourceBoard,
     *,
     dry_run: bool,
+    allow_shrink: bool = False,
 ) -> BoardReport:
     report = BoardReport(spec.key, board.token)
     factory = get_session_factory(get_settings().database_url)
@@ -230,12 +239,16 @@ async def sync_board(
                 parser=None,
                 defer_requirements=True,
             )
-            report.closed = await mark_unseen_catalog_jobs_unavailable(
-                session,
-                source_key=spec.key,
-                external_id_prefix=board.external_id_prefix,
-                seen_external_ids=set(mapping.seen_external_ids),
-            )
+            try:
+                report.closed = await mark_unseen_catalog_jobs_unavailable(
+                    session,
+                    source_key=spec.key,
+                    external_id_prefix=board.external_id_prefix,
+                    seen_external_ids=set(mapping.seen_external_ids),
+                    guard_shrink=not allow_shrink,
+                )
+            except FeedShrankError as shrank:
+                report.held = str(shrank)
             await mark_catalog_jobs_observed(
                 session,
                 source_key=spec.key,
@@ -274,6 +287,12 @@ async def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--board", action="append", help="Only sync this board token")
     parser.add_argument(
         "--dry-run", action="store_true", help="Fetch and map only; no database writes"
+    )
+    parser.add_argument(
+        "--allow-shrink",
+        action="store_true",
+        help="Close vanished postings even when a board loses more than half of "
+        "its open postings at once (use after confirming the drop on the site)",
     )
     parser.add_argument(
         "--every-hours",
@@ -330,7 +349,13 @@ async def run_once(args: argparse.Namespace) -> int:
             if not first:
                 await asyncio.sleep(PAUSE_BETWEEN_BOARDS_SECONDS)
             first = False
-            report = await sync_board(client, spec, board, dry_run=args.dry_run)
+            report = await sync_board(
+                client,
+                spec,
+                board,
+                dry_run=args.dry_run,
+                allow_shrink=args.allow_shrink,
+            )
             reports.append(report)
             print(report.line(), flush=True)
 
@@ -338,12 +363,14 @@ async def run_once(args: argparse.Namespace) -> int:
         await asyncio.gather(*(worker(client) for _ in range(args.concurrency)))
 
     failed = [report for report in reports if report.error]
+    held = [report for report in reports if report.held]
     print(
         f"\n{'DRY RUN ' if args.dry_run else ''}boards={len(reports)} failed={len(failed)} "
+        f"held={len(held)} "
         f"kept={sum(r.kept for r in reports)} created={sum(r.created for r in reports)} "
         f"updated={sum(r.updated for r in reports)} closed={sum(r.closed for r in reports)}"
     )
-    return 1 if failed else 0
+    return 1 if failed or held else 0
 
 
 if __name__ == "__main__":

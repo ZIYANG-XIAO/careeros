@@ -127,7 +127,13 @@ on item 1 below.**
   2. *Source quality* — structured title, location, offices, HTML description.
   3. *Freshness* — each sync re-reads every board; a posting that disappears
      from a successfully fetched board is marked `UNAVAILABLE`/`STALE`. A failed
-     fetch never closes anything.
+     fetch never closes anything. The scheduled sync (`scripts/sync_job_sources.py`,
+     every source) also holds a board whose fetch would close more than half
+     of its open postings (when it has at least 20): it upserts what it read,
+     closes nothing by absence, reports the board as `HELD`, and exits 1. An
+     operator re-runs it with `--allow-shrink` after confirming the drop on
+     the site. (Example: on 2026-10-17 Citizens Financial Group's Oracle site
+     reported 0 of its previous 479 postings.)
   4. *Market* — North America only: a posting is kept only when its own
      location (or, failing that, its office names) explicitly names a US/Canada
      place. Pieces naming a place elsewhere are ignored, so "Berlin, DE" is not

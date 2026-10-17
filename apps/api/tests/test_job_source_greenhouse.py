@@ -17,7 +17,12 @@ from careeros_api.job_source_greenhouse import (
     map_board_jobs,
     resolve_north_america,
 )
-from careeros_api.job_sources import ingest_job_source, mark_unseen_catalog_jobs_unavailable
+from careeros_api.job_sources import (
+    FeedShrankError,
+    closes_too_many,
+    ingest_job_source,
+    mark_unseen_catalog_jobs_unavailable,
+)
 from careeros_api.models import Job, JobCountry, JobMarket
 
 CONTENT = (
@@ -210,6 +215,62 @@ async def test_catalog_sync_is_shared_deferred_and_closes_vanished_postings() ->
             )
             assert clip.status_code == 200, clip.text
             assert clip.json()["job"]["is_catalog"] is True
+    finally:
+        async with factory() as session:
+            await session.execute(
+                delete(Job).where(Job.user_id.is_(None), Job.external_job_id.like(f"{token}:%"))
+            )
+            await session.commit()
+        await engine.dispose()
+
+
+def test_shrink_guard_trips_only_when_most_of_a_sizable_board_vanishes() -> None:
+    assert closes_too_many(51, 100)
+    assert not closes_too_many(50, 100)
+    assert not closes_too_many(15, 19)  # small boards churn legitimately
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_guarded_close_holds_a_feed_that_drops_most_postings() -> None:
+    token = board_token()
+    board = GreenhouseBoard(token, "Acme")
+    engine = create_async_engine(get_test_db_url())
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with factory() as session:
+            full = map_board_jobs({"jobs": [posting(i, "Austin, TX") for i in range(30)]}, board)
+            await ingest_job_source(
+                session,
+                user_id=None,
+                adapter=GreenhouseBoardAdapter(full),
+                parser=None,
+                defer_requirements=True,
+            )
+            await session.commit()
+
+        # A truncated response lists 5 of 30: nothing closes unless allowed.
+        truncated = map_board_jobs({"jobs": [posting(i, "Austin, TX") for i in range(5)]}, board)
+        async with factory() as session:
+            with pytest.raises(FeedShrankError) as held:
+                await mark_unseen_catalog_jobs_unavailable(
+                    session,
+                    source_key="greenhouse",
+                    external_id_prefix=board.external_id_prefix,
+                    seen_external_ids=set(truncated.seen_external_ids),
+                    guard_shrink=True,
+                )
+            assert (held.value.closing, held.value.open_count) == (25, 30)
+            await session.commit()
+        async with factory() as session:
+            closed = await mark_unseen_catalog_jobs_unavailable(
+                session,
+                source_key="greenhouse",
+                external_id_prefix=board.external_id_prefix,
+                seen_external_ids=set(truncated.seen_external_ids),
+            )
+            await session.commit()
+            assert closed == 25
     finally:
         async with factory() as session:
             await session.execute(
